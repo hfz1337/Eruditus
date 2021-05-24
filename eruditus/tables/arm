@@ -1,0 +1,346 @@
+id	Name	r7	r0	r1	r2	r3	r4	r5	Definition
+9437184	restart_syscall	0x900000	-	-	-	-	-	-	kernel/signal.c:2501
+9437185	exit	0x900001	int error_code	-	-	-	-	-	kernel/exit.c:1095
+9437186	fork	0x900002	-	-	-	-	-	-	arch/arm/kernel/sys_arm.c:34
+9437187	read	0x900003	unsigned int fd	char *buf	size_t count	-	-	-	fs/read_write.c:460
+9437188	write	0x900004	unsigned int fd	const char *buf	size_t count	-	-	-	fs/read_write.c:477
+9437189	open	0x900005	const char *filename	int flags	umode_t mode	-	-	-	fs/open.c:1046
+9437190	close	0x900006	unsigned int fd	-	-	-	-	-	fs/open.c:1117
+9437192	creat	0x900008	const char *pathname	umode_t mode	-	-	-	-	fs/open.c:1079
+9437193	link	0x900009	const char *oldname	const char *newname	-	-	-	-	fs/namei.c:3152
+9437194	unlink	0x90000a	const char *pathname	-	-	-	-	-	fs/namei.c:2979
+9437195	execve	0x90000b	const char *filename	const char *const *argv	const char *const *envp	-	-	-	arch/arm/kernel/sys_arm.c:65
+9437196	chdir	0x90000c	const char *filename	-	-	-	-	-	fs/open.c:375
+9437197	time	0x90000d	time_t *tloc	-	-	-	-	-	kernel/time.c:62
+9437198	mknod	0x90000e	const char *filename	umode_t mode	unsigned dev	-	-	-	fs/namei.c:2693
+9437199	chmod	0x90000f	const char *filename	umode_t mode	-	-	-	-	fs/open.c:499
+9437200	lchown	0x900010	const char *filename	uid_t user	gid_t group	-	-	-	fs/open.c:586
+9437203	lseek	0x900013	unsigned int fd	off_t offset	unsigned int origin	-	-	-	fs/read_write.c:230
+9437204	getpid	0x900014	-	-	-	-	-	-	kernel/timer.c:1413
+9437205	mount	0x900015	char *dev_name	char *dir_name	char *type	unsigned long flags	void *data	-	fs/namespace.c:2362
+9437206	umount	0x900016	char *name	int flags	-	-	-	-	fs/namespace.c:1190
+9437207	setuid	0x900017	uid_t uid	-	-	-	-	-	kernel/sys.c:761
+9437208	getuid	0x900018	-	-	-	-	-	-	kernel/timer.c:1435
+9437209	stime	0x900019	time_t *tptr	-	-	-	-	-	kernel/time.c:81
+9437210	ptrace	0x90001a	long request	long pid	unsigned long addr	unsigned long data	-	-	kernel/ptrace.c:857
+9437211	alarm	0x90001b	unsigned int seconds	-	-	-	-	-	kernel/timer.c:1390
+9437213	pause	0x90001d	-	-	-	-	-	-	kernel/signal.c:3245
+9437214	utime	0x90001e	char *filename	struct utimbuf *times	-	-	-	-	fs/utimes.c:27
+9437217	access	0x900021	const char *filename	int mode	-	-	-	-	fs/open.c:370
+9437218	nice	0x900022	int increment	-	-	-	-	-	kernel/sched/core.c:4119
+9437220	sync	0x900024	-	-	-	-	-	-	fs/sync.c:98
+9437221	kill	0x900025	pid_t pid	int sig	-	-	-	-	kernel/signal.c:2841
+9437222	rename	0x900026	const char *oldname	const char *newname	-	-	-	-	fs/namei.c:3403
+9437223	mkdir	0x900027	const char *pathname	umode_t mode	-	-	-	-	fs/namei.c:2751
+9437224	rmdir	0x900028	const char *pathname	-	-	-	-	-	fs/namei.c:2870
+9437225	dup	0x900029	unsigned int fildes	-	-	-	-	-	fs/fcntl.c:131
+9437226	pipe	0x90002a	int *fildes	-	-	-	-	-	fs/pipe.c:1149
+9437227	times	0x90002b	struct tms *tbuf	-	-	-	-	-	kernel/sys.c:1058
+9437229	brk	0x90002d	unsigned long brk	-	-	-	-	-	mm/mmap.c:246
+9437230	setgid	0x90002e	gid_t gid	-	-	-	-	-	kernel/sys.c:614
+9437231	getgid	0x90002f	-	-	-	-	-	-	kernel/timer.c:1447
+9437233	geteuid	0x900031	-	-	-	-	-	-	kernel/timer.c:1441
+9437234	getegid	0x900032	-	-	-	-	-	-	kernel/timer.c:1453
+9437235	acct	0x900033	const char *name	-	-	-	-	-	kernel/acct.c:255
+9437236	umount2	0x900034	char *name	int flags	-	-	-	-	fs/namespace.c:1190
+9437238	ioctl	0x900036	unsigned int fd	unsigned int cmd	unsigned long arg	-	-	-	fs/ioctl.c:604
+9437239	fcntl	0x900037	unsigned int fd	unsigned int cmd	unsigned long arg	-	-	-	fs/fcntl.c:442
+9437241	setpgid	0x900039	pid_t pid	pid_t pgid	-	-	-	-	kernel/sys.c:1083
+9437244	umask	0x90003c	int mask	-	-	-	-	-	kernel/sys.c:1782
+9437245	chroot	0x90003d	const char *filename	-	-	-	-	-	fs/open.c:422
+9437246	ustat	0x90003e	unsigned dev	struct ustat *ubuf	-	-	-	-	fs/statfs.c:222
+9437247	dup2	0x90003f	unsigned int oldfd	unsigned int newfd	-	-	-	-	fs/fcntl.c:116
+9437248	getppid	0x900040	-	-	-	-	-	-	kernel/timer.c:1424
+9437249	getpgrp	0x900041	-	-	-	-	-	-	kernel/sys.c:1184
+9437250	setsid	0x900042	-	-	-	-	-	-	kernel/sys.c:1219
+9437251	sigaction	0x900043	int sig	const struct old_sigaction *act	struct old_sigaction *oact	-	-	-	arch/arm/kernel/signal.c:73
+9437254	setreuid	0x900046	uid_t ruid	uid_t euid	-	-	-	-	kernel/sys.c:690
+9437255	setregid	0x900047	gid_t rgid	gid_t egid	-	-	-	-	kernel/sys.c:557
+9437256	sigsuspend	0x900048	int restart	unsigned long oldmask	old_sigset_t mask	-	-	-	arch/arm/kernel/signal.c:65
+9437257	sigpending	0x900049	old_sigset_t *set	-	-	-	-	-	kernel/signal.c:3107
+9437258	sethostname	0x90004a	char *name	int len	-	-	-	-	kernel/sys.c:1365
+9437259	setrlimit	0x90004b	unsigned int resource	struct rlimit *rlim	-	-	-	-	kernel/sys.c:1641
+9437260	getrlimit	0x90004c	unsigned int resource	struct rlimit *rlim	-	-	-	-	kernel/sys.c:1440
+9437261	getrusage	0x90004d	int who	struct rusage *ru	-	-	-	-	kernel/sys.c:1774
+9437262	gettimeofday	0x90004e	struct timeval *tv	struct timezone *tz	-	-	-	-	kernel/time.c:101
+9437263	settimeofday	0x90004f	struct timeval *tv	struct timezone *tz	-	-	-	-	kernel/time.c:179
+9437264	getgroups	0x900050	int gidsetsize	gid_t *grouplist	-	-	-	-	kernel/groups.c:202
+9437265	setgroups	0x900051	int gidsetsize	gid_t *grouplist	-	-	-	-	kernel/groups.c:231
+9437266	select	0x900052	int n	fd_set *inp	fd_set *outp	fd_set *exp	struct timeval *tvp	-	fs/select.c:593
+9437267	symlink	0x900053	const char *oldname	const char *newname	-	-	-	-	fs/namei.c:3039
+9437269	readlink	0x900055	const char *path	char *buf	int bufsiz	-	-	-	fs/stat.c:321
+9437270	uselib	0x900056	const char *library	-	-	-	-	-	fs/exec.c:116
+9437271	swapon	0x900057	const char *specialfile	int swap_flags	-	-	-	-	mm/swapfile.c:1996
+9437272	reboot	0x900058	int magic1	int magic2	unsigned int cmd	void *arg	-	-	kernel/sys.c:432
+9437273	readdir	0x900059	unsigned int fd	struct old_linux_dirent *dirent	unsigned int count	-	-	-	fs/readdir.c:105
+9437274	mmap	0x90005a	struct mmap_arg_struct *arg	-	-	-	-	-	mm/mmap.c:1153
+9437275	munmap	0x90005b	unsigned long addr	size_t len	-	-	-	-	mm/mmap.c:2141
+9437276	truncate	0x90005c	const char *path	long length	-	-	-	-	fs/open.c:128
+9437277	ftruncate	0x90005d	unsigned int fd	unsigned long length	-	-	-	-	fs/open.c:178
+9437278	fchmod	0x90005e	unsigned int fd	umode_t mode	-	-	-	-	fs/open.c:472
+9437279	fchown	0x90005f	unsigned int fd	uid_t user	gid_t group	-	-	-	fs/open.c:605
+9437280	getpriority	0x900060	int which	int who	-	-	-	-	kernel/sys.c:241
+9437281	setpriority	0x900061	int which	int who	int niceval	-	-	-	kernel/sys.c:172
+9437283	statfs	0x900063	const char *pathname	struct statfs *buf	-	-	-	-	fs/statfs.c:166
+9437284	fstatfs	0x900064	unsigned int fd	struct statfs *buf	-	-	-	-	fs/statfs.c:187
+9437286	socketcall	0x900066	int call	unsigned long *args	-	-	-	-	net/socket.c:2355
+9437287	syslog	0x900067	int type	char *buf	int len	-	-	-	kernel/printk.c:1195
+9437288	setitimer	0x900068	int which	struct itimerval *value	struct itimerval *ovalue	-	-	-	kernel/itimer.c:278
+9437289	getitimer	0x900069	int which	struct itimerval *value	-	-	-	-	kernel/itimer.c:103
+9437290	stat	0x90006a	const char *filename	struct __old_kernel_stat *statbuf	-	-	-	-	fs/stat.c:155
+9437291	lstat	0x90006b	const char *filename	struct __old_kernel_stat *statbuf	-	-	-	-	fs/stat.c:168
+9437292	fstat	0x90006c	unsigned int fd	struct __old_kernel_stat *statbuf	-	-	-	-	fs/stat.c:181
+9437295	vhangup	0x90006f	-	-	-	-	-	-	fs/open.c:1156
+9437297	syscall	0x900071	-	-	-	-	-	-	arch/arm/kernel/entry-common.S:502
+9437298	wait4	0x900072	pid_t upid	int *stat_addr	int options	struct rusage *ru	-	-	kernel/exit.c:1834
+9437299	swapoff	0x900073	const char *specialfile	-	-	-	-	-	mm/swapfile.c:1539
+9437300	sysinfo	0x900074	struct sysinfo *info	-	-	-	-	-	kernel/timer.c:1641
+9437301	ipc	0x900075	unsigned int call	int first	unsigned long second	unsigned long third	void *ptr	long fifth	ipc/syscall.c:16
+9437302	fsync	0x900076	unsigned int fd	-	-	-	-	-	fs/sync.c:201
+9437303	sigreturn	0x900077	-	-	-	-	-	-	arch/arm/kernel/signal.c:264
+9437304	clone	0x900078	unsigned long clone_flags	unsigned long newsp	int *parent_tidptr	int tls_val	int *child_tidptr	-	arch/arm/kernel/sys_arm.c:47
+9437305	setdomainname	0x900079	char *name	int len	-	-	-	-	kernel/sys.c:1416
+9437306	uname	0x90007a	struct old_utsname *name	-	-	-	-	-	kernel/sys.c:1311
+9437308	adjtimex	0x90007c	struct timex *txc_p	-	-	-	-	-	kernel/time.c:200
+9437309	mprotect	0x90007d	unsigned long start	size_t len	unsigned long prot	-	-	-	mm/mprotect.c:232
+9437310	sigprocmask	0x90007e	int how	old_sigset_t *nset	old_sigset_t *oset	-	-	-	kernel/signal.c:3125
+9437312	init_module	0x900080	void *umod	unsigned long len	const char *uargs	-	-	-	kernel/module.c:3010
+9437313	delete_module	0x900081	const char *name_user	unsigned int flags	-	-	-	-	kernel/module.c:768
+9437315	quotactl	0x900083	unsigned int cmd	const char *special	qid_t id	void *addr	-	-	fs/quota/quota.c:346
+9437316	getpgid	0x900084	pid_t pid	-	-	-	-	-	kernel/sys.c:1154
+9437317	fchdir	0x900085	unsigned int fd	-	-	-	-	-	fs/open.c:396
+9437318	bdflush	0x900086	int func	long data	-	-	-	-	fs/buffer.c:3130
+9437319	sysfs	0x900087	int option	unsigned long arg1	unsigned long arg2	-	-	-	fs/filesystems.c:183
+9437320	personality	0x900088	unsigned int personality	-	-	-	-	-	kernel/exec_domain.c:182
+9437322	setfsuid	0x90008a	uid_t uid	-	-	-	-	-	kernel/sys.c:969
+9437323	setfsgid	0x90008b	gid_t gid	-	-	-	-	-	kernel/sys.c:1008
+9437324	_llseek	0x90008c	unsigned int fd	unsigned long offset_high	unsigned long offset_low	loff_t *result	unsigned int origin	-	fs/read_write.c:254
+9437325	getdents	0x90008d	unsigned int fd	struct linux_dirent *dirent	unsigned int count	-	-	-	fs/readdir.c:191
+9437326	_newselect	0x90008e	int n	fd_set *inp	fd_set *outp	fd_set *exp	struct timeval *tvp	-	fs/select.c:593
+9437327	flock	0x90008f	unsigned int fd	unsigned int cmd	-	-	-	-	fs/locks.c:1636
+9437328	msync	0x900090	unsigned long start	size_t len	int flags	-	-	-	mm/msync.c:31
+9437329	readv	0x900091	unsigned long fd	const struct iovec *vec	unsigned long vlen	-	-	-	fs/read_write.c:787
+9437330	writev	0x900092	unsigned long fd	const struct iovec *vec	unsigned long vlen	-	-	-	fs/read_write.c:808
+9437331	getsid	0x900093	pid_t pid	-	-	-	-	-	kernel/sys.c:1191
+9437332	fdatasync	0x900094	unsigned int fd	-	-	-	-	-	fs/sync.c:206
+9437333	_sysctl	0x900095	struct __sysctl_args *args	-	-	-	-	-	kernel/sysctl_binary.c:1444
+9437334	mlock	0x900096	unsigned long start	size_t len	-	-	-	-	mm/mlock.c:482
+9437335	munlock	0x900097	unsigned long start	size_t len	-	-	-	-	mm/mlock.c:512
+9437336	mlockall	0x900098	int flags	-	-	-	-	-	mm/mlock.c:549
+9437337	munlockall	0x900099	-	-	-	-	-	-	mm/mlock.c:582
+9437338	sched_setparam	0x90009a	pid_t pid	struct sched_param *param	-	-	-	-	kernel/sched/core.c:4477
+9437339	sched_getparam	0x90009b	pid_t pid	struct sched_param *param	-	-	-	-	kernel/sched/core.c:4512
+9437340	sched_setscheduler	0x90009c	pid_t pid	int policy	struct sched_param *param	-	-	-	kernel/sched/core.c:4462
+9437341	sched_getscheduler	0x90009d	pid_t pid	-	-	-	-	-	kernel/sched/core.c:4486
+9437342	sched_yield	0x90009e	-	-	-	-	-	-	kernel/sched/core.c:4711
+9437343	sched_get_priority_max	0x90009f	int policy	-	-	-	-	-	kernel/sched/core.c:4935
+9437344	sched_get_priority_min	0x9000a0	int policy	-	-	-	-	-	kernel/sched/core.c:4960
+9437345	sched_rr_get_interval	0x9000a1	pid_t pid	struct timespec *interval	-	-	-	-	kernel/sched/core.c:4985
+9437346	nanosleep	0x9000a2	struct timespec *rqtp	struct timespec *rmtp	-	-	-	-	kernel/hrtimer.c:1621
+9437347	mremap	0x9000a3	unsigned long addr	unsigned long old_len	unsigned long new_len	unsigned long flags	unsigned long new_addr	-	mm/mremap.c:431
+9437348	setresuid	0x9000a4	uid_t ruid	uid_t euid	uid_t suid	-	-	-	kernel/sys.c:808
+9437349	getresuid	0x9000a5	uid_t *ruidp	uid_t *euidp	uid_t *suidp	-	-	-	kernel/sys.c:873
+9437352	poll	0x9000a8	struct pollfd *ufds	unsigned int nfds	int timeout_msecs	-	-	-	fs/select.c:908
+9437353	nfsservctl	-	-	-	-	-	-	-	Not implemented
+9437354	setresgid	0x9000aa	gid_t rgid	gid_t egid	gid_t sgid	-	-	-	kernel/sys.c:893
+9437355	getresgid	0x9000ab	gid_t *rgidp	gid_t *egidp	gid_t *sgidp	-	-	-	kernel/sys.c:945
+9437356	prctl	0x9000ac	int option	unsigned long arg2	unsigned long arg3	unsigned long arg4	unsigned long arg5	-	kernel/sys.c:1999
+9437357	rt_sigreturn	0x9000ad	-	-	-	-	-	-	arch/arm/kernel/signal.c:294
+9437358	rt_sigaction	0x9000ae	int sig	const struct sigaction *act	struct sigaction *oact	size_t sigsetsize	-	-	kernel/signal.c:3174
+9437359	rt_sigprocmask	0x9000af	int how	sigset_t *nset	sigset_t *oset	size_t sigsetsize	-	-	kernel/signal.c:2591
+9437360	rt_sigpending	0x9000b0	sigset_t *set	size_t sigsetsize	-	-	-	-	kernel/signal.c:2651
+9437361	rt_sigtimedwait	0x9000b1	const sigset_t *uthese	siginfo_t *uinfo	const struct timespec *uts	size_t sigsetsize	-	-	kernel/signal.c:2805
+9437362	rt_sigqueueinfo	0x9000b2	pid_t pid	int sig	siginfo_t *uinfo	-	-	-	kernel/signal.c:2938
+9437363	rt_sigsuspend	0x9000b3	sigset_t *unewset	size_t sigsetsize	-	-	-	-	kernel/signal.c:3274
+9437364	pread64	0x9000b4	char *buf size_t count	loff_t pos	-	-	-	-	fs/read_write.c:495
+9437365	pwrite64	0x9000b5	const char *buf size_t count	loff_t pos	-	-	-	-	fs/read_write.c:524
+9437366	chown	0x9000b6	const char *filename	uid_t user	gid_t group	-	-	-	fs/open.c:540
+9437367	getcwd	0x9000b7	char *buf	unsigned long size	-	-	-	-	fs/dcache.c:2885
+9437368	capget	0x9000b8	cap_user_header_t header	cap_user_data_t dataptr	-	-	-	-	kernel/capability.c:158
+9437369	capset	0x9000b9	cap_user_header_t header	const cap_user_data_t data	-	-	-	-	kernel/capability.c:232
+9437370	sigaltstack	-	-	-	-	-	-	-	Not implemented
+9437371	sendfile	0x9000bb	int out_fd	int in_fd	off_t *offset	size_t count	-	-	fs/read_write.c:973
+9437374	vfork	0x9000be	-	-	-	-	-	-	arch/arm/kernel/sys_arm.c:57
+9437375	ugetrlimit	0x9000bf	unsigned int resource	struct rlimit *rlim	-	-	-	-	kernel/sys.c:1440
+9437376	mmap2	0x9000c0	unsigned long addr	unsigned long len	unsigned long prot	unsigned long flags	unsigned long fd	unsigned long pgoff	mm/mmap.c:1105
+9437377	truncate64	0x9000c1	loff_t length	-	-	-	-	-	fs/open.c:188
+9437378	ftruncate64	0x9000c2	loff_t length	-	-	-	-	-	fs/open.c:200
+9437379	stat64	0x9000c3	const char *filename	struct stat64 *statbuf	-	-	-	-	fs/stat.c:372
+9437380	lstat64	0x9000c4	const char *filename	struct stat64 *statbuf	-	-	-	-	fs/stat.c:384
+9437381	fstat64	0x9000c5	unsigned long fd	struct stat64 *statbuf	-	-	-	-	fs/stat.c:396
+9437382	lchown32	0x9000c6	const char *filename	uid_t user	gid_t group	-	-	-	fs/open.c:586
+9437383	getuid32	0x9000c7	-	-	-	-	-	-	kernel/timer.c:1435
+9437384	getgid32	0x9000c8	-	-	-	-	-	-	kernel/timer.c:1447
+9437385	geteuid32	0x9000c9	-	-	-	-	-	-	kernel/timer.c:1441
+9437386	getegid32	0x9000ca	-	-	-	-	-	-	kernel/timer.c:1453
+9437387	setreuid32	0x9000cb	uid_t ruid	uid_t euid	-	-	-	-	kernel/sys.c:690
+9437388	setregid32	0x9000cc	gid_t rgid	gid_t egid	-	-	-	-	kernel/sys.c:557
+9437389	getgroups32	0x9000cd	int gidsetsize	gid_t *grouplist	-	-	-	-	kernel/groups.c:202
+9437390	setgroups32	0x9000ce	int gidsetsize	gid_t *grouplist	-	-	-	-	kernel/groups.c:231
+9437391	fchown32	0x9000cf	unsigned int fd	uid_t user	gid_t group	-	-	-	fs/open.c:605
+9437392	setresuid32	0x9000d0	uid_t ruid	uid_t euid	uid_t suid	-	-	-	kernel/sys.c:808
+9437393	getresuid32	0x9000d1	uid_t *ruidp	uid_t *euidp	uid_t *suidp	-	-	-	kernel/sys.c:873
+9437394	setresgid32	0x9000d2	gid_t rgid	gid_t egid	gid_t sgid	-	-	-	kernel/sys.c:893
+9437395	getresgid32	0x9000d3	gid_t *rgidp	gid_t *egidp	gid_t *sgidp	-	-	-	kernel/sys.c:945
+9437396	chown32	0x9000d4	const char *filename	uid_t user	gid_t group	-	-	-	fs/open.c:540
+9437397	setuid32	0x9000d5	uid_t uid	-	-	-	-	-	kernel/sys.c:761
+9437398	setgid32	0x9000d6	gid_t gid	-	-	-	-	-	kernel/sys.c:614
+9437399	setfsuid32	0x9000d7	uid_t uid	-	-	-	-	-	kernel/sys.c:969
+9437400	setfsgid32	0x9000d8	gid_t gid	-	-	-	-	-	kernel/sys.c:1008
+9437401	getdents64	0x9000d9	unsigned int fd	struct linux_dirent64 *dirent	unsigned int count	-	-	-	fs/readdir.c:272
+9437402	pivot_root	0x9000da	const char *new_root	const char *put_old	-	-	-	-	fs/namespace.c:2453
+9437403	mincore	0x9000db	unsigned long start	size_t len	unsigned char *vec	-	-	-	mm/mincore.c:266
+9437404	madvise	0x9000dc	unsigned long start	size_t len_in	int behavior	-	-	-	mm/madvise.c:362
+9437405	fcntl64	0x9000dd	unsigned int fd	unsigned int cmd	unsigned long arg	-	-	-	fs/fcntl.c:468
+9437408	gettid	0x9000e0	-	-	-	-	-	-	kernel/timer.c:1569
+9437409	readahead	0x9000e1	loff_t offset size_t count	-	-	-	-	-	mm/readahead.c:579
+9437410	setxattr	0x9000e2	const char *pathname	const char *name	const void *value	size_t size	int flags	-	fs/xattr.c:361
+9437411	lsetxattr	0x9000e3	const char *pathname	const char *name	const void *value	size_t size	int flags	-	fs/xattr.c:380
+9437412	fsetxattr	0x9000e4	int fd	const char *name	const void *value	size_t size	int flags	-	fs/xattr.c:399
+9437413	getxattr	0x9000e5	const char *pathname	const char *name	void *value	size_t size	-	-	fs/xattr.c:459
+9437414	lgetxattr	0x9000e6	const char *pathname	const char *name	void *value	size_t size	-	-	fs/xattr.c:473
+9437415	fgetxattr	0x9000e7	int fd	const char *name	void *value	size_t size	-	-	fs/xattr.c:487
+9437416	listxattr	0x9000e8	const char *pathname	char *list	size_t size	-	-	-	fs/xattr.c:541
+9437417	llistxattr	0x9000e9	const char *pathname	char *list	size_t size	-	-	-	fs/xattr.c:555
+9437418	flistxattr	0x9000ea	int fd	char *list	size_t size	-	-	-	fs/xattr.c:569
+9437419	removexattr	0x9000eb	const char *pathname	const char *name	-	-	-	-	fs/xattr.c:602
+9437420	lremovexattr	0x9000ec	const char *pathname	const char *name	-	-	-	-	fs/xattr.c:620
+9437421	fremovexattr	0x9000ed	int fd	const char *name	-	-	-	-	fs/xattr.c:638
+9437422	tkill	0x9000ee	pid_t pid	int sig	-	-	-	-	kernel/signal.c:2923
+9437423	sendfile64	0x9000ef	int out_fd	int in_fd	loff_t *offset	size_t count	-	-	fs/read_write.c:992
+9437424	futex	0x9000f0	u32 *uaddr	int op	u32 val	struct timespec *utime	u32 *uaddr2	u32 val3	kernel/futex.c:2680
+9437425	sched_setaffinity	0x9000f1	pid_t pid	unsigned int len	unsigned long *user_mask_ptr	-	-	-	kernel/sched/core.c:4626
+9437426	sched_getaffinity	0x9000f2	pid_t pid	unsigned int len	unsigned long *user_mask_ptr	-	-	-	kernel/sched/core.c:4677
+9437427	io_setup	0x9000f3	unsigned nr_events	aio_context_t *ctxp	-	-	-	-	fs/aio.c:1298
+9437428	io_destroy	0x9000f4	aio_context_t ctx	-	-	-	-	-	fs/aio.c:1334
+9437429	io_getevents	0x9000f5	aio_context_t ctx_id	long min_nr	long nr	struct io_event *events	struct timespec *timeout	-	fs/aio.c:1844
+9437430	io_submit	0x9000f6	aio_context_t ctx_id	long nr	struct iocb * *iocbpp	-	-	-	fs/aio.c:1746
+9437431	io_cancel	0x9000f7	aio_context_t ctx_id	struct iocb *iocb	struct io_event *result	-	-	-	fs/aio.c:1781
+9437432	exit_group	0x9000f8	int error_code	-	-	-	-	-	kernel/exit.c:1136
+9437433	lookup_dcookie	0x9000f9	char *buf size_t len	-	-	-	-	-	fs/dcookies.c:148
+9437434	epoll_create	0x9000fa	int size	-	-	-	-	-	fs/eventpoll.c:1668
+9437435	epoll_ctl	0x9000fb	int epfd	int op	int fd	struct epoll_event *event	-	-	fs/eventpoll.c:1681
+9437436	epoll_wait	0x9000fc	int epfd	struct epoll_event *events	int maxevents	int timeout	-	-	fs/eventpoll.c:1809
+9437437	remap_file_pages	0x9000fd	unsigned long start	unsigned long size	unsigned long prot	unsigned long pgoff	unsigned long flags	-	mm/fremap.c:122
+9437440	set_tid_address	0x900100	int *tidptr	-	-	-	-	-	kernel/fork.c:1109
+9437441	timer_create	0x900101	const clockid_t which_clock	struct sigevent *timer_event_spec	timer_t *created_timer_id	-	-	-	kernel/posix-timers.c:535
+9437442	timer_settime	0x900102	timer_t timer_id	int flags	const struct itimerspec *new_setting	struct itimerspec *old_setting	-	-	kernel/posix-timers.c:819
+9437443	timer_gettime	0x900103	timer_t timer_id	struct itimerspec *setting	-	-	-	-	kernel/posix-timers.c:715
+9437444	timer_getoverrun	0x900104	timer_t timer_id	-	-	-	-	-	kernel/posix-timers.c:751
+9437445	timer_delete	0x900105	timer_t timer_id	-	-	-	-	-	kernel/posix-timers.c:882
+9437446	clock_settime	0x900106	const clockid_t which_clock	const struct timespec *tp	-	-	-	-	kernel/posix-timers.c:950
+9437447	clock_gettime	0x900107	const clockid_t which_clock	struct timespec *tp	-	-	-	-	kernel/posix-timers.c:965
+9437448	clock_getres	0x900108	const clockid_t which_clock	struct timespec *tp	-	-	-	-	kernel/posix-timers.c:1006
+9437449	clock_nanosleep	0x900109	const clockid_t which_clock	int flags	const struct timespec *rqtp	struct timespec *rmtp	-	-	kernel/posix-timers.c:1035
+9437450	statfs64	0x90010a	const char *pathname	size_t sz	struct statfs64 *buf	-	-	-	fs/statfs.c:175
+9437451	fstatfs64	0x90010b	unsigned int fd	size_t sz	struct statfs64 *buf	-	-	-	fs/statfs.c:196
+9437452	tgkill	0x90010c	pid_t tgid	pid_t pid	int sig	-	-	-	kernel/signal.c:2907
+9437453	utimes	0x90010d	char *filename	struct timeval *utimes	-	-	-	-	fs/utimes.c:221
+9437454	arm_fadvise64_64	0x90010e	int fd	int advice	loff_t offset	loff_t len	-	-	arch/arm/kernel/sys_arm.c:129
+9437455	pciconfig_iobase	-	-	-	-	-	-	-	Not implemented
+9437456	pciconfig_read	0x900110	unsigned long bus	unsigned long dfn	unsigned long off	unsigned long len	void *buf	-	drivers/pci/syscall.c:16
+9437457	pciconfig_write	0x900111	unsigned long bus	unsigned long dfn	unsigned long off	unsigned long len	void *buf	-	drivers/pci/syscall.c:86
+9437458	mq_open	0x900112	const char *u_name	int oflag	umode_t mode	struct mq_attr *u_attr	-	-	ipc/mqueue.c:803
+9437459	mq_unlink	0x900113	const char *u_name	-	-	-	-	-	ipc/mqueue.c:876
+9437460	mq_timedsend	0x900114	mqd_t mqdes	const char *u_msg_ptr	size_t msg_len	unsigned int msg_prio	const struct timespec *u_abs_timeout	-	ipc/mqueue.c:971
+9437461	mq_timedreceive	0x900115	mqd_t mqdes	char *u_msg_ptr	size_t msg_len	unsigned int *u_msg_prio	const struct timespec *u_abs_timeout	-	ipc/mqueue.c:1092
+9437462	mq_notify	0x900116	mqd_t mqdes	const struct sigevent *u_notification	-	-	-	-	ipc/mqueue.c:1201
+9437463	mq_getsetattr	0x900117	mqd_t mqdes	const struct mq_attr *u_mqstat	struct mq_attr *u_omqstat	-	-	-	ipc/mqueue.c:1333
+9437464	waitid	0x900118	int which	pid_t upid	struct siginfo *infop	int options	struct rusage *ru	-	kernel/exit.c:1763
+9437465	socket	0x900119	int family	int type	int protocol	-	-	-	net/socket.c:1324
+9437466	bind	0x90011a	int fd	struct sockaddr *umyaddr	int addrlen	-	-	-	net/socket.c:1446
+9437467	connect	0x90011b	int fd	struct sockaddr *uservaddr	int addrlen	-	-	-	net/socket.c:1600
+9437468	listen	0x90011c	int fd	int backlog	-	-	-	-	net/socket.c:1475
+9437469	accept	0x90011d	int fd	struct sockaddr *upeer_sockaddr	int *upeer_addrlen	-	-	-	net/socket.c:1582
+9437470	getsockname	0x90011e	int fd	struct sockaddr *usockaddr	int *usockaddr_len	-	-	-	net/socket.c:1632
+9437471	getpeername	0x90011f	int fd	struct sockaddr *usockaddr	int *usockaddr_len	-	-	-	net/socket.c:1663
+9437472	socketpair	0x900120	int family	int type	int protocol	int *usockvec	-	-	net/socket.c:1365
+9437473	send	0x900121	int fd	void *buff	size_t len	unsigned int flags	-	-	net/socket.c:1742
+9437474	sendto	0x900122	int fd	void *buff	size_t len	unsigned int flags	struct sockaddr *addr	int addr_len	net/socket.c:1695
+9437475	recv	0x900123	int fd	void *ubuf	size_t size	unsigned int flags	-	-	net/socket.c:1799
+9437476	recvfrom	0x900124	int fd	void *ubuf	size_t size	unsigned int flags	struct sockaddr *addr	int *addr_len	net/socket.c:1754
+9437477	shutdown	0x900125	int fd	int how	-	-	-	-	net/socket.c:1874
+9437478	setsockopt	0x900126	int fd	int level	int optname	char *optval	int optlen	-	net/socket.c:1810
+9437479	getsockopt	0x900127	int fd	int level	int optname	char *optval	int *optlen	-	net/socket.c:1844
+9437480	sendmsg	0x900128	int fd	struct msghdr *msg	unsigned int flags	-	-	-	net/socket.c:2016
+9437481	recvmsg	0x900129	int fd	struct msghdr *msg	unsigned int flags	-	-	-	net/socket.c:2189
+9437482	semop	0x90012a	int semid	struct sembuf *tsops	unsigned nsops	-	-	-	ipc/sem.c:1548
+9437483	semget	0x90012b	key_t key	int nsems	int semflg	-	-	-	ipc/sem.c:367
+9437484	semctl	0x90012c	int semnum int cmd	union semun arg	-	-	-	-	ipc/sem.c:1121
+9437485	msgsnd	0x90012d	int msqid	struct msgbuf *msgp	size_t msgsz	int msgflg	-	-	ipc/msg.c:726
+9437486	msgrcv	0x90012e	int msqid	struct msgbuf *msgp	size_t msgsz	long msgtyp	int msgflg	-	ipc/msg.c:907
+9437487	msgget	0x90012f	key_t key	int msgflg	-	-	-	-	ipc/msg.c:312
+9437488	msgctl	0x900130	int msqid	int cmd	struct msqid_ds *buf	-	-	-	ipc/msg.c:469
+9437489	shmat	0x900131	int shmid	char *shmaddr	int shmflg	-	-	-	ipc/shm.c:1105
+9437490	shmdt	0x900132	char *shmaddr	-	-	-	-	-	ipc/shm.c:1121
+9437491	shmget	0x900133	key_t key	size_t size	int shmflg	-	-	-	ipc/shm.c:574
+9437492	shmctl	0x900134	int shmid	int cmd	struct shmid_ds *buf	-	-	-	ipc/shm.c:774
+9437493	add_key	0x900135	const char *_type	const char *_description	const void *_payload	size_t plen	key_serial_t ringid	-	security/keys/keyctl.c:54
+9437494	request_key	0x900136	const char *_type	const char *_description	const char *_callout_info	key_serial_t destringid	-	-	security/keys/keyctl.c:147
+9437495	keyctl	0x900137	int option	unsigned long arg2	unsigned long arg3	unsigned long arg4	unsigned long arg5	-	security/keys/keyctl.c:1556
+9437496	semtimedop	0x900138	int semid	struct sembuf *tsops	unsigned nsops	const struct timespec *timeout	-	-	ipc/sem.c:1330
+9437497	vserver	-	-	-	-	-	-	-	Not implemented
+9437498	ioprio_set	0x90013a	int which	int who	int ioprio	-	-	-	fs/ioprio.c:61
+9437499	ioprio_get	0x90013b	int which	int who	-	-	-	-	fs/ioprio.c:176
+9437500	inotify_init	0x90013c	-	-	-	-	-	-	fs/notify/inotify/inotify_user.c:749
+9437501	inotify_add_watch	0x90013d	int fd	const char *pathname	u32 mask	-	-	-	fs/notify/inotify/inotify_user.c:754
+9437502	inotify_rm_watch	0x90013e	int fd	__s32 wd	-	-	-	-	fs/notify/inotify/inotify_user.c:795
+9437503	mbind	0x90013f	unsigned long start	unsigned long len	unsigned long mode	unsigned long *nmask	unsigned long maxnode	unsigned flags	mm/mempolicy.c:1263
+9437504	get_mempolicy	0x900140	int *policy	unsigned long *nmask	unsigned long maxnode	unsigned long addr	unsigned long flags	-	mm/mempolicy.c:1400
+9437505	set_mempolicy	0x900141	int mode	unsigned long *nmask	unsigned long maxnode	-	-	-	mm/mempolicy.c:1285
+9437506	openat	0x900142	int dfd	const char *filename	int flags	umode_t mode	-	-	fs/open.c:1059
+9437507	mkdirat	0x900143	int dfd	const char *pathname	umode_t mode	-	-	-	fs/namei.c:2723
+9437508	mknodat	0x900144	int dfd	const char *filename	umode_t mode	unsigned dev	-	-	fs/namei.c:2646
+9437509	fchownat	0x900145	int dfd	const char *filename	uid_t user	gid_t group	int flag	-	fs/open.c:559
+9437510	futimesat	0x900146	int dfd	const char *filename	struct timeval *utimes	-	-	-	fs/utimes.c:193
+9437511	fstatat64	0x900147	int dfd	const char *filename	struct stat64 *statbuf	int flag	-	-	fs/stat.c:407
+9437512	unlinkat	0x900148	int dfd	const char *pathname	int flag	-	-	-	fs/namei.c:2968
+9437513	renameat	0x900149	int olddfd	const char *oldname	int newdfd	const char *newname	-	-	fs/namei.c:3309
+9437514	linkat	0x90014a	int olddfd	const char *oldname	int newdfd	const char *newname	int flags	-	fs/namei.c:3097
+9437515	symlinkat	0x90014b	const char *oldname	int newdfd	const char *newname	-	-	-	fs/namei.c:3004
+9437516	readlinkat	0x90014c	int dfd	const char *pathname	char *buf	int bufsiz	-	-	fs/stat.c:293
+9437517	fchmodat	0x90014d	int dfd	const char *filename	umode_t mode	-	-	-	fs/open.c:486
+9437518	faccessat	0x90014e	int dfd	const char *filename	int mode	-	-	-	fs/open.c:299
+9437519	pselect6	0x90014f	int n	fd_set *inp	fd_set *outp	fd_set *exp	struct timespec *tsp	void *sig	fs/select.c:671
+9437520	ppoll	0x900150	struct pollfd *ufds	unsigned int nfds	struct timespec *tsp	const sigset_t *sigmask	size_t sigsetsize	-	fs/select.c:942
+9437521	unshare	0x900151	unsigned long unshare_flags	-	-	-	-	-	kernel/fork.c:1778
+9437522	set_robust_list	0x900152	struct robust_list_head *head	size_t len	-	-	-	-	kernel/futex.c:2422
+9437523	get_robust_list	0x900153	int pid	struct robust_list_head * *head_ptr	size_t *len_ptr	-	-	-	kernel/futex.c:2444
+9437524	splice	0x900154	int fd_in	loff_t *off_in	int fd_out	loff_t *off_out	size_t len	unsigned int flags	fs/splice.c:1689
+9437525	sync_file_range2	0x900155	unsigned int flags loff_t offset	loff_t nbytes	-	-	-	-	fs/sync.c:370
+9437526	tee	0x900156	int fdin	int fdout	size_t len	unsigned int flags	-	-	fs/splice.c:2025
+9437527	vmsplice	0x900157	int fd	const struct iovec *iov	unsigned long nr_segs	unsigned int flags	-	-	fs/splice.c:1663
+9437528	move_pages	0x900158	pid_t pid	unsigned long nr_pages	const void * *pages	const int *nodes	int *status	int flags	mm/migrate.c:1343
+9437529	getcpu	0x900159	unsigned *cpup	unsigned *nodep	struct getcpu_cache *unused	-	-	-	kernel/sys.c:2179
+9437530	epoll_pwait	0x90015a	int epfd	struct epoll_event *events	int maxevents	int timeout	const sigset_t *sigmask	size_t sigsetsize	fs/eventpoll.c:1860
+9437531	kexec_load	0x90015b	unsigned long entry	unsigned long nr_segments	struct kexec_segment *segments	unsigned long flags	-	-	kernel/kexec.c:940
+9437532	utimensat	0x90015c	int dfd	const char *filename	struct timespec *utimes	int flags	-	-	fs/utimes.c:175
+9437533	signalfd	0x90015d	int ufd	sigset_t *user_mask	size_t sizemask	-	-	-	fs/signalfd.c:292
+9437534	timerfd_create	0x90015e	int clockid	int flags	-	-	-	-	fs/timerfd.c:252
+9437535	eventfd	0x90015f	unsigned int count	-	-	-	-	-	fs/eventfd.c:431
+9437536	fallocate	0x900160	int mode loff_t offset	loff_t len	-	-	-	-	fs/open.c:272
+9437537	timerfd_settime	0x900161	int ufd	int flags	const struct itimerspec *utmr	struct itimerspec *otmr	-	-	fs/timerfd.c:283
+9437538	timerfd_gettime	0x900162	int ufd	struct itimerspec *otmr	-	-	-	-	fs/timerfd.c:344
+9437539	signalfd4	0x900163	int ufd	sigset_t *user_mask	size_t sizemask	int flags	-	-	fs/signalfd.c:237
+9437540	eventfd2	0x900164	unsigned int count	int flags	-	-	-	-	fs/eventfd.c:406
+9437541	epoll_create1	0x900165	int flags	-	-	-	-	-	fs/eventpoll.c:1625
+9437542	dup3	0x900166	unsigned int oldfd	unsigned int newfd	int flags	-	-	-	fs/fcntl.c:53
+9437543	pipe2	0x900167	int *fildes	int flags	-	-	-	-	fs/pipe.c:1133
+9437544	inotify_init1	0x900168	int flags	-	-	-	-	-	fs/notify/inotify/inotify_user.c:724
+9437545	preadv	0x900169	unsigned long fd	const struct iovec *vec	unsigned long vlen	unsigned long pos_l	unsigned long pos_h	-	fs/read_write.c:835
+9437546	pwritev	0x90016a	unsigned long fd	const struct iovec *vec	unsigned long vlen	unsigned long pos_l	unsigned long pos_h	-	fs/read_write.c:860
+9437547	rt_tgsigqueueinfo	0x90016b	pid_t tgid	pid_t pid	int sig	siginfo_t *uinfo	-	-	kernel/signal.c:2979
+9437548	perf_event_open	0x90016c	struct perf_event_attr *attr_uptr	pid_t pid	int cpu	int group_fd	unsigned long flags	-	kernel/events/core.c:6186
+9437549	recvmmsg	0x90016d	int fd	struct mmsghdr *mmsg	unsigned int vlen	unsigned int flags	struct timespec *timeout	-	net/socket.c:2313
+9437550	accept4	0x90016e	int fd	struct sockaddr *upeer_sockaddr	int *upeer_addrlen	int flags	-	-	net/socket.c:1508
+9437551	fanotify_init	0x90016f	unsigned int flags	unsigned int event_f_flags	-	-	-	-	fs/notify/fanotify/fanotify_user.c:679
+9437552	fanotify_mark	0x900170	unsigned int flags __u64 mask	int dfd const char *pathname	-	-	-	-	fs/notify/fanotify/fanotify_user.c:767
+9437553	prlimit64	0x900171	pid_t pid	unsigned int resource	const struct rlimit64 *new_rlim	struct rlimit64 *old_rlim	-	-	kernel/sys.c:1599
+9437554	name_to_handle_at	0x900172	int dfd	const char *name	struct file_handle *handle	int *mnt_id	int flag	-	fs/fhandle.c:92
+9437555	open_by_handle_at	0x900173	int mountdirfd	struct file_handle *handle	int flags	-	-	-	fs/fhandle.c:257
+9437556	clock_adjtime	0x900174	const clockid_t which_clock	struct timex *utx	-	-	-	-	kernel/posix-timers.c:983
+9437557	syncfs	0x900175	int fd	-	-	-	-	-	fs/sync.c:134
+9437558	sendmmsg	0x900176	int fd	struct mmsghdr *mmsg	unsigned int vlen	unsigned int flags	-	-	net/socket.c:2091
+9437559	setns	0x900177	int fd	int nstype	-	-	-	-	kernel/nsproxy.c:235
+9437560	process_vm_readv	0x900178	pid_t pid	const struct iovec *lvec	unsigned long liovcnt	const struct iovec *rvec	unsigned long riovcnt	unsigned long flags	mm/process_vm_access.c:398
+9437561	process_vm_writev	0x900179	pid_t pid	const struct iovec *lvec	unsigned long liovcnt	const struct iovec *rvec	unsigned long riovcnt	unsigned long flags	mm/process_vm_access.c:405

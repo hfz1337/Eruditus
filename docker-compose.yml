@@ -1,0 +1,36 @@
+version: '2'
+
+services:
+  eruditus:
+    build: .
+    image: eruditus:latest
+    container_name: eruditus
+    restart: always
+    environment:
+        # Bot token (required)
+      - DISCORD_TOKEN=<YOUR_BOT_TOKEN>
+      - MONGODB_URI=mongodb://mongodb:27017/
+      - DBNAME=eruditus
+      - CTFTIME_EVENTS_COLLECTION=ctftime
+      - CTFS_COLLECTION=ctfs
+      - CHANNELS_COLLECTION=channels
+        # The category channel where past CTFs results will be moved (optional)
+      - ARCHIVE_CATEGORY_CHANNEL=
+        # The channel ID where we make CTF announcements and enable voting (optional)
+      - EVENT_ANNOUNCEMENT_CHANNEL=
+        # The Guild ID (required)
+      - GUILD_ID=<YOUR_GUILD_NUMERICAL_ID>
+        # The minimum number of players required to create a CTF automatically (required)
+      - MINIMUM_PLAYER_COUNT=5
+        # The number of seconds before the CTF starts from which we start considering
+        # the votes to decide whether to create the CTF or not (required, default: 2 hours)
+      - VOTING_VERDICT_COUNTDOWN=7200
+        # The number of seconds remaining for a CTF to start when we announce it for
+        # voting (required, default: 2 days)
+      - VOTING_STARTS_COUNTDOWN=172800
+  mongodb:
+    image: mongo:latest
+    container_name: monogdb
+    restart: always
+    volumes:
+      - .data:/data/db
