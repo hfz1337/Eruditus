@@ -10,12 +10,16 @@
 # The syscalls tables under `tables` were integrated without any changes.
 # ======================================================================================
 
-from discord.ext.commands import Context, Bot
 from collections import OrderedDict
-from discord.ext import commands
-from help import help_info
-import discord
 import os
+
+from discord.ext.commands import Bot
+from discord.ext import commands
+
+from discord_slash import SlashContext, cog_ext
+from discord_slash.utils.manage_commands import create_option
+
+from cogs.syscalls.help import cog_help
 
 
 class SyscallTable:
@@ -79,35 +83,12 @@ class Syscalls(commands.Cog):
         for table in os.listdir(basedir):
             self.tables[table] = SyscallTable(os.path.join(basedir, table))
 
-    @commands.group()
-    async def syscalls(self, ctx: Context) -> None:
-        if ctx.invoked_subcommand is None:
-            embed = discord.Embed(
-                title=f"Commands group for {self.bot.command_prefix}{ctx.invoked_with}",
-                colour=discord.Colour.blue(),
-            ).set_thumbnail(url=f"{self.bot.user.avatar_url}")
-
-            for command in help_info[ctx.invoked_with]:
-                embed.add_field(
-                    name=help_info[ctx.invoked_with][command]["usage"].format(
-                        self.bot.command_prefix
-                    ),
-                    value=help_info[ctx.invoked_with][command]["brief"],
-                    inline=False,
-                )
-
-            await ctx.send(embed=embed)
-
-    @syscalls.command()
-    async def available(self, ctx: Context) -> None:
-        await ctx.send(f"Supported architectures: {', '.join(self.tables.keys())}")
-
-    @syscalls.command()
-    async def show(self, ctx: Context, arch: str, syscall: str) -> None:
-        # make sure the arch exists
-        if arch not in self.tables.keys():
-            await ctx.send(f"No such architecture: {arch}")
-
+    @cog_ext.cog_slash(
+        name=cog_help["name"],
+        description=cog_help["description"],
+        options=[create_option(**option) for option in cog_help["options"]],
+    )
+    async def _syscalls(self, ctx: SlashContext, arch: str, syscall: str) -> None:
         table = self.tables.get(arch)
 
         if syscall.startswith("0x"):
@@ -128,4 +109,5 @@ class Syscalls(commands.Cog):
 
 
 def setup(bot: Bot) -> None:
-    bot.add_cog(Syscalls(bot, "tables"))
+    cog_dir = os.path.dirname(os.path.abspath(__file__))
+    bot.add_cog(Syscalls(bot, f"{cog_dir}/tables"))
