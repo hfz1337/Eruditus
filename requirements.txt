@@ -1,0 +1,6 @@
+discord-py-slash-command
+beautifulsoup4
+discord.py
+requests
+pymongo
+urllib3

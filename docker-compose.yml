@@ -1,0 +1,16 @@
+version: '2'
+
+services:
+  eruditus:
+    build: .
+    image: eruditus:latest
+    container_name: eruditus
+    restart: always
+    environment:
+      - DISCORD_TOKEN=<BOT_TOKEN_GOES_HERE>
+  mongodb:
+    image: mongo:latest
+    container_name: monogdb
+    restart: always
+    volumes:
+      - .data:/data/db
