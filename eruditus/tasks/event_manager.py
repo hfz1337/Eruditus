@@ -270,7 +270,8 @@ class EventManager(commands.Cog):
             return
 
         # Get the message that got a reaction added
-        message = await self._bot.fetch_message(payload.message_id)
+        channel = await self._bot.fetch_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
 
         # If the concerned message doesn't belong to us, do nothing
         if message.author.id != self._bot.user.id:
