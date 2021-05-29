@@ -17,7 +17,7 @@ from lib.ctfd import pull_challenges, submit_flag
 
 from config import (
     MONGODB_URI,
-    DBNAME,
+    DBNAME_PREFIX,
     CHALLENGE_COLLECTION,
     CONFIG_COLLECTION,
     CTF_COLLECTION,
@@ -26,14 +26,16 @@ from config import (
 
 
 # MongoDB handle
-mongo = MongoClient(MONGODB_URI)[DBNAME]
+mongo = MongoClient(MONGODB_URI)
 
 
 def in_ctf_channel() -> bool:
     """Wrapper function to check if a command was issued from a CTF channel."""
 
     async def predicate(ctx: SlashContext) -> bool:
-        if mongo[CTF_COLLECTION].find_one({"guild_category": ctx.channel.category_id}):
+        if mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+            {"guild_category": ctx.channel.category_id}
+        ):
             return True
 
         await ctx.send(
@@ -51,7 +53,6 @@ class CTF(commands.Cog):
 
     def __init__(self, bot: Bot) -> None:
         self._bot = bot
-        self._config = mongo[CONFIG_COLLECTION].find_one()
 
     async def _periodic_puller(self, ctx: SlashContext) -> None:
         """Pulls new challenges from the CTFd platform periodically."""
@@ -78,7 +79,9 @@ class CTF(commands.Cog):
 
         """
         # Check if CTF already exists
-        if mongo[CTF_COLLECTION].find_one({"name": name}):
+        if mongo[f"{DBNAME_PREFIX}-{ctx.guild.id}"][CTF_COLLECTION].find_one(
+            {"name": name}
+        ):
             await ctx.send(
                 "Another CTF with similar name already exists, please choose another "
                 "name.",
@@ -152,7 +155,7 @@ class CTF(commands.Cog):
                 "notes": notes_channel.id,
             },
         }
-        mongo[CTF_COLLECTION].insert_one(ctf)
+        mongo[f"{DBNAME_PREFIX}-{ctx.guild.id}"][CTF_COLLECTION].insert_one(ctf)
         # If the command was invoked by us, don't send the confirmation message
         if ctx.author.id != self._bot.user.id:
             await ctx.send(f'✅ CTF "{name}" has been created')
@@ -178,7 +181,7 @@ class CTF(commands.Cog):
             new_name: The new CTF name.
 
         """
-        ctf = mongo[CTF_COLLECTION].find_one(
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
         )
         old_name = ctf["name"]
@@ -192,7 +195,7 @@ class CTF(commands.Cog):
             name=category_channel.name.replace(old_name, new_name)
         )
 
-        mongo[CTF_COLLECTION].update_one(
+        mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]}, {"$set": {"name": ctf["name"]}}
         )
         await ctx.send(f'✅ CTF "{old_name}" has been renamed to "{new_name}"')
@@ -225,40 +228,22 @@ class CTF(commands.Cog):
         await ctx.defer()
 
         if name is None:
-            ctf = mongo[CTF_COLLECTION].find_one(
+            ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
                 {"guild_category": ctx.channel.category_id}
             )
         else:
-            ctf = mongo[CTF_COLLECTION].find_one({"name": name})
+            ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+                {"name": name}
+            )
 
         if ctf:
-            # If the archive category channel is provided, check if it corresponds to
-            # an existing category channel in the guild.
-            if self._config["archive_category_channel"]:
-                archive_category_channel = discord.utils.get(
-                    ctx.guild.categories, id=self._config["archive_category_channel"]
-                )
-            else:
-                archive_category_channel = None
-
-            # If the category channel didn't exist or wasn't found in the database, we
-            # create a new archive category and save its ID to the database for future
-            # use.
-            if archive_category_channel is None:
-                overwrites = {
-                    ctx.guild.default_role: discord.PermissionOverwrite(
-                        send_messages=False
-                    )
-                }
-                archive_category_channel = await ctx.guild.create_category(
-                    name="📁 CTF Archive",
-                    overwrites=overwrites,
-                )
-                self._config["archive_category_channel"] = archive_category_channel.id
-                mongo[CONFIG_COLLECTION].update_one(
-                    {"_id": self._config["_id"]},
-                    {"$set": {"archive_category_channel": archive_category_channel.id}},
-                )
+            # Global archive category channel
+            archive_category_channel = discord.utils.get(
+                ctx.guild.categories,
+                id=mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                    CONFIG_COLLECTION
+                ].find_one()["archive_category_channel"],
+            )
 
             # Category channel of the CTF
             category_channel = discord.utils.get(
@@ -304,10 +289,10 @@ class CTF(commands.Cog):
             if role is not None:
                 await role.delete()
 
-            if ctx.channel.category_id != ctf["guild_category"]:
+            if ctx.channel is not None:
                 await ctx.send(f"✅ CTF \"{ctf['name']}\" has been archived")
 
-            mongo[CTF_COLLECTION].update_one(
+            mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].update_one(
                 {"_id": ctf["_id"]}, {"$set": {"archived": True}}
             )
         else:
@@ -337,11 +322,13 @@ class CTF(commands.Cog):
         await ctx.defer()
 
         if name is None:
-            ctf = mongo[CTF_COLLECTION].find_one(
+            ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
                 {"guild_category": ctx.channel.category_id}
             )
         else:
-            ctf = mongo[CTF_COLLECTION].find_one({"name": name})
+            ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+                {"name": name}
+            )
 
         if ctf:
             category_channel = discord.utils.get(
@@ -355,7 +342,9 @@ class CTF(commands.Cog):
             if category_channel is None:
                 archive_category_channel = discord.utils.get(
                     ctx.guild.categories,
-                    id=self._config["archive_category_channel"],
+                    id=mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                        CONFIG_COLLECTION
+                    ].find_one()["archive_category_channel"],
                 )
                 # Delete `notes` and `solves` channels for that CTF
                 if archive_category_channel:
@@ -375,9 +364,13 @@ class CTF(commands.Cog):
 
             # Delete all challenges for that CTF
             for challenge_id in ctf["challenges"]:
-                mongo[CHALLENGE_COLLECTION].delete_one({"_id": challenge_id})
+                mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                    CHALLENGE_COLLECTION
+                ].delete_one({"_id": challenge_id})
             # Delete the CTF
-            mongo[CTF_COLLECTION].delete_one({"_id": ctf["_id"]})
+            mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].delete_one(
+                {"_id": ctf["_id"]}
+            )
 
             await ctx.send(f"✅ CTF \"{ctf['name']}\" has been deleted")
         else:
@@ -409,7 +402,9 @@ class CTF(commands.Cog):
             await ctx.author.add_roles(role)
 
             # Announce that the user joined the CTF
-            ctf = mongo[CTF_COLLECTION].find_one({"guild_role": role.id})
+            ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+                {"guild_role": role.id}
+            )
             if not ctf:
                 return
 
@@ -440,14 +435,16 @@ class CTF(commands.Cog):
             ctx: The context in which the command is being invoked under.
 
         """
-        ctf = mongo[CTF_COLLECTION].find_one(
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
         )
         role = discord.utils.get(ctx.guild.roles, id=ctf["guild_role"])
         await ctx.author.remove_roles(role)
 
         # Announce that the user left the CTF
-        ctf = mongo[CTF_COLLECTION].find_one({"guild_role": role.id})
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+            {"guild_role": role.id}
+        )
         if not ctf:
             return
 
@@ -501,7 +498,7 @@ class CTF(commands.Cog):
         category = category.title().strip()
 
         # Check if challenge already exists
-        if mongo[CHALLENGE_COLLECTION].find_one(
+        if mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CHALLENGE_COLLECTION].find_one(
             {
                 "name": name,
                 "category": category,
@@ -526,7 +523,9 @@ class CTF(commands.Cog):
         )
 
         # Add challenge to the database
-        challenge = mongo[CHALLENGE_COLLECTION].insert_one(
+        challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+            CHALLENGE_COLLECTION
+        ].insert_one(
             {
                 "id": id,
                 "name": name,
@@ -541,11 +540,13 @@ class CTF(commands.Cog):
         )
 
         # Add reference for the CTF to the newly created challenge
-        ctf = mongo[CTF_COLLECTION].find_one(
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
         )
         ctf["challenges"].append(challenge.inserted_id)
-        mongo[CTF_COLLECTION].update_one({"_id": ctf["_id"]}, {"$set": ctf})
+        mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].update_one(
+            {"_id": ctf["_id"]}, {"$set": ctf}
+        )
 
         # Announce that the challenge was added
         announcements_channel = discord.utils.get(
@@ -610,7 +611,9 @@ class CTF(commands.Cog):
                 the category doesn't change and we stick to the previous one.
 
         """
-        challenge = mongo[CHALLENGE_COLLECTION].find_one({"channel": ctx.channel_id})
+        challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+            CHALLENGE_COLLECTION
+        ].find_one({"channel": ctx.channel_id})
 
         challenge["name"] = new_name
         challenge["category"] = new_category or challenge["category"]
@@ -626,7 +629,7 @@ class CTF(commands.Cog):
         else:
             await challenge_channel.edit(name=f"❌-{new_channel_name}")
 
-        mongo[CHALLENGE_COLLECTION].update_one(
+        mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {"$set": {"name": challenge["name"], "category": challenge["category"]}},
         )
@@ -654,21 +657,25 @@ class CTF(commands.Cog):
 
         """
         if name is None:
-            challenge = mongo[CHALLENGE_COLLECTION].find_one(
-                {"channel": ctx.channel_id}
-            )
+            challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                CHALLENGE_COLLECTION
+            ].find_one({"channel": ctx.channel_id})
         else:
-            challenge = mongo[CHALLENGE_COLLECTION].find_one({"name": name})
+            challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                CHALLENGE_COLLECTION
+            ].find_one({"name": name})
 
         if challenge is None:
             await ctx.send("No such challenge.", hidden=True)
             return
 
         # Delete challenge from the database
-        mongo[CHALLENGE_COLLECTION].delete_one(challenge)
+        mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CHALLENGE_COLLECTION].delete_one(
+            challenge
+        )
 
         # Delete reference to that challenge from the CTF
-        ctf = mongo[CTF_COLLECTION].find_one(
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
         )
 
@@ -679,7 +686,7 @@ class CTF(commands.Cog):
         await challenge_channel.delete()
 
         ctf["challenges"].remove(challenge["_id"])
-        mongo[CTF_COLLECTION].update_one(
+        mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
         )
 
@@ -711,7 +718,9 @@ class CTF(commands.Cog):
         """
         await ctx.defer()
 
-        challenge = mongo[CHALLENGE_COLLECTION].find_one({"channel": ctx.channel_id})
+        challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+            CHALLENGE_COLLECTION
+        ].find_one({"channel": ctx.channel_id})
         if challenge is None:
             # If we didn't find any challenge that corresponds to the channel from which
             # the command was run, then we're probably in a non-challenge channel.
@@ -741,7 +750,7 @@ class CTF(commands.Cog):
             # by spamming solve and unsolve.
             pass
 
-        ctf = mongo[CTF_COLLECTION].find_one(
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
         )
         solves_channel = self._bot.get_channel(ctf["guild_channels"]["solves"])
@@ -761,7 +770,7 @@ class CTF(commands.Cog):
         announcement = await solves_channel.send(embed=embed)
 
         challenge["solve_announcement"] = announcement.id
-        mongo[CHALLENGE_COLLECTION].update_one(
+        mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {
                 "$set": {
@@ -795,7 +804,9 @@ class CTF(commands.Cog):
         """
         await ctx.defer()
 
-        challenge = mongo[CHALLENGE_COLLECTION].find_one({"channel": ctx.channel_id})
+        challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+            CHALLENGE_COLLECTION
+        ].find_one({"channel": ctx.channel_id})
         if challenge is None:
             # If we didn't find any challenge that corresponds to the channel from which
             # the command was run, then we're probably in a non-challenge channel.
@@ -820,7 +831,7 @@ class CTF(commands.Cog):
             # by spamming solve and unsolve.
             pass
 
-        ctf = mongo[CTF_COLLECTION].find_one(
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
         )
         # Delete the challenge solved announcement we made
@@ -832,7 +843,7 @@ class CTF(commands.Cog):
         )
         await announcement.delete()
 
-        mongo[CHALLENGE_COLLECTION].update_one(
+        mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {
                 "$set": {
@@ -866,7 +877,9 @@ class CTF(commands.Cog):
             name: Name of the challenge.
 
         """
-        challenge = mongo[CHALLENGE_COLLECTION].find_one({"name": name})
+        challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+            CHALLENGE_COLLECTION
+        ].find_one({"name": name})
         if challenge is None:
             await ctx.send("No such challenge.", hidden=True)
             return
@@ -889,7 +902,7 @@ class CTF(commands.Cog):
 
         await challenge_channel.set_permissions(ctx.author, read_messages=True)
 
-        mongo[CHALLENGE_COLLECTION].update_one(
+        mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {"$set": {"players": challenge["players"]}},
         )
@@ -917,11 +930,13 @@ class CTF(commands.Cog):
 
         """
         if name is None:
-            challenge = mongo[CHALLENGE_COLLECTION].find_one(
-                {"channel": ctx.channel_id}
-            )
+            challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                CHALLENGE_COLLECTION
+            ].find_one({"channel": ctx.channel_id})
         else:
-            challenge = mongo[CHALLENGE_COLLECTION].find_one({"name": name})
+            challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                CHALLENGE_COLLECTION
+            ].find_one({"name": name})
 
         if challenge is None:
             await ctx.send("No such challenge.", hidden=True)
@@ -938,7 +953,7 @@ class CTF(commands.Cog):
 
         await challenge_channel.set_permissions(ctx.author, overwrite=None)
 
-        mongo[CHALLENGE_COLLECTION].update_one(
+        mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {"$set": {"players": challenge["players"]}},
         )
@@ -966,14 +981,16 @@ class CTF(commands.Cog):
         """
         await ctx.defer()
 
-        ctf = mongo[CTF_COLLECTION].find_one(
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
         )
 
         # CTF name wasn't provided, and we're outside a CTF category channel, so
         # we display statuses of all running CTFs.
         if ctf is None and name is None:
-            ctfs = mongo[CTF_COLLECTION].find({"archived": False})
+            ctfs = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find(
+                {"archived": False}
+            )
         # CTF name wasn't provided, and we're inside a CTF category channel, so
         # we display status of the CTF related to this category channel.
         elif name is None:
@@ -984,7 +1001,9 @@ class CTF(commands.Cog):
         # CTF name was provided, and we're outside a CTF category channel, so
         # we display status of the requested CTF only.
         else:
-            ctfs = mongo[CTF_COLLECTION].find({"name": name, "archived": False})
+            ctfs = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find(
+                {"name": name, "archived": False}
+            )
 
         no_running_ctfs = True
         for ctf in ctfs:
@@ -1004,7 +1023,9 @@ class CTF(commands.Cog):
                         title=f"{ctf['name']} status", colour=discord.Colour.blue()
                     )
                     for challenge_id in challenges:
-                        challenge = mongo[CHALLENGE_COLLECTION].find_one(challenge_id)
+                        challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                            CHALLENGE_COLLECTION
+                        ].find_one(challenge_id)
                         if challenge["solved"]:
                             embed.add_field(
                                 name=(
@@ -1085,14 +1106,14 @@ class CTF(commands.Cog):
         """
         await ctx.defer()
 
-        ctf = mongo[CTF_COLLECTION].find_one(
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
         )
         ctf["credentials"]["url"] = url
         ctf["credentials"]["username"] = username
         ctf["credentials"]["password"] = password
 
-        mongo[CTF_COLLECTION].update_one(
+        mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]},
             {"$set": {"credentials": ctf["credentials"]}},
         )
@@ -1135,7 +1156,7 @@ class CTF(commands.Cog):
             ctx: The context in which the command is being invoked under.
 
         """
-        ctf = mongo[CTF_COLLECTION].find_one(
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
         )
         url = ctf["credentials"]["url"]
@@ -1181,7 +1202,7 @@ class CTF(commands.Cog):
         if not ctx.responded:
             await ctx.defer()
 
-        ctf = mongo[CTF_COLLECTION].find_one(
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
         )
         url = ctfd_url or ctf["credentials"]["url"]
@@ -1193,7 +1214,9 @@ class CTF(commands.Cog):
         else:
             for challenge in pull_challenges(url, username, password):
                 # Create this challenge if it didn't exist
-                if not mongo[CHALLENGE_COLLECTION].find_one(
+                if not mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                    CHALLENGE_COLLECTION
+                ].find_one(
                     {
                         "id": challenge["id"],
                         "name": challenge["name"],
@@ -1233,12 +1256,14 @@ class CTF(commands.Cog):
                 it as is.
 
         """
-        challenge = mongo[CHALLENGE_COLLECTION].find_one({"channel": ctx.channel_id})
+        challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+            CHALLENGE_COLLECTION
+        ].find_one({"channel": ctx.channel_id})
         if challenge is None:
             await ctx.send("❌ Not within a challenge channel", hidden=True)
             return
 
-        ctf = mongo[CTF_COLLECTION].find_one(
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
         )
         notes_channel = discord.utils.get(
@@ -1309,7 +1334,9 @@ class CTF(commands.Cog):
         """
         await ctx.defer()
 
-        challenge = mongo[CHALLENGE_COLLECTION].find_one({"channel": ctx.channel_id})
+        challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+            CHALLENGE_COLLECTION
+        ].find_one({"channel": ctx.channel_id})
         if challenge is None:
             await ctx.send(
                 "❌ This command may only be used from within a challenge channel",
@@ -1317,7 +1344,7 @@ class CTF(commands.Cog):
             )
             return
 
-        ctf = mongo[CTF_COLLECTION].find_one(
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
         )
         ctfd_url = ctf["credentials"]["url"]
@@ -1385,7 +1412,7 @@ class CTF(commands.Cog):
 
             challenge["solve_announcement"] = announcement.id
 
-            mongo[CHALLENGE_COLLECTION].update_one(
+            mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CHALLENGE_COLLECTION].update_one(
                 {"_id": challenge["_id"]},
                 {
                     "$set": {

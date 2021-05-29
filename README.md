@@ -71,10 +71,20 @@ Here's a list of the currently supported commands:
 ```
 
 ## Installation
-This is a self hosted bot (this might change in the future), just set your bot token in
-the `docker-compose.yml` file and run `docker-compose up -d --build` to deploy it.  
-In order to use Slash commands, the usual `bot` scope in the Discord developer
-portal is not sufficient, you must also grant the `applications.commands` scope.
+### Method 1 - Invite the already hosted bot
+Invite the bot to your server using this [link](https://discord.com/api/oauth2/authorize?client_id=848180282174734378&permissions=8&scope=bot%20applications.commands).
+
+### Method 2 - Host your own copy of the bot
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Create a new application.
+3. Go to the **Bot** pane and add a bot for your application.
+4. Copy the bot's token and paste it in the `docker-compose.yml` file like indicated.
+5. Go to the **OAuth2** pane, tick `bot` and `applications.commands` under the **Scopes**
+section, tick `Administrator` under the **Bot Permissions** section and copy the
+generated link.
+6. Deploy the bot by running `docker-compose up -d --build`.
+7. Invite your bot to the guild using the link generated in **5**.
+8. Enjoy.
 
 ## Contribution Guidelines
 Please consider reading our [Contribution Guidelines](.github/CONTRIBUTING.md) before

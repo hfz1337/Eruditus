@@ -15,7 +15,7 @@ from cogs.ctftime.help import cog_help
 from lib.ctftime import scrape_current_events
 from config import (
     MONGODB_URI,
-    DBNAME,
+    DBNAME_PREFIX,
     CTFTIME_COLLECTION,
     CTFTIME_URL,
     USER_AGENT,
@@ -23,7 +23,7 @@ from config import (
 )
 
 # MongoDB handle
-mongo = MongoClient(MONGODB_URI)[DBNAME]
+mongo = MongoClient(MONGODB_URI)
 
 
 class CTFTime(commands.Cog):
@@ -118,7 +118,23 @@ class CTFTime(commands.Cog):
         query_filter = {"start": {"$gt": int(time.time())}}
         no_upcoming_events = True
 
-        for event in mongo[CTFTIME_COLLECTION].find(query_filter).limit(limit):
+        events = list(
+            mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTFTIME_COLLECTION]
+            .find(query_filter)
+            .limit(limit)
+        )
+
+        # If we didn't update the database yet through the background task, we do it
+        # manually
+        if not events:
+            await self._bot.get_cog("EventManager").update_events()
+            events = (
+                mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTFTIME_COLLECTION]
+                .find(query_filter)
+                .limit(limit)
+            )
+
+        for event in events:
             # Convert timestamps to dates
             event["start"] = datetime.strftime(
                 datetime.fromtimestamp(event["start"]), DATE_FORMAT
