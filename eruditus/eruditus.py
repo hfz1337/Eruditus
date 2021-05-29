@@ -134,6 +134,7 @@ async def help_command(ctx: SlashContext) -> None:
     await ctx.send(embed=embed)
 
 
+@commands.has_permissions(manage_channels=True)
 @slash.slash(
     name="config",
     description="Change configuration variables",
@@ -168,16 +169,38 @@ async def help_command(ctx: SlashContext) -> None:
 )
 async def config(
     ctx: SlashContext,
-    minimum_player_count: int = MINIMUM_PLAYER_COUNT,
-    voting_starts_countdown: int = VOTING_STARTS_COUNTDOWN,
-    voting_verdict_countdown: int = VOTING_VERDICT_COUNTDOWN,
+    minimum_player_count: int = None,
+    voting_starts_countdown: int = None,
+    voting_verdict_countdown: int = None,
 ) -> None:
     """Changes the guild's configuration."""
-    config_id = mongo[f"{DBNAME_PREFIX}-{ctx.guild.id}"][CONFIG_COLLECTION].find_one()[
-        "_id"
-    ]
+    # Get guild config from the database
+    config = mongo[f"{DBNAME_PREFIX}-{ctx.guild.id}"][CONFIG_COLLECTION].find_one()
+
+    if (
+        minimum_player_count is None
+        and voting_starts_countdown is None
+        and voting_verdict_countdown is None
+    ):
+        current_configuration = "\n".join(
+            f"{var}: {config[var]}"
+            for var in [
+                "minimum_player_count",
+                "voting_starts_countdown",
+                "voting_verdict_countdown",
+            ]
+        )
+        await ctx.send(
+            f"⚙️ Current configuration\n```yaml\n{current_configuration}\n```"
+        )
+        return
+
+    minimum_player_count = minimum_player_count or MINIMUM_PLAYER_COUNT
+    voting_starts_countdown = voting_starts_countdown or VOTING_STARTS_COUNTDOWN
+    voting_verdict_countdown = voting_verdict_countdown or VOTING_VERDICT_COUNTDOWN
+
     mongo[f"{DBNAME_PREFIX}-{ctx.guild.id}"][CONFIG_COLLECTION].update_one(
-        {"_id": config_id},
+        {"_id": config["_id"]},
         {
             "$set": {
                 "minimum_player_count": minimum_player_count,
