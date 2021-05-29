@@ -18,4 +18,4 @@ RUN touch /var/log/eruditus.log && \
 
 USER nobody
 
-ENTRYPOINT ["python3", "eruditus.py"]
+ENTRYPOINT ["python3", "-u", "eruditus.py"]
