@@ -82,6 +82,9 @@ async def setup_database(guild: Guild) -> None:
 @bot.event
 async def on_ready() -> None:
     for guild in bot.guilds:
+        # Setup guild database if it wasn't already
+        if not mongo[f"{DBNAME_PREFIX}-{guild.id}"][CONFIG_COLLECTION].find_one():
+            await setup_database(guild)
         logger.info(f"{bot.user} connected to {guild}")
     await bot.change_presence(activity=discord.Game(name="/help"))
 
