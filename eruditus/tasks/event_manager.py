@@ -63,8 +63,7 @@ class EventManager(commands.Cog):
                     if mongo[f"{DBNAME_PREFIX}-{guild.id}"][
                         CTFTIME_COLLECTION
                     ].find_one({"id": event_info["id"]}):
-                        # In case it was found, we update all its fields, except the
-                        # `announced` boolean.
+                        # In case it was found, we update it
                         mongo[f"{DBNAME_PREFIX}-{guild.id}"][
                             CTFTIME_COLLECTION
                         ].update_one({"id": event_info["id"]}, {"$set": event_info})
@@ -158,8 +157,10 @@ class EventManager(commands.Cog):
                 event["announced"] = True
                 event["announcement"] = message.id
 
+                event_object_id = event["_id"]
+                del event["_id"]
                 mongo[f"{DBNAME_PREFIX}-{guild.id}"][CTFTIME_COLLECTION].update_one(
-                    {"_id": event["_id"]}, {"$set": event}
+                    {"_id": event_object_id}, {"$set": event}
                 )
 
     @tasks.loop(minutes=10.0, reconnect=True)

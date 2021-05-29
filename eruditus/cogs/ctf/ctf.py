@@ -544,8 +544,10 @@ class CTF(commands.Cog):
             {"guild_category": ctx.channel.category_id}
         )
         ctf["challenges"].append(challenge.inserted_id)
+        ctf_object_id = ctf["_id"]
+        del ctf["_id"]
         mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].update_one(
-            {"_id": ctf["_id"]}, {"$set": ctf}
+            {"_id": ctf_object_id}, {"$set": ctf}
         )
 
         # Announce that the challenge was added
