@@ -5,12 +5,12 @@ services:
     build: .
     image: eruditus:latest
     container_name: eruditus
-    restart: always
+    restart: unless-stopped
     environment:
       - DISCORD_TOKEN=<BOT_TOKEN_GOES_HERE>
   mongodb:
     image: mongo:latest
-    container_name: monogdb
-    restart: always
+    container_name: mongodb
+    restart: unless-stopped
     volumes:
       - .data:/data/db

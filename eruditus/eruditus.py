@@ -5,22 +5,23 @@ import sys
 import os
 
 import discord
+from discord import Guild
 from discord.ext import commands
 from discord.ext.commands import Bot, CommandError
 
 from discord_slash import SlashCommand, SlashContext
+from discord_slash.model import SlashCommandOptionType as OptionType
+from discord_slash.utils.manage_commands import create_option
 
 import pymongo
 
 from config import (
     MONGODB_URI,
-    DBNAME,
+    DBNAME_PREFIX,
     CONFIG_COLLECTION,
     MINIMUM_PLAYER_COUNT,
     VOTING_STARTS_COUNTDOWN,
     VOTING_VERDICT_COUNTDOWN,
-    ARCHIVE_CATEGORY_CHANNEL,
-    ANNOUNCEMENT_CHANNEL,
 )
 
 # Setup logging
@@ -34,23 +35,10 @@ handler.setFormatter(
 )
 logger.addHandler(handler)
 
-# Init config collection
-mongo = pymongo.MongoClient(MONGODB_URI)[DBNAME]
-if not mongo[CONFIG_COLLECTION].find_one():
-    mongo[CONFIG_COLLECTION].insert_one(
-        {
-            "voting_verdict_countdown": VOTING_VERDICT_COUNTDOWN,
-            "voting_starts_countdown": VOTING_STARTS_COUNTDOWN,
-            "minimum_player_count": MINIMUM_PLAYER_COUNT,
-            "archive_category_channel": ARCHIVE_CATEGORY_CHANNEL,
-            "announcement_channel": ANNOUNCEMENT_CHANNEL,
-        }
-    )
+# MongoDB handle
+mongo = pymongo.MongoClient(MONGODB_URI)
 
-
-bot = Bot(command_prefix="!", description="Eruditus - CTF helper bot")
-bot.remove_command("help")
-
+bot = Bot(command_prefix=None, description="Eruditus - CTF helper bot")
 slash = SlashCommand(bot, sync_commands=True, sync_on_cog_reload=True)
 
 extensions = {
@@ -59,14 +47,61 @@ extensions = {
 tasks = [task.split(".")[0] for task in os.listdir("tasks") if task.endswith(".py")]
 
 
+async def setup_database(guild: Guild) -> None:
+    """Sets up a database for a guild."""
+    # Create an announcements channel
+    overwrites = {
+        guild.default_role: discord.PermissionOverwrite(
+            send_messages=False, add_reactions=False
+        )
+    }
+    announcement_channel = await guild.create_text_channel(
+        name="📢 Event Announcements",
+        overwrites=overwrites,
+    )
+
+    # Create CTF archive category channel
+    overwrites = {guild.default_role: discord.PermissionOverwrite(send_messages=False)}
+    archive_category_channel = await guild.create_category(
+        name="📁 CTF Archive",
+        overwrites=overwrites,
+    )
+
+    # Insert the config document into the config collection of that guild's own db
+    mongo[f"{DBNAME_PREFIX}-{guild.id}"][CONFIG_COLLECTION].insert_one(
+        {
+            "voting_verdict_countdown": VOTING_VERDICT_COUNTDOWN,
+            "voting_starts_countdown": VOTING_STARTS_COUNTDOWN,
+            "minimum_player_count": MINIMUM_PLAYER_COUNT,
+            "archive_category_channel": archive_category_channel.id,
+            "announcement_channel": announcement_channel.id,
+        }
+    )
+
+
 @bot.event
 async def on_ready() -> None:
-    logger.info(f"{bot.user} connected to {bot.guilds[0]}")
+    for guild in bot.guilds:
+        logger.info(f"{bot.user} connected to {guild}")
     await bot.change_presence(activity=discord.Game(name="/help"))
+
+
+@bot.event
+async def on_guild_join(guild) -> None:
+    await setup_database(guild)
+    logger.info(f"{bot.user} joined {guild}!")
+
+
+@bot.event
+async def on_guild_remove(guild) -> None:
+    """Deletes the database for the guild we just left."""
+    mongo.drop_database(f"{DBNAME_PREFIX}-{guild.id}")
+    logger.info(f"{bot.user} left {guild}.")
 
 
 @slash.slash(name="help", description="Get help about the bot usage")
 async def help_command(ctx: SlashContext) -> None:
+    """Shows help about the bot usage."""
     embed = (
         discord.Embed(
             title="Eruditus - CTF helper bot",
@@ -94,6 +129,61 @@ async def help_command(ctx: SlashContext) -> None:
             inline=False,
         )
     await ctx.send(embed=embed)
+
+
+@slash.slash(
+    name="config",
+    description="Change configuration variables",
+    options=[
+        create_option(
+            name="minimum_player_count",
+            description=(
+                "The minimum number of players required to create a CTF automatically"
+            ),
+            option_type=OptionType.INTEGER,
+            required=False,
+        ),
+        create_option(
+            name="voting_starts_countdown",
+            description=(
+                "The number of seconds remaining for a CTF to start when we announce "
+                "it for voting"
+            ),
+            option_type=OptionType.INTEGER,
+            required=False,
+        ),
+        create_option(
+            name="voting_verdict_countdown",
+            description=(
+                "The number of seconds before the CTF starts from which we start "
+                "considering the votes"
+            ),
+            option_type=OptionType.INTEGER,
+            required=False,
+        ),
+    ],
+)
+async def config(
+    ctx: SlashContext,
+    minimum_player_count: int = MINIMUM_PLAYER_COUNT,
+    voting_starts_countdown: int = VOTING_STARTS_COUNTDOWN,
+    voting_verdict_countdown: int = VOTING_VERDICT_COUNTDOWN,
+) -> None:
+    """Changes the guild's configuration."""
+    config_id = mongo[f"{DBNAME_PREFIX}-{ctx.guild.id}"][CONFIG_COLLECTION].find_one()[
+        "_id"
+    ]
+    mongo[f"{DBNAME_PREFIX}-{ctx.guild.id}"][CONFIG_COLLECTION].update_one(
+        {"_id": config_id},
+        {
+            "$set": {
+                "minimum_player_count": minimum_player_count,
+                "voting_starts_countdown": voting_starts_countdown,
+                "voting_verdict_countdown": voting_verdict_countdown,
+            }
+        },
+    )
+    await ctx.send("⚙️ Configuration updated")
 
 
 @bot.event

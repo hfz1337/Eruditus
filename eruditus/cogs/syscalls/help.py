@@ -13,7 +13,7 @@ cog_help = {
         },
         {
             "name": "syscall",
-            "description": "Syscall name or ID (decimal and hex are supported).",
+            "description": "Syscall name or ID (decimal and hex are supported)",
             "option_type": OptionType.STRING,
             "required": True,
         },
