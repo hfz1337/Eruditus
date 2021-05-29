@@ -85,7 +85,7 @@ class EventManager(commands.Cog):
                 {"end": {"$lt": int(time.time())}}
             )
 
-    @tasks.loop(minutes=30.0, reconnect=True)
+    @tasks.loop(minutes=10.0, reconnect=True)
     async def _announce_upcoming_events(self) -> None:
         """Announces upcoming CTF competitions."""
         # Wait until the bot's internal cache is ready
@@ -162,7 +162,7 @@ class EventManager(commands.Cog):
                     {"_id": event["_id"]}, {"$set": event}
                 )
 
-    @tasks.loop(minutes=15.0, reconnect=True)
+    @tasks.loop(minutes=10.0, reconnect=True)
     async def _voting_verdict(self) -> None:
         """Decides whether or not to create an approaching CTF according to the vote
         results represented by the number of reactions.

@@ -1135,7 +1135,7 @@ class CTF(commands.Cog):
 
         # Start a background task for this CTF in order to pull new challenges
         # periodically
-        tasks.loop(minutes=5.0, reconnect=True)(self._periodic_puller).start(ctx)
+        tasks.loop(minutes=3.0, reconnect=True)(self._periodic_puller).start(ctx)
 
     @commands.bot_has_permissions(manage_messages=True)
     @commands.guild_only()
