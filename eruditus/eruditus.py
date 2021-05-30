@@ -38,7 +38,7 @@ logger.addHandler(handler)
 # MongoDB handle
 mongo = pymongo.MongoClient(MONGODB_URI)
 
-bot = Bot(command_prefix=None, description="Eruditus - CTF helper bot")
+bot = Bot(command_prefix="!", description="Eruditus - CTF helper bot")
 slash = SlashCommand(bot, sync_commands=True, sync_on_cog_reload=True)
 
 extensions = {
