@@ -174,6 +174,8 @@ class EventManager(commands.Cog):
         for guild in self._bot.guilds:
             # Get guild config from the database
             config = mongo[f"{DBNAME_PREFIX}-{guild.id}"][CONFIG_COLLECTION].find_one()
+            if config is None:
+                return
             announcement_channel = await self._bot.fetch_channel(
                 config["announcement_channel"]
             )
