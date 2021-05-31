@@ -162,8 +162,8 @@ class CTF(commands.Cog):
 
     @commands.bot_has_permissions(manage_channels=True)
     @commands.has_permissions(manage_channels=True)
-    @commands.guild_only()
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["renamectf"]["name"],
@@ -417,8 +417,8 @@ class CTF(commands.Cog):
             await ctf_general_channel.send(f"{ctx.author.mention} joined the battle ⚔️")
 
     @commands.bot_has_permissions(manage_roles=True)
-    @commands.guild_only()
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["leave"]["name"],
@@ -458,8 +458,9 @@ class CTF(commands.Cog):
             f"{ctx.author.mention} abandonned the boat :frowning:"
         )
 
-    @commands.guild_only()
+    @commands.bot_has_permissions(manage_channels=True)
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["createchallenge"]["name"],
@@ -590,8 +591,9 @@ class CTF(commands.Cog):
         else:
             await ctx.send("✅ Challenge created")
 
-    @commands.guild_only()
+    @commands.bot_has_permissions(manage_channels=True)
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["renamechallenge"]["name"],
@@ -637,8 +639,9 @@ class CTF(commands.Cog):
         )
         await ctx.send("✅ Challenge renamed")
 
-    @commands.guild_only()
+    @commands.bot_has_permissions(manage_channels=True)
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["deletechallenge"]["name"],
@@ -694,8 +697,9 @@ class CTF(commands.Cog):
 
         await ctx.send("✅ Challenge deleted")
 
-    @commands.guild_only()
+    @commands.bot_has_permissions(manage_channels=True)
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["solve"]["name"],
@@ -786,8 +790,9 @@ class CTF(commands.Cog):
 
         await ctx.send("✅ Challenge solved")
 
-    @commands.guild_only()
+    @commands.bot_has_permissions(manage_channels=True)
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["unsolve"]["name"],
@@ -859,8 +864,9 @@ class CTF(commands.Cog):
 
         await ctx.send("✅ Challenge unsolved")
 
-    @commands.guild_only()
+    @commands.bot_has_permissions(manage_channels=True)
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["workon"]["name"],
@@ -912,8 +918,9 @@ class CTF(commands.Cog):
         await ctx.send("✅ Added to the challenge")
         await challenge_channel.send(f"{ctx.author.mention} wants to collaborate 🤝")
 
-    @commands.guild_only()
+    @commands.bot_has_permissions(manage_channels=True)
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["unworkon"]["name"],
@@ -1083,8 +1090,8 @@ class CTF(commands.Cog):
                 await ctx.send("No such CTF.", hidden=True)
 
     @commands.bot_has_permissions(manage_messages=True)
-    @commands.guild_only()
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["addcreds"]["name"],
@@ -1140,8 +1147,8 @@ class CTF(commands.Cog):
         tasks.loop(minutes=3.0, reconnect=True)(self._periodic_puller).start(ctx)
 
     @commands.bot_has_permissions(manage_messages=True)
-    @commands.guild_only()
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["showcreds"]["name"],
@@ -1179,8 +1186,8 @@ class CTF(commands.Cog):
             await ctx.send(message)
 
     @commands.bot_has_permissions(manage_messages=True)
-    @commands.guild_only()
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["pull"]["name"],
@@ -1235,8 +1242,8 @@ class CTF(commands.Cog):
                 await ctx.send("✅ Done pulling challenges")
 
     @commands.bot_has_permissions(manage_messages=True)
-    @commands.guild_only()
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["takenote"]["name"],
@@ -1313,8 +1320,8 @@ class CTF(commands.Cog):
 
         await ctx.send("✅ Note taken successfully", hidden=True)
 
-    @commands.guild_only()
     @in_ctf_channel()
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["submit"]["name"],
