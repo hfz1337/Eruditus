@@ -97,6 +97,7 @@ class CTFTime(commands.Cog):
         if no_running_events:
             await ctx.send("No ongoing CTFs for the moment.")
 
+    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["upcoming"]["name"],
