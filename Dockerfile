@@ -11,10 +11,9 @@ RUN pip3 install -r requirements.txt && \
 
 COPY eruditus /eruditus
 
-WORKDIR /eruditus/
+WORKDIR /eruditus
 
-RUN touch /var/log/eruditus.log && \
-    chown -R nobody:nogroup . /var/log/eruditus.log
+RUN chown -R nobody:nogroup .
 
 USER nobody
 
