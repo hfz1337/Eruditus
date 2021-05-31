@@ -439,7 +439,6 @@ class CTF(commands.Cog):
             {"guild_category": ctx.channel.category_id}
         )
         role = discord.utils.get(ctx.guild.roles, id=ctf["guild_role"])
-        await ctx.author.remove_roles(role)
 
         # Announce that the user left the CTF
         ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
@@ -453,10 +452,12 @@ class CTF(commands.Cog):
             category_id=ctf["guild_category"],
             name="general",
         )
-        await ctx.send(f"✅ Removed from \"{ctf['name']}\"")
+        await ctx.send(f"✅ Removed from \"{ctf['name']}\"", hidden=True)
         await ctf_general_channel.send(
             f"{ctx.author.mention} abandonned the boat :frowning:"
         )
+
+        await ctx.author.remove_roles(role)
 
     @commands.bot_has_permissions(manage_channels=True)
     @in_ctf_channel()
@@ -960,14 +961,17 @@ class CTF(commands.Cog):
             ctx.guild.text_channels, id=challenge["channel"]
         )
 
-        await challenge_channel.set_permissions(ctx.author, overwrite=None)
-
         mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {"$set": {"players": challenge["players"]}},
         )
 
-        await ctx.send(f"{ctx.author.mention} left you alone, what a chicken! 🐥")
+        await ctx.send(f"✅ Removed from \"{challenge['name']}\"", hidden=True)
+        await challenge_channel.send(
+            f"{ctx.author.mention} left you alone, what a chicken! 🐥"
+        )
+
+        await challenge_channel.set_permissions(ctx.author, overwrite=None)
 
     @commands.guild_only()
     @cog_ext.cog_subcommand(
