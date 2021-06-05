@@ -35,7 +35,10 @@ class EventManager(commands.Cog):
 
     def __init__(self, bot: Bot) -> None:
         self._bot = bot
-        tasks.loop(minutes=30.0, reconnect=True)(self.update_events).start()
+        self._update_events_task = tasks.loop(minutes=30.0, reconnect=True)(
+            self.update_events
+        )
+        self._update_events_task.start()
         self._announce_upcoming_events.start()
         self._voting_verdict.start()
 
