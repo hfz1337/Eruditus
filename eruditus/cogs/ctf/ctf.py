@@ -53,6 +53,7 @@ class CTF(commands.Cog):
 
     def __init__(self, bot: Bot) -> None:
         self._bot = bot
+        self._pullers = {}
 
     async def _periodic_puller(self, ctx: SlashContext) -> None:
         """Pulls new challenges from the CTFd platform periodically."""
@@ -237,6 +238,11 @@ class CTF(commands.Cog):
             )
 
         if ctf:
+            # Stop periodic puller
+            if ctf["credentials"]["url"] in self._pullers:
+                self._pullers[ctf["credentials"]["url"]].cancel()
+                del self._pullers[ctf["credentials"]["url"]]
+
             # Global archive category channel
             archive_category_channel = discord.utils.get(
                 ctx.guild.categories,
@@ -514,8 +520,7 @@ class CTF(commands.Cog):
             ctx.guild.categories, id=ctx.channel.category_id
         )
         overwrites = {
-            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            ctx.author: discord.PermissionOverwrite(read_messages=True),
+            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False)
         }
         channel_name = sanitize_channel_name(f"{category}-{name}")
         challenge_channel = await ctx.guild.create_text_channel(
@@ -563,7 +568,7 @@ class CTF(commands.Cog):
             description=(
                 f"**Challenge name:** {name}\n"
                 f"**Category:** {category}\n\n"
-                f'Use `/ctf workon "{name}"` to join.\n'
+                f"Use `/ctf workon {name}` to join.\n"
                 f"{role.mention}"
             ),
             colour=discord.Colour.dark_gold(),
@@ -899,7 +904,7 @@ class CTF(commands.Cog):
 
         if challenge["solved"]:
             await ctx.send(
-                "You can't work on challenge that has been solved.", hidden=True
+                "You can't work on a challenge that has been solved.", hidden=True
             )
             return
 
@@ -1032,10 +1037,19 @@ class CTF(commands.Cog):
                     )
                     await ctx.send(embed=embed)
                 else:
-                    embed = discord.Embed(
-                        title=f"{ctf['name']} status", colour=discord.Colour.blue()
-                    )
-                    for challenge_id in challenges:
+                    embed = None
+                    for idx, challenge_id in enumerate(challenges):
+                        # If we reached Discord's maximum number of fields per
+                        # embed, we send the previous one and create a new one
+                        if idx % 25 == 0:
+                            if embed is not None:
+                                await ctx.send(embed=embed)
+
+                            embed = discord.Embed(
+                                title=f"{ctf['name']} status",
+                                colour=discord.Colour.blue(),
+                            )
+
                         challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
                             CHALLENGE_COLLECTION
                         ].find_one(challenge_id)
@@ -1071,7 +1085,9 @@ class CTF(commands.Cog):
                                 value=workers,
                                 inline=False,
                             )
+                    # Send the remaining embed
                     await ctx.send(embed=embed)
+
             # Otherwise, let the user know that they should join the CTF first to
             # see the details.
             else:
@@ -1148,7 +1164,10 @@ class CTF(commands.Cog):
 
         # Start a background task for this CTF in order to pull new challenges
         # periodically
-        tasks.loop(minutes=3.0, reconnect=True)(self._periodic_puller).start(ctx)
+        self._pullers[ctf["credentials"]["url"]] = tasks.loop(
+            minutes=3.0, reconnect=True
+        )(self._periodic_puller)
+        self._pullers[ctf["credentials"]["url"]].start(ctx)
 
     @commands.bot_has_permissions(manage_messages=True)
     @in_ctf_channel()
@@ -1283,7 +1302,7 @@ class CTF(commands.Cog):
             ctx.guild.text_channels, id=ctf["guild_channels"]["notes"]
         )
         history = await ctx.channel.history(limit=1).flatten()
-        message = history[0].clean_content
+        message = history[0]
 
         if note_type == "progress":
             title = (
@@ -1299,7 +1318,7 @@ class CTF(commands.Cog):
             embed = (
                 discord.Embed(
                     title=title,
-                    description=message,
+                    description=message.clean_content,
                     colour=colour,
                 )
                 .set_thumbnail(url=ctx.author.avatar_url)
@@ -1320,7 +1339,12 @@ class CTF(commands.Cog):
             # If we send the embed and the content in the same command, the embed
             # would be placed after the content, which is not what we want.
             await notes_channel.send(embed=embed)
-            await notes_channel.send(message)
+            await notes_channel.send(
+                message.clean_content,
+                files=[
+                    await attachment.to_file() for attachment in message.attachments
+                ],
+            )
 
         await ctx.send("✅ Note taken successfully", hidden=True)
 
