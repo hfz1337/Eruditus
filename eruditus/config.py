@@ -7,6 +7,8 @@ CTFTIME_COLLECTION = "ctftime"
 CHALLENGE_COLLECTION = "challenge"
 CTF_COLLECTION = "ctf"
 CONFIG_COLLECTION = "config"
+CACHE_DATABASE = "cache"
+SESSION_COLLECTION = "session"
 DATE_FORMAT = "%a, %d %B %Y, %H:%M UTC"
 CTFTIME_URL = "https://ctftime.org"
 # CTFtime's nginx server is configured to block requests with specific
