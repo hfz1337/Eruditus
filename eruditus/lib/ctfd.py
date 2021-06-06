@@ -171,7 +171,7 @@ def pull_challenges(
 
     # Confirm that we're dealing with a CTFd platform
     if not is_ctfd_platform(ctfd_base_url):
-        return None
+        return []
 
     # Maybe the challenges endpoint is accessible to the public?
     response = requests.get(
@@ -231,7 +231,7 @@ def get_scoreboard(ctfd_base_url: str, username: str, password: str) -> list:
 
     # Confirm that we're dealing with a CTFd platform
     if not is_ctfd_platform(ctfd_base_url):
-        return None
+        return []
 
     # Maybe the scoreboard endpoint is accessible to the public?
     response = requests.get(
@@ -254,3 +254,4 @@ def get_scoreboard(ctfd_base_url: str, username: str, password: str) -> list:
             {"name": team["name"], "score": team["score"]}
             for team in response.json()["data"][:20]
         ]
+    return []

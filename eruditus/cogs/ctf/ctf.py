@@ -256,6 +256,31 @@ class CTF(commands.Cog):
                 self._updaters[ctf["credentials"]["url"]].cancel()
                 del self._updaters[ctf["credentials"]["url"]]
 
+            # Post challenge solves summary in the scoreboard channel
+            summary = ""
+            for challenge_id in ctf["challenges"]:
+                challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                    CHALLENGE_COLLECTION
+                ].find_one(challenge_id)
+                summary += (
+                    f"{['-', '+'][challenge['solved']]} "
+                    f"{challenge['name']:<30}"
+                    f"{challenge['category']:<30}"
+                    f"{['❌', '✔️'][challenge['solved']]}\n"
+                )
+
+            if summary:
+                summary = (
+                    "```diff\n"
+                    f"  {'Challenge':<30}{'Category':<30}{'Solved'}\n\n"
+                    f"{summary}"
+                    "```"
+                )
+                scoreboard_channel = discord.utils.get(
+                    ctx.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
+                )
+                await scoreboard_channel.send(summary)
+
             # Global archive category channel
             archive_category_channel = discord.utils.get(
                 ctx.guild.categories,
@@ -282,6 +307,12 @@ class CTF(commands.Cog):
                     elif ctf_channel.id == ctf["guild_channels"]["solves"]:
                         await ctf_channel.edit(
                             name=f"🎉-{sanitize_channel_name(ctf['name'])}",
+                            category=archive_category_channel,
+                            sync_permissions=True,
+                        )
+                    elif ctf_channel.id == ctf["guild_channels"]["scoreboard"]:
+                        await ctf_channel.edit(
+                            name=f"📈-{sanitize_channel_name(ctf['name'])}",
                             category=archive_category_channel,
                             sync_permissions=True,
                         )
@@ -365,12 +396,13 @@ class CTF(commands.Cog):
                         CONFIG_COLLECTION
                     ].find_one()["archive_category_channel"],
                 )
-                # Delete `notes` and `solves` channels for that CTF
+                # Delete `notes`, `solves` and `scoreboard` channels for that CTF
                 if archive_category_channel:
                     for ctf_channel in archive_category_channel.channels:
                         if (
                             ctf_channel.id == ctf["guild_channels"]["notes"]
                             or ctf_channel.id == ctf["guild_channels"]["solves"]
+                            or ctf_channel.id == ctf["guild_channels"]["scoreboard"]
                         ):
                             await ctf_channel.delete()
             else:
@@ -1520,7 +1552,7 @@ class CTF(commands.Cog):
                 "```"
             )
         else:
-            message = "No solves yet."
+            message = "No solves yet, or platform isn't CTFd."
 
         # If `channel` was provided (i.e, scoreboard channel), we fetch the scoreboard
         # message if it was already sent and update it
