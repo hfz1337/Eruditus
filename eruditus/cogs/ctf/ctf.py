@@ -613,8 +613,8 @@ class CTF(commands.Cog):
             description=(
                 f"**Challenge name:** {name}\n"
                 f"**Category:** {category}\n\n"
-                f"Use `/ctf workon {name}` to join.\n"
-                f"{role.mention}"
+                f"Use `/ctf workon {name}` or `/ctf workon {len(ctf['challenges'])}` "
+                f"to join.\n{role.mention}"
             ),
             colour=discord.Colour.dark_gold(),
         ).set_footer(text=datetime.strftime(datetime.now(), DATE_FORMAT))
@@ -927,7 +927,7 @@ class CTF(commands.Cog):
             for option in cog_help["subcommands"]["workon"]["options"]
         ],
     )
-    async def _workon(self, ctx: SlashContext, name: str) -> None:
+    async def _workon(self, ctx: SlashContext, name: Union[str, int]) -> None:
         """Adds a member to a challenge by giving him access to the associated
         channel.
 
@@ -939,6 +939,17 @@ class CTF(commands.Cog):
         challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
             CHALLENGE_COLLECTION
         ].find_one({"name": name})
+
+        if challenge is None and name.isdigit():
+            position = int(name)
+            ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+                {"guild_category": ctx.channel.category_id}
+            )
+            if 0 < position <= len(ctf["challenges"]):
+                challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                    CHALLENGE_COLLECTION
+                ].find_one(ctf["challenges"][position - 1])
+
         if challenge is None:
             await ctx.send("No such challenge.", hidden=True)
             return
@@ -981,7 +992,7 @@ class CTF(commands.Cog):
             for option in cog_help["subcommands"]["unworkon"]["options"]
         ],
     )
-    async def _unworkon(self, ctx: SlashContext, name: str = None) -> None:
+    async def _unworkon(self, ctx: SlashContext, name: Union[str, int] = None) -> None:
         """Removes a member from a challenge.
 
         Args:
@@ -997,6 +1008,16 @@ class CTF(commands.Cog):
             challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
                 CHALLENGE_COLLECTION
             ].find_one({"name": name})
+
+        if challenge is None and name.isdigit():
+            position = int(name)
+            ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+                {"guild_category": ctx.channel.category_id}
+            )
+            if 0 < position <= len(ctf["challenges"]):
+                challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                    CHALLENGE_COLLECTION
+                ].find_one(ctf["challenges"][position - 1])
 
         if challenge is None:
             await ctx.send("No such challenge.", hidden=True)
@@ -1125,7 +1146,8 @@ class CTF(commands.Cog):
                             )
                             embed.add_field(
                                 name=(
-                                    f"❌ {challenge['name']} ({challenge['category']})"
+                                    f"❌ {idx + 1:2} - "
+                                    f"{challenge['name']} ({challenge['category']})"
                                 ),
                                 value=workers,
                                 inline=False,
