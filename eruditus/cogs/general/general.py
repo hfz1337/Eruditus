@@ -159,7 +159,8 @@ class General(commands.Cog):
             .set_author(name=ctx.author.name)
             .set_footer(text=datetime.now().strftime(DATE_FORMAT).strip())
         )
-        await developer.send(embed=embed)
+        message = await developer.send(embed=embed)
+        await message.pin()
         await ctx.send(
             "✅ Your suggestion has been sent to the developer, thanks for your help!",
             hidden=True,
@@ -186,7 +187,8 @@ class General(commands.Cog):
             .set_author(name=ctx.author.name)
             .set_footer(text=datetime.now().strftime(DATE_FORMAT).strip())
         )
-        await developer.send(embed=embed)
+        message = await developer.send(embed=embed)
+        await message.pin()
         await ctx.send(
             "✅ Your bug report has been sent to the developer, thanks for your help!",
             hidden=True,
