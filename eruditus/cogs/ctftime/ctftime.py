@@ -125,15 +125,16 @@ class CTFTime(commands.Cog):
             if database.startswith(f"{DBNAME_PREFIX}"):
                 break
 
-        events = list(
-            mongo[database][CTFTIME_COLLECTION].find(query_filter).limit(limit)
-        )
+        events = list(mongo[database][CTFTIME_COLLECTION].find(query_filter))
 
         # If we didn't update the database yet through the background task, we do it
         # manually
         if not events:
             await self._bot.get_cog("EventManager").update_events()
-            events = mongo[database][CTFTIME_COLLECTION].find(query_filter).limit(limit)
+            events = mongo[database][CTFTIME_COLLECTION].find(query_filter)
+
+        # Sort events from nearest to farthest, according to start date
+        events = sorted(events, key=lambda event: event["start"])[:limit]
 
         for event in events:
             # Convert timestamps to dates
