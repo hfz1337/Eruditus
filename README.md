@@ -32,6 +32,9 @@ make its usage as intuitive as possible.
 Here's a list of the currently supported commands:
 ```
 /help                                                (Show help about the bot usage)
+/request <feature>                                   (Request a new feature from the developer)
+/report <bug>                                        (Send a bug report to the developer)
+/config [<args>]...                                  (Display or alter configuration specific to the guild)
 
 /ctf createctf <ctf_name>                            (Create a new CTF)
 /ctf renamectf <ctf_name>                            (Rename a CTF)

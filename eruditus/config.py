@@ -11,6 +11,7 @@ CACHE_DATABASE = "cache"
 SESSION_COLLECTION = "session"
 DATE_FORMAT = "%a, %d %B %Y, %H:%M UTC"
 CTFTIME_URL = "https://ctftime.org"
+DEVELOPER_USER_ID = 305076601253789697
 # CTFtime's nginx server is configured to block requests with specific
 # user agents, like those containing "python-requests"
 USER_AGENT = "Eruditus"

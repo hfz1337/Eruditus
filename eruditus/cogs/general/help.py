@@ -40,5 +40,29 @@ cog_help = {
                 },
             ],
         },
+        "request": {
+            "name": "request",
+            "description": "Request a new feature from the developer",
+            "options": [
+                {
+                    "name": "feature",
+                    "description": "Description of the new feature you want to suggest",
+                    "option_type": OptionType.STRING,
+                    "required": True,
+                },
+            ],
+        },
+        "report": {
+            "name": "report",
+            "description": "Report a bug to the developer",
+            "options": [
+                {
+                    "name": "bug",
+                    "description": "Description of the bug you encountered",
+                    "option_type": OptionType.STRING,
+                    "required": True,
+                },
+            ],
+        },
     },
 }
