@@ -339,12 +339,17 @@ class CTF(commands.Cog):
             if role is not None:
                 await role.delete()
 
-            if ctx.channel is not None:
-                await ctx.send(f"✅ CTF \"{ctf['name']}\" has been archived")
+            # Delete all challenges for that CTF
+            for challenge_id in ctf["challenges"]:
+                mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                    CHALLENGE_COLLECTION
+                ].delete_one({"_id": challenge_id})
 
             mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].update_one(
                 {"_id": ctf["_id"]}, {"$set": {"archived": True}}
             )
+            if ctx.channel is not None:
+                await ctx.send(f"✅ CTF \"{ctf['name']}\" has been archived")
         else:
             await ctx.send("No such CTF.", hidden=True)
 
