@@ -1,4 +1,9 @@
 # Eruditus - CTF helper bot
+<p align="center">
+        <a href="https://discord.com/developers/docs/interactions/slash-commands"><img src="https://img.shields.io/badge/%2F-Discord%20Slash-blue" alt="Discord Slash Commands"></a>
+        <a href="https://github.com/hfz1337/Eruditus/actions"><img src="https://img.shields.io/github/workflow/status/hfz1337/Eruditus/pre-commit?label=master&logo=github" alt="GitHub Workflow Status"></a>
+        <a href="https://github.com/pre-commit/pre-commit"> <img alt="pre-commit" src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=flat-square"></a>
+</p>
 <br/>
 <p align="center">
   <img src="https://i.imgur.com/K5mNt37.jpg" alt="Logo" width="200">
