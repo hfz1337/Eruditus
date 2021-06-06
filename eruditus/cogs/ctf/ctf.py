@@ -1564,12 +1564,15 @@ class CTF(commands.Cog):
 
         scoreboard = ""
         for rank, team in enumerate(teams, start=1):
-            scoreboard += f"{rank:<10}{team['name']:<50}{round(team['score'], 4)}\n"
+            scoreboard += (
+                f"{['-', '+'][team['name'] == username]} "
+                f"{rank:<10}{team['name']:<50}{round(team['score'], 4)}\n"
+            )
 
         if scoreboard:
             message = (
-                "```ini\n"
-                f"{'[Rank]':<10}{'[Team]':<50}{'[Score]'}\n"
+                "```diff\n"
+                f"  {'Rank':<10}{'Team':<50}{'Score'}\n"
                 f"{scoreboard}"
                 "```"
             )
