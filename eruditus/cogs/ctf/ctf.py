@@ -69,7 +69,6 @@ class CTF(commands.Cog):
         await self._pull.invoke(ctx)
 
     @commands.bot_has_permissions(manage_channels=True, manage_roles=True)
-    @commands.has_permissions(manage_channels=True)
     @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
