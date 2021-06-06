@@ -13,6 +13,7 @@ from pymongo import MongoClient
 
 from cogs.ctftime.help import cog_help
 from lib.ctftime import scrape_current_events
+
 from config import (
     MONGODB_URI,
     DBNAME_PREFIX,
@@ -97,7 +98,6 @@ class CTFTime(commands.Cog):
         if no_running_events:
             await ctx.send("No ongoing CTFs for the moment.")
 
-    @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
         name=cog_help["subcommands"]["upcoming"]["name"],
@@ -119,21 +119,21 @@ class CTFTime(commands.Cog):
         query_filter = {"start": {"$gt": int(time.time())}}
         no_upcoming_events = True
 
+        # Database to fetch the events from, can be any database whose name starts
+        # with DBNAME_PREFIX
+        for database in mongo.list_database_names():
+            if database.startswith(f"{DBNAME_PREFIX}"):
+                break
+
         events = list(
-            mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTFTIME_COLLECTION]
-            .find(query_filter)
-            .limit(limit)
+            mongo[database][CTFTIME_COLLECTION].find(query_filter).limit(limit)
         )
 
         # If we didn't update the database yet through the background task, we do it
         # manually
         if not events:
             await self._bot.get_cog("EventManager").update_events()
-            events = (
-                mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTFTIME_COLLECTION]
-                .find(query_filter)
-                .limit(limit)
-            )
+            events = mongo[database][CTFTIME_COLLECTION].find(query_filter).limit(limit)
 
         for event in events:
             # Convert timestamps to dates
