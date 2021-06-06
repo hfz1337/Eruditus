@@ -43,20 +43,21 @@ async def on_ready() -> None:
 
 @bot.event
 async def on_guild_join(guild: Guild) -> None:
-    """Sets up a database for the newly joined guild."""
+    """Set up a database for the newly joined guild."""
     await setup_database(mongo, guild)
     logger.info(f"{bot.user} joined {guild}!")
 
 
 @bot.event
 async def on_guild_remove(guild: Guild) -> None:
-    """Deletes the database for the guild we just left."""
+    """Delete the database for the guild we just left."""
     mongo.drop_database(f"{DBNAME_PREFIX}-{guild.id}")
     logger.info(f"{bot.user} left {guild}.")
 
 
 @bot.event
 async def on_slash_command_error(ctx: SlashContext, err: Exception) -> None:
+    """Handle exceptions."""
     if isinstance(err, commands.errors.CommandNotFound):
         pass
     elif isinstance(err, discord.errors.NotFound):

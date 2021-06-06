@@ -12,7 +12,7 @@ from config import (
 
 
 def is_ctfd_platform(ctfd_base_url: str) -> bool:
-    """Checks whether a website is using the CTFd framework.
+    """Check whether a website is using the CTFd framework.
 
     Args:
         ctfd_base_url: URL of the CTF platform to check for.
@@ -27,6 +27,17 @@ def is_ctfd_platform(ctfd_base_url: str) -> bool:
 
 
 def get_cached_cookies(ctfd_base_url: str, username: str, password: str) -> dict:
+    """Return cached session cookies from the database.
+
+    Args:
+        ctfd_base_url: The CTFd platform to login into.
+        username: The username to login with.
+        password: The password to login with.
+
+    Returns:
+        A dictionary containing session cookies
+
+    """
     mongo = pymongo.MongoClient(MONGODB_URI)[CACHE_DATABASE]
     cached_session = mongo[SESSION_COLLECTION].find_one(
         {"url": ctfd_base_url.strip(), "username": username, "password": password}
@@ -39,6 +50,15 @@ def get_cached_cookies(ctfd_base_url: str, username: str, password: str) -> dict
 def save_cached_session(
     ctfd_base_url: str, username: str, password: str, cookies: dict
 ) -> None:
+    """Save cached session cookies in the database.
+
+    Args:
+        ctfd_base_url: The CTFd platform to login into.
+        username: The username to login with.
+        password: The password to login with.
+        cookies: The session cookies to cache.
+
+    """
     mongo = pymongo.MongoClient(MONGODB_URI)[CACHE_DATABASE]
     mongo[SESSION_COLLECTION].update_one(
         {
@@ -52,7 +72,7 @@ def save_cached_session(
 
 
 def login(ctfd_base_url: str, username: str, password: str) -> dict:
-    """Logins to the CTFd platform.
+    """Login to the CTFd platform.
 
     Args:
         ctfd_base_url: The CTFd platform to login into.
@@ -100,7 +120,7 @@ def login(ctfd_base_url: str, username: str, password: str) -> dict:
 def submit_flag(
     ctfd_base_url: str, username: str, password: str, challenge_id: int, flag: str
 ) -> Tuple[str, bool]:
-    """Attempts to submit the flag into the CTFd platform and checks if we got first
+    """Attempt to submit the flag into the CTFd platform and check if we got first
     blood in case it succeeds.
 
     Args:

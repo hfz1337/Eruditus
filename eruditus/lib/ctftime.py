@@ -7,7 +7,7 @@ from lib.util import truncate
 
 
 def scrape_event_info(event_id: int) -> dict:
-    """Scrapes event information off the CTFtime website.
+    """Scrape event information off the CTFtime website.
 
     Args:
         event_id: Unique ID of the event.
@@ -76,7 +76,7 @@ def scrape_event_info(event_id: int) -> dict:
 
 
 def scrape_current_events() -> Generator[int, None, None]:
-    """Scrapes current events off the CTFtime home page.
+    """Scrape current events off the CTFtime home page.
 
     Yields:
         int: Unique ID of the event.

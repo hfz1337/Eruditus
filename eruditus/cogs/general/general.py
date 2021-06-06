@@ -44,7 +44,7 @@ class General(commands.Cog):
         ],
     )
     async def _help(self, ctx: SlashContext) -> None:
-        """Shows help about the bot usage."""
+        """Show help about the bot usage."""
         embed = (
             discord.Embed(
                 title="Eruditus - CTF helper bot",
@@ -100,7 +100,7 @@ class General(commands.Cog):
         voting_starts_countdown: int = None,
         voting_verdict_countdown: int = None,
     ) -> None:
-        """Changes the guild's configuration."""
+        """Change the guild's configuration."""
         # Get guild config from the database
         config = mongo[f"{DBNAME_PREFIX}-{ctx.guild.id}"][CONFIG_COLLECTION].find_one()
 

@@ -81,7 +81,7 @@ class Syscalls(commands.Cog):
         options=[create_option(**option) for option in cog_help["options"]],
     )
     async def _syscalls(self, ctx: SlashContext, arch: str, syscall: str) -> None:
-        """Shows information for a syscall from a specific architecture.
+        """Show information for a syscall from a specific architecture.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -112,6 +112,6 @@ class Syscalls(commands.Cog):
 
 
 def setup(bot: Bot) -> None:
-    """Adds the extension to the bot."""
+    """Add the extension to the bot."""
     cog_dir = os.path.dirname(os.path.abspath(__file__))
     bot.add_cog(Syscalls(bot, f"{cog_dir}/tables"))

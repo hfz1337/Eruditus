@@ -56,7 +56,7 @@ class CTF(commands.Cog):
         self._updaters = {}
 
     async def _periodic_updater(self, ctx: SlashContext) -> None:
-        """Pulls new challenges from the CTFd platform and updates the scoreboard
+        """Pull new challenges from the CTFd platform and update the scoreboard
         periodically.
         """
         ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
@@ -80,7 +80,7 @@ class CTF(commands.Cog):
         ],
     )
     async def createctf(self, ctx: Union[SlashContext, Context], name: str) -> None:
-        """Creates a new CTF along with its role and private channels.
+        """Create a new CTF along with its role and private channels.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -187,7 +187,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _renamectf(self, ctx: SlashContext, new_name: str) -> None:
-        """Renames a previously created CTF.
+        """Rename a previously created CTF.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -228,7 +228,7 @@ class CTF(commands.Cog):
     async def _archivectf(
         self, ctx: SlashContext, mode: str = "minimal", name: str = None
     ):
-        """Archives a CTF by making its channels read-only.
+        """Archive a CTF by making its channels read-only.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -365,7 +365,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _deletectf(self, ctx: SlashContext, name: str = None) -> None:
-        """Deletes a CTF.
+        """Delete a CTF.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -443,7 +443,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _join(self, ctx: SlashContext, name: str) -> None:
-        """Allows a member to join a CTF by granting the associated role.
+        """Allow a member to join a CTF by granting the associated role.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -484,7 +484,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _leave(self, ctx: SlashContext) -> None:
-        """Removes a member from the CTF by taking away the associated role.
+        """Remove a member from the CTF by taking away the associated role.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -537,7 +537,7 @@ class CTF(commands.Cog):
         tags: List[str] = None,
         files: List[str] = None,
     ) -> None:
-        """Creates a new challenge for the CTF.
+        """Create a new challenge for the CTF.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -661,7 +661,7 @@ class CTF(commands.Cog):
     async def _renamechallenge(
         self, ctx: SlashContext, new_name: str, new_category: str = None
     ) -> None:
-        """Renames a previously created challenge.
+        """Rename a previously created challenge.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -707,7 +707,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _deletechallenge(self, ctx: SlashContext, name: str = None) -> None:
-        """Deletes a challenge from the CTF.
+        """Delete a challenge from the CTF.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -769,7 +769,7 @@ class CTF(commands.Cog):
         ctx: SlashContext,
         **support: Member,
     ) -> None:
-        """Marks the challenge solved, and makes an announcement on the announcements
+        """Mark the challenge solved, and make an announcement on the announcements
         channel.
 
         Args:
@@ -858,7 +858,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _unsolve(self, ctx: SlashContext) -> None:
-        """Marks a challenge unsolved and removes its associated announcement.
+        """Mark a challenge unsolved and remove its associated announcement.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -932,7 +932,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _workon(self, ctx: SlashContext, name: Union[str, int]) -> None:
-        """Adds a member to a challenge by giving him access to the associated
+        """Add a member to a challenge by giving him access to the associated
         channel.
 
         Args:
@@ -997,7 +997,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _unworkon(self, ctx: SlashContext, name: Union[str, int] = None) -> None:
-        """Removes a member from a challenge.
+        """Remove a member from a challenge.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -1059,7 +1059,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _status(self, ctx: SlashContext, name: str = None) -> None:
-        """Shows all ongoing CTF competitions, and provides details about a specific
+        """Show all ongoing CTF competitions, and provide details about a specific
         CTF if the command is issued from a CTF channel.
 
         Args:
@@ -1195,7 +1195,7 @@ class CTF(commands.Cog):
     async def _addcreds(
         self, ctx: SlashContext, username: str, password: str, url: str
     ) -> None:
-        """Adds credentials for the CTF.
+        """Add credentials for the CTF.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -1253,7 +1253,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _showcreds(self, ctx: SlashContext) -> None:
-        """Shows credentials of the CTF.
+        """Show credentials of the CTF.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -1292,7 +1292,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _pull(self, ctx: SlashContext, ctfd_url: str = None) -> None:
-        """Pulls new challenges from the CTFd platform.
+        """Pull new challenges from the CTFd platform.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -1350,7 +1350,7 @@ class CTF(commands.Cog):
     async def _takenote(
         self, ctx: SlashContext, note_type: str, note_format: str = "embed"
     ) -> None:
-        """Copies the last message in the channel into the notes channel.
+        """Copy the last message in the channel into the notes channel.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -1431,7 +1431,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _submit(self, ctx: SlashContext, flag: str, **support: Member) -> None:
-        """Submits a challenge to the CTFd platform and informs us whether we got first
+        """Submit a flag to the CTFd platform and inform us whether we got first
         blood.
 
         Args:
@@ -1548,7 +1548,7 @@ class CTF(commands.Cog):
         ],
     )
     async def _scoreboard(self, ctx: SlashContext, channel: TextChannel = None) -> None:
-        """Displays scoreboard for the current CTF.
+        """Display scoreboard for the current CTF.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -1596,5 +1596,5 @@ class CTF(commands.Cog):
 
 
 def setup(bot: Bot) -> None:
-    """Adds the extension to the bot."""
+    """Add the extension to the bot."""
     bot.add_cog(CTF(bot))

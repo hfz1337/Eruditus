@@ -108,7 +108,7 @@ class CTFTime(commands.Cog):
         ],
     )
     async def _upcoming(self, ctx: SlashContext, limit: int = 3) -> None:
-        """Shows upcoming events.
+        """Show upcoming events.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -191,7 +191,7 @@ class CTFTime(commands.Cog):
         ],
     )
     async def _top(self, ctx: SlashContext, year: int = None) -> None:
-        """Shows a specific year's leaderboard
+        """Show a specific year's leaderboard.
 
         Args:
             ctx: The context in which the command is being invoked under.
@@ -224,5 +224,5 @@ class CTFTime(commands.Cog):
 
 
 def setup(bot: Bot) -> None:
-    """Adds the extension to the bot."""
+    """Add the extension to the bot."""
     bot.add_cog(CTFTime(bot))

@@ -43,7 +43,7 @@ class EventManager(commands.Cog):
         self._voting_verdict.start()
 
     async def update_events(self) -> None:
-        """Updates the database with recent events from CTFtime."""
+        """Update the database with recent events from CTFtime."""
         # Wait until the bot's internal cache is ready
         await self._bot.wait_until_ready()
 
@@ -89,7 +89,7 @@ class EventManager(commands.Cog):
 
     @tasks.loop(minutes=10.0, reconnect=True)
     async def _announce_upcoming_events(self) -> None:
-        """Announces upcoming CTF competitions."""
+        """Announce upcoming CTF competitions."""
         # Wait until the bot's internal cache is ready
         await self._bot.wait_until_ready()
 
@@ -168,7 +168,7 @@ class EventManager(commands.Cog):
 
     @tasks.loop(minutes=10.0, reconnect=True)
     async def _voting_verdict(self) -> None:
-        """Decides whether or not to create an approaching CTF according to the vote
+        """Decide whether or not to create an approaching CTF according to the vote
         results represented by the number of reactions.
         """
         # Wait until the bot's internal cache is ready
@@ -249,7 +249,7 @@ class EventManager(commands.Cog):
     async def _ctf_started_reminder(
         self, countdown: int, channel: TextChannel, role: Role
     ):
-        """Sends a reminder message to the `general` CTF channel when the CTF starts.
+        """Send a reminder message to the `general` CTF channel when the CTF starts.
 
         Args:
             channel: The guild's text channel where the reminder is sent.
@@ -264,7 +264,7 @@ class EventManager(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
-        """Prevents a member from adding both votes to the announcement message
+        """Prevent a member from adding both votes to the announcement message
         simultaneously.
 
         Args:
@@ -290,5 +290,5 @@ class EventManager(commands.Cog):
 
 
 def setup(bot: Bot) -> None:
-    """Adds the extension to the bot."""
+    """Add the extension to the bot."""
     bot.add_cog(EventManager(bot))

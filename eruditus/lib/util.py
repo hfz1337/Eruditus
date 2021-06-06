@@ -19,7 +19,7 @@ from config import (
 
 
 def truncate(text: str, maxlen=1024) -> str:
-    """Truncates a paragraph to a specific length.
+    """Truncate a paragraph to a specific length.
 
     Args:
         text: The paragraph to truncate.
@@ -34,7 +34,7 @@ def truncate(text: str, maxlen=1024) -> str:
 
 
 def sanitize_channel_name(name: str) -> str:
-    """Filters out characters that aren't allowed by Discord for guild channels.
+    """Filter out characters that aren't allowed by Discord for guild channels.
 
     Args:
         name: Channel name.
@@ -57,7 +57,7 @@ def sanitize_channel_name(name: str) -> str:
 
 
 def derive_colour(role_name: str) -> int:
-    """Derives a colour for the CTF role by taking its MD5 hash and using the first 3
+    """Derive a colour for the CTF role by taking its MD5 hash and using the first 3
     bytes as the colour.
 
     Args:
@@ -71,7 +71,7 @@ def derive_colour(role_name: str) -> int:
 
 
 async def setup_database(mongo: MongoClient, guild: Guild) -> None:
-    """Sets up a database for a guild.
+    """Set up a database for a guild.
 
     Args:
         mongo: MongoDB client handle
@@ -109,7 +109,7 @@ async def setup_database(mongo: MongoClient, guild: Guild) -> None:
 
 
 def setup_logger(level: int) -> RootLogger:
-    """Sets up logging.
+    """Set up logging.
 
     Args:
         level: Logging level.
