@@ -2,6 +2,13 @@ from typing import Tuple, Generator
 import re
 import requests
 from bs4 import BeautifulSoup
+import pymongo
+
+from config import (
+    MONGODB_URI,
+    CACHE_DATABASE,
+    SESSION_COLLECTION,
+)
 
 
 def is_ctfd_platform(ctfd_base_url: str) -> bool:
@@ -17,6 +24,31 @@ def is_ctfd_platform(ctfd_base_url: str) -> bool:
     ctfd_signature = "Powered by CTFd"
     response = requests.get(url=f"{ctfd_base_url.strip()}/")
     return ctfd_signature in response.text
+
+
+def get_cached_cookies(ctfd_base_url: str, username: str, password: str) -> dict:
+    mongo = pymongo.MongoClient(MONGODB_URI)[CACHE_DATABASE]
+    cached_session = mongo[SESSION_COLLECTION].find_one(
+        {"url": ctfd_base_url.strip(), "username": username, "password": password}
+    )
+    if cached_session is not None:
+        return cached_session["cookies"]
+    return {}
+
+
+def save_cached_session(
+    ctfd_base_url: str, username: str, password: str, cookies: dict
+) -> None:
+    mongo = pymongo.MongoClient(MONGODB_URI)[CACHE_DATABASE]
+    mongo[SESSION_COLLECTION].update_one(
+        {
+            "url": ctfd_base_url.strip(),
+            "username": username,
+            "password": password,
+        },
+        {"$set": {"cookies": cookies}},
+        upsert=True,
+    )
 
 
 def login(ctfd_base_url: str, username: str, password: str) -> dict:
@@ -37,6 +69,14 @@ def login(ctfd_base_url: str, username: str, password: str) -> dict:
     if not is_ctfd_platform(ctfd_base_url):
         return None
 
+    # Check if our cached session cookies (if any) are still valid
+    cookies = get_cached_cookies(ctfd_base_url, username, password)
+    response = requests.head(
+        url=f"{ctfd_base_url}/user", cookies=cookies, allow_redirects=False
+    )
+    if response.status_code == 200:
+        return cookies
+
     # Get the nonce
     response = requests.get(url=f"{ctfd_base_url}/login")
     cookies = response.cookies.get_dict()
@@ -49,7 +89,12 @@ def login(ctfd_base_url: str, username: str, password: str) -> dict:
     response = requests.post(
         url=f"{ctfd_base_url}/login", data=data, cookies=cookies, allow_redirects=False
     )
-    return response.cookies.get_dict()
+    cookies = response.cookies.get_dict()
+
+    # Save session cookies in the database for future use
+    save_cached_session(ctfd_base_url, username, password, cookies)
+
+    return cookies
 
 
 def submit_flag(
@@ -126,7 +171,7 @@ def pull_challenges(
 
     # Confirm that we're dealing with a CTFd platform
     if not is_ctfd_platform(ctfd_base_url):
-        return None
+        return []
 
     # Maybe the challenges endpoint is accessible to the public?
     response = requests.get(
@@ -168,3 +213,45 @@ def pull_challenges(
                     "tags": challenge["tags"],
                     "files": challenge["files"],
                 }
+
+
+def get_scoreboard(ctfd_base_url: str, username: str, password: str) -> list:
+    """Get scoreboard from the CTFd platform.
+
+    Args:
+        ctfd_base_url: The CTFd platform to login into.
+        username: The username to login with.
+        password: The password to login with.
+
+    Yields:
+        dict: Scoreboard starting with the top team.
+
+    """
+    ctfd_base_url = ctfd_base_url.strip("/")
+
+    # Confirm that we're dealing with a CTFd platform
+    if not is_ctfd_platform(ctfd_base_url):
+        return []
+
+    # Maybe the scoreboard endpoint is accessible to the public?
+    response = requests.get(
+        url=f"{ctfd_base_url}/api/v1/scoreboard", allow_redirects=False
+    )
+
+    if response.status_code != 200:
+        # Perhaps the API access needs authentication, so we login to the CTFd platform.
+        cookies = login(ctfd_base_url, username, password)
+
+        # Get scoreboard
+        response = requests.get(
+            url=f"{ctfd_base_url}/api/v1/scoreboard",
+            cookies=cookies,
+            allow_redirects=False,
+        )
+
+    if response.status_code == 200 and response.json()["success"]:
+        return [
+            {"name": team["name"], "score": team["score"]}
+            for team in response.json()["data"][:20]
+        ]
+    return []

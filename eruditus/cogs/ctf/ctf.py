@@ -3,7 +3,7 @@ from datetime import datetime
 from pymongo import MongoClient
 
 import discord
-from discord import Member
+from discord import Member, TextChannel
 from discord.ext.commands import Bot, Context
 from discord.ext import tasks, commands
 
@@ -13,7 +13,7 @@ from discord_slash.utils.manage_commands import create_option
 from cogs.ctf.help import cog_help
 
 from lib.util import sanitize_channel_name, derive_colour
-from lib.ctfd import pull_challenges, submit_flag
+from lib.ctfd import pull_challenges, submit_flag, get_scoreboard
 
 from config import (
     MONGODB_URI,
@@ -53,9 +53,19 @@ class CTF(commands.Cog):
 
     def __init__(self, bot: Bot) -> None:
         self._bot = bot
+        self._updaters = {}
 
-    async def _periodic_puller(self, ctx: SlashContext) -> None:
-        """Pulls new challenges from the CTFd platform periodically."""
+    async def _periodic_updater(self, ctx: SlashContext) -> None:
+        """Pulls new challenges from the CTFd platform and updates the scoreboard
+        periodically.
+        """
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+            {"guild_category": ctx.channel.category_id}
+        )
+        scoreboard_channel = discord.utils.get(
+            ctx.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
+        )
+        await self._scoreboard.invoke(ctx, scoreboard_channel)
         await self._pull.invoke(ctx)
 
     @commands.bot_has_permissions(manage_channels=True, manage_roles=True)
@@ -136,6 +146,9 @@ class CTF(commands.Cog):
         solves_channel = await ctx.guild.create_text_channel(
             name="🎉-solves", category=category_channel, overwrites=overwrites
         )
+        scoreboard_channel = await ctx.guild.create_text_channel(
+            name="📈-scoreboard", category=category_channel, overwrites=overwrites
+        )
 
         ctf = {
             "name": name,
@@ -151,6 +164,7 @@ class CTF(commands.Cog):
             "guild_channels": {
                 "announcements": announcement_channel.id,
                 "credentials": credentials_channel.id,
+                "scoreboard": scoreboard_channel.id,
                 "solves": solves_channel.id,
                 "notes": notes_channel.id,
             },
@@ -237,6 +251,36 @@ class CTF(commands.Cog):
             )
 
         if ctf:
+            # Stop periodic updater
+            if ctf["credentials"]["url"] in self._updaters:
+                self._updaters[ctf["credentials"]["url"]].cancel()
+                del self._updaters[ctf["credentials"]["url"]]
+
+            # Post challenge solves summary in the scoreboard channel
+            summary = ""
+            for challenge_id in ctf["challenges"]:
+                challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                    CHALLENGE_COLLECTION
+                ].find_one(challenge_id)
+                summary += (
+                    f"{['-', '+'][challenge['solved']]} "
+                    f"{challenge['name']:<30}"
+                    f"{challenge['category']:<30}"
+                    f"{['❌', '✔️'][challenge['solved']]}\n"
+                )
+
+            if summary:
+                summary = (
+                    "```diff\n"
+                    f"  {'Challenge':<30}{'Category':<30}{'Solved'}\n\n"
+                    f"{summary}"
+                    "```"
+                )
+                scoreboard_channel = discord.utils.get(
+                    ctx.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
+                )
+                await scoreboard_channel.send(summary)
+
             # Global archive category channel
             archive_category_channel = discord.utils.get(
                 ctx.guild.categories,
@@ -263,6 +307,12 @@ class CTF(commands.Cog):
                     elif ctf_channel.id == ctf["guild_channels"]["solves"]:
                         await ctf_channel.edit(
                             name=f"🎉-{sanitize_channel_name(ctf['name'])}",
+                            category=archive_category_channel,
+                            sync_permissions=True,
+                        )
+                    elif ctf_channel.id == ctf["guild_channels"]["scoreboard"]:
+                        await ctf_channel.edit(
+                            name=f"📈-{sanitize_channel_name(ctf['name'])}",
                             category=archive_category_channel,
                             sync_permissions=True,
                         )
@@ -346,12 +396,13 @@ class CTF(commands.Cog):
                         CONFIG_COLLECTION
                     ].find_one()["archive_category_channel"],
                 )
-                # Delete `notes` and `solves` channels for that CTF
+                # Delete `notes`, `solves` and `scoreboard` channels for that CTF
                 if archive_category_channel:
                     for ctf_channel in archive_category_channel.channels:
                         if (
                             ctf_channel.id == ctf["guild_channels"]["notes"]
                             or ctf_channel.id == ctf["guild_channels"]["solves"]
+                            or ctf_channel.id == ctf["guild_channels"]["scoreboard"]
                         ):
                             await ctf_channel.delete()
             else:
@@ -514,8 +565,7 @@ class CTF(commands.Cog):
             ctx.guild.categories, id=ctx.channel.category_id
         )
         overwrites = {
-            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            ctx.author: discord.PermissionOverwrite(read_messages=True),
+            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False)
         }
         channel_name = sanitize_channel_name(f"{category}-{name}")
         challenge_channel = await ctx.guild.create_text_channel(
@@ -563,8 +613,8 @@ class CTF(commands.Cog):
             description=(
                 f"**Challenge name:** {name}\n"
                 f"**Category:** {category}\n\n"
-                f'Use `/ctf workon "{name}"` to join.\n'
-                f"{role.mention}"
+                f"Use `/ctf workon {name}` or `/ctf workon {len(ctf['challenges'])}` "
+                f"to join.\n{role.mention}"
             ),
             colour=discord.Colour.dark_gold(),
         ).set_footer(text=datetime.strftime(datetime.now(), DATE_FORMAT))
@@ -877,7 +927,7 @@ class CTF(commands.Cog):
             for option in cog_help["subcommands"]["workon"]["options"]
         ],
     )
-    async def _workon(self, ctx: SlashContext, name: str) -> None:
+    async def _workon(self, ctx: SlashContext, name: Union[str, int]) -> None:
         """Adds a member to a challenge by giving him access to the associated
         channel.
 
@@ -889,6 +939,17 @@ class CTF(commands.Cog):
         challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
             CHALLENGE_COLLECTION
         ].find_one({"name": name})
+
+        if challenge is None and name.isdigit():
+            position = int(name)
+            ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+                {"guild_category": ctx.channel.category_id}
+            )
+            if 0 < position <= len(ctf["challenges"]):
+                challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                    CHALLENGE_COLLECTION
+                ].find_one(ctf["challenges"][position - 1])
+
         if challenge is None:
             await ctx.send("No such challenge.", hidden=True)
             return
@@ -899,7 +960,7 @@ class CTF(commands.Cog):
 
         if challenge["solved"]:
             await ctx.send(
-                "You can't work on challenge that has been solved.", hidden=True
+                "You can't work on a challenge that has been solved.", hidden=True
             )
             return
 
@@ -931,7 +992,7 @@ class CTF(commands.Cog):
             for option in cog_help["subcommands"]["unworkon"]["options"]
         ],
     )
-    async def _unworkon(self, ctx: SlashContext, name: str = None) -> None:
+    async def _unworkon(self, ctx: SlashContext, name: Union[str, int] = None) -> None:
         """Removes a member from a challenge.
 
         Args:
@@ -947,6 +1008,16 @@ class CTF(commands.Cog):
             challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
                 CHALLENGE_COLLECTION
             ].find_one({"name": name})
+
+        if challenge is None and name.isdigit():
+            position = int(name)
+            ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+                {"guild_category": ctx.channel.category_id}
+            )
+            if 0 < position <= len(ctf["challenges"]):
+                challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+                    CHALLENGE_COLLECTION
+                ].find_one(ctf["challenges"][position - 1])
 
         if challenge is None:
             await ctx.send("No such challenge.", hidden=True)
@@ -1032,10 +1103,19 @@ class CTF(commands.Cog):
                     )
                     await ctx.send(embed=embed)
                 else:
-                    embed = discord.Embed(
-                        title=f"{ctf['name']} status", colour=discord.Colour.blue()
-                    )
-                    for challenge_id in challenges:
+                    embed = None
+                    for idx, challenge_id in enumerate(challenges):
+                        # If we reached Discord's maximum number of fields per
+                        # embed, we send the previous one and create a new one
+                        if idx % 25 == 0:
+                            if embed is not None:
+                                await ctx.send(embed=embed)
+
+                            embed = discord.Embed(
+                                title=f"{ctf['name']} status",
+                                colour=discord.Colour.blue(),
+                            )
+
                         challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
                             CHALLENGE_COLLECTION
                         ].find_one(challenge_id)
@@ -1066,12 +1146,15 @@ class CTF(commands.Cog):
                             )
                             embed.add_field(
                                 name=(
-                                    f"❌ {challenge['name']} ({challenge['category']})"
+                                    f"❌ {idx + 1:2} - "
+                                    f"{challenge['name']} ({challenge['category']})"
                                 ),
                                 value=workers,
                                 inline=False,
                             )
+                    # Send the remaining embed
                     await ctx.send(embed=embed)
+
             # Otherwise, let the user know that they should join the CTF first to
             # see the details.
             else:
@@ -1148,7 +1231,10 @@ class CTF(commands.Cog):
 
         # Start a background task for this CTF in order to pull new challenges
         # periodically
-        tasks.loop(minutes=3.0, reconnect=True)(self._periodic_puller).start(ctx)
+        self._updaters[ctf["credentials"]["url"]] = tasks.loop(
+            seconds=30.0, reconnect=True
+        )(self._periodic_updater)
+        self._updaters[ctf["credentials"]["url"]].start(ctx)
 
     @commands.bot_has_permissions(manage_messages=True)
     @in_ctf_channel()
@@ -1239,9 +1325,9 @@ class CTF(commands.Cog):
                     await self._createchallenge.invoke(ctx, **challenge)
 
             # If we already responded (which happens if `pull` if invoked through
-            # `addcreds` or `_periodic_puller`), then don't send the confirmation
+            # `addcreds` or `_periodic_updater`), then don't send the confirmation
             # message, otherwise we would be spamming this same message everytime
-            # the periodic puller is executed.
+            # the periodic updater is executed.
             if not ctx.responded:
                 await ctx.send("✅ Done pulling challenges")
 
@@ -1283,7 +1369,7 @@ class CTF(commands.Cog):
             ctx.guild.text_channels, id=ctf["guild_channels"]["notes"]
         )
         history = await ctx.channel.history(limit=1).flatten()
-        message = history[0].clean_content
+        message = history[0]
 
         if note_type == "progress":
             title = (
@@ -1299,7 +1385,7 @@ class CTF(commands.Cog):
             embed = (
                 discord.Embed(
                     title=title,
-                    description=message,
+                    description=message.clean_content,
                     colour=colour,
                 )
                 .set_thumbnail(url=ctx.author.avatar_url)
@@ -1320,7 +1406,12 @@ class CTF(commands.Cog):
             # If we send the embed and the content in the same command, the embed
             # would be placed after the content, which is not what we want.
             await notes_channel.send(embed=embed)
-            await notes_channel.send(message)
+            await notes_channel.send(
+                message.clean_content,
+                files=[
+                    await attachment.to_file() for attachment in message.attachments
+                ],
+            )
 
         await ctx.send("✅ Note taken successfully", hidden=True)
 
@@ -1440,6 +1531,64 @@ class CTF(commands.Cog):
             await ctx.send("You already solved this challenge.")
         else:
             await ctx.send("❌ Incorrect flag.")
+
+    @in_ctf_channel()
+    @commands.guild_only()
+    @cog_ext.cog_subcommand(
+        base=cog_help["name"],
+        name=cog_help["subcommands"]["scoreboard"]["name"],
+        description=cog_help["subcommands"]["scoreboard"]["description"],
+        options=[
+            create_option(**option)
+            for option in cog_help["subcommands"]["scoreboard"]["options"]
+        ],
+    )
+    async def _scoreboard(self, ctx: SlashContext, channel: TextChannel = None) -> None:
+        """Displays scoreboard for the current CTF.
+
+        Args:
+            ctx: The context in which the command is being invoked under.
+
+        """
+        if channel is None:
+            await ctx.defer()
+
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+            {"guild_category": ctx.channel.category_id}
+        )
+        ctfd_url = ctf["credentials"]["url"]
+        username = ctf["credentials"]["username"]
+        password = ctf["credentials"]["password"]
+
+        teams = get_scoreboard(ctfd_url, username, password)
+
+        scoreboard = ""
+        for rank, team in enumerate(teams, start=1):
+            scoreboard += (
+                f"{['-', '+'][team['name'] == username]} "
+                f"{rank:<10}{team['name']:<50}{round(team['score'], 4)}\n"
+            )
+
+        if scoreboard:
+            message = (
+                "```diff\n"
+                f"  {'Rank':<10}{'Team':<50}{'Score'}\n"
+                f"{scoreboard}"
+                "```"
+            )
+        else:
+            message = "No solves yet, or platform isn't CTFd."
+
+        # If `channel` was provided (i.e, scoreboard channel), we fetch the scoreboard
+        # message if it was already sent and update it
+        if channel is not None:
+            history = await channel.history(limit=1).flatten()
+            if history:
+                await history[0].edit(content=message)
+            else:
+                await channel.send(message)
+        else:
+            await ctx.send(message)
 
 
 def setup(bot: Bot) -> None:

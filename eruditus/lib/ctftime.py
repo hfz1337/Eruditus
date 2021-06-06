@@ -3,6 +3,7 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 from config import CTFTIME_URL, USER_AGENT
+from lib.util import truncate
 
 
 def scrape_event_info(event_id: int) -> dict:
@@ -61,8 +62,8 @@ def scrape_event_info(event_id: int) -> dict:
     return {
         "id": event_id,
         "name": event_name,
-        "description": event_description,
-        "prizes": event_prizes,
+        "description": truncate(event_description),
+        "prizes": truncate(event_prizes),
         "location": event_location,
         "format": event_format,
         "website": event_website,

@@ -1,4 +1,5 @@
 from importlib import import_module
+from datetime import datetime
 import os
 
 import discord
@@ -19,6 +20,8 @@ from config import (
     MINIMUM_PLAYER_COUNT,
     VOTING_STARTS_COUNTDOWN,
     VOTING_VERDICT_COUNTDOWN,
+    DATE_FORMAT,
+    DEVELOPER_USER_ID,
 )
 
 # MongoDB handle
@@ -134,6 +137,60 @@ class General(commands.Cog):
             },
         )
         await ctx.send("⚙️ Configuration updated")
+
+    @cog_ext.cog_slash(
+        name=cog_help["commands"]["request"]["name"],
+        description=cog_help["commands"]["request"]["description"],
+        options=[
+            create_option(**option)
+            for option in cog_help["commands"]["request"]["options"]
+        ],
+    )
+    async def _request(self, ctx: SlashContext, feature: str) -> None:
+        """Send a feature request to the developer."""
+        developer = await self._bot.fetch_user(DEVELOPER_USER_ID)
+        embed = (
+            discord.Embed(
+                title="💡 **Feature request**",
+                description=feature,
+                colour=discord.Colour.green(),
+            )
+            .set_thumbnail(url=ctx.author.avatar_url)
+            .set_author(name=ctx.author.name)
+            .set_footer(text=datetime.now().strftime(DATE_FORMAT).strip())
+        )
+        await developer.send(embed=embed)
+        await ctx.send(
+            "✅ Your suggestion has been sent to the developer, thanks for your help!",
+            hidden=True,
+        )
+
+    @cog_ext.cog_slash(
+        name=cog_help["commands"]["report"]["name"],
+        description=cog_help["commands"]["report"]["description"],
+        options=[
+            create_option(**option)
+            for option in cog_help["commands"]["report"]["options"]
+        ],
+    )
+    async def _report(self, ctx: SlashContext, bug: str) -> None:
+        """Send a bug report to the developer."""
+        developer = await self._bot.fetch_user(DEVELOPER_USER_ID)
+        embed = (
+            discord.Embed(
+                title="🐛 **Bug report**",
+                description=bug,
+                colour=discord.Colour.green(),
+            )
+            .set_thumbnail(url=ctx.author.avatar_url)
+            .set_author(name=ctx.author.name)
+            .set_footer(text=datetime.now().strftime(DATE_FORMAT).strip())
+        )
+        await developer.send(embed=embed)
+        await ctx.send(
+            "✅ Your bug report has been sent to the developer, thanks for your help!",
+            hidden=True,
+        )
 
 
 def setup(bot: Bot) -> None:

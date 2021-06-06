@@ -18,6 +18,21 @@ from config import (
 )
 
 
+def truncate(text: str, maxlen=1024) -> str:
+    """Truncates a paragraph to a specific length.
+
+    Args:
+        text: The paragraph to truncate.
+        maxlen: The maximum length of the paragraph.
+
+    Returns:
+        The truncated paragraph
+
+    """
+    etc = "[…]"
+    return f"{text[:maxlen - len(etc)]}{etc}" if len(text) > maxlen - len(etc) else text
+
+
 def sanitize_channel_name(name: str) -> str:
     """Filters out characters that aren't allowed by Discord for guild channels.
 

@@ -59,6 +59,10 @@ async def on_guild_remove(guild: Guild) -> None:
 async def on_slash_command_error(ctx: SlashContext, err: Exception) -> None:
     if isinstance(err, commands.errors.CommandNotFound):
         pass
+    elif isinstance(err, discord.errors.NotFound):
+        pass
+    elif isinstance(err, discord.errors.Forbidden):
+        await ctx.send("Forbidden.")
     elif isinstance(err, commands.errors.MissingPermissions):
         await ctx.send("Permission denied.")
     elif isinstance(err, commands.errors.BotMissingPermissions):
