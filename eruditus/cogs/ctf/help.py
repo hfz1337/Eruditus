@@ -292,5 +292,10 @@ cog_help = {
                 for i in range(1, 5)
             ],
         },
+        "scoreboard": {
+            "name": "scoreboard",
+            "description": "Display scoreboard for the CTF",
+            "options": [],
+        },
     },
 }

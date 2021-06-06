@@ -3,7 +3,7 @@ from datetime import datetime
 from pymongo import MongoClient
 
 import discord
-from discord import Member
+from discord import Member, TextChannel
 from discord.ext.commands import Bot, Context
 from discord.ext import tasks, commands
 
@@ -13,7 +13,7 @@ from discord_slash.utils.manage_commands import create_option
 from cogs.ctf.help import cog_help
 
 from lib.util import sanitize_channel_name, derive_colour
-from lib.ctfd import pull_challenges, submit_flag
+from lib.ctfd import pull_challenges, submit_flag, get_scoreboard
 
 from config import (
     MONGODB_URI,
@@ -53,10 +53,19 @@ class CTF(commands.Cog):
 
     def __init__(self, bot: Bot) -> None:
         self._bot = bot
-        self._pullers = {}
+        self._updaters = {}
 
-    async def _periodic_puller(self, ctx: SlashContext) -> None:
-        """Pulls new challenges from the CTFd platform periodically."""
+    async def _periodic_updater(self, ctx: SlashContext) -> None:
+        """Pulls new challenges from the CTFd platform and updates the scoreboard
+        periodically.
+        """
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+            {"guild_category": ctx.channel.category_id}
+        )
+        scoreboard_channel = discord.utils.get(
+            ctx.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
+        )
+        await self._scoreboard.invoke(ctx, scoreboard_channel)
         await self._pull.invoke(ctx)
 
     @commands.bot_has_permissions(manage_channels=True, manage_roles=True)
@@ -137,6 +146,9 @@ class CTF(commands.Cog):
         solves_channel = await ctx.guild.create_text_channel(
             name="🎉-solves", category=category_channel, overwrites=overwrites
         )
+        scoreboard_channel = await ctx.guild.create_text_channel(
+            name="📈-scoreboard", category=category_channel, overwrites=overwrites
+        )
 
         ctf = {
             "name": name,
@@ -152,6 +164,7 @@ class CTF(commands.Cog):
             "guild_channels": {
                 "announcements": announcement_channel.id,
                 "credentials": credentials_channel.id,
+                "scoreboard": scoreboard_channel.id,
                 "solves": solves_channel.id,
                 "notes": notes_channel.id,
             },
@@ -238,10 +251,10 @@ class CTF(commands.Cog):
             )
 
         if ctf:
-            # Stop periodic puller
-            if ctf["credentials"]["url"] in self._pullers:
-                self._pullers[ctf["credentials"]["url"]].cancel()
-                del self._pullers[ctf["credentials"]["url"]]
+            # Stop periodic updater
+            if ctf["credentials"]["url"] in self._updaters:
+                self._updaters[ctf["credentials"]["url"]].cancel()
+                del self._updaters[ctf["credentials"]["url"]]
 
             # Global archive category channel
             archive_category_channel = discord.utils.get(
@@ -1164,10 +1177,10 @@ class CTF(commands.Cog):
 
         # Start a background task for this CTF in order to pull new challenges
         # periodically
-        self._pullers[ctf["credentials"]["url"]] = tasks.loop(
-            minutes=3.0, reconnect=True
-        )(self._periodic_puller)
-        self._pullers[ctf["credentials"]["url"]].start(ctx)
+        self._updaters[ctf["credentials"]["url"]] = tasks.loop(
+            seconds=30.0, reconnect=True
+        )(self._periodic_updater)
+        self._updaters[ctf["credentials"]["url"]].start(ctx)
 
     @commands.bot_has_permissions(manage_messages=True)
     @in_ctf_channel()
@@ -1258,9 +1271,9 @@ class CTF(commands.Cog):
                     await self._createchallenge.invoke(ctx, **challenge)
 
             # If we already responded (which happens if `pull` if invoked through
-            # `addcreds` or `_periodic_puller`), then don't send the confirmation
+            # `addcreds` or `_periodic_updater`), then don't send the confirmation
             # message, otherwise we would be spamming this same message everytime
-            # the periodic puller is executed.
+            # the periodic updater is executed.
             if not ctx.responded:
                 await ctx.send("✅ Done pulling challenges")
 
@@ -1464,6 +1477,61 @@ class CTF(commands.Cog):
             await ctx.send("You already solved this challenge.")
         else:
             await ctx.send("❌ Incorrect flag.")
+
+    @in_ctf_channel()
+    @commands.guild_only()
+    @cog_ext.cog_subcommand(
+        base=cog_help["name"],
+        name=cog_help["subcommands"]["scoreboard"]["name"],
+        description=cog_help["subcommands"]["scoreboard"]["description"],
+        options=[
+            create_option(**option)
+            for option in cog_help["subcommands"]["scoreboard"]["options"]
+        ],
+    )
+    async def _scoreboard(self, ctx: SlashContext, channel: TextChannel = None) -> None:
+        """Displays scoreboard for the current CTF.
+
+        Args:
+            ctx: The context in which the command is being invoked under.
+
+        """
+        if channel is None:
+            await ctx.defer()
+
+        ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
+            {"guild_category": ctx.channel.category_id}
+        )
+        ctfd_url = ctf["credentials"]["url"]
+        username = ctf["credentials"]["username"]
+        password = ctf["credentials"]["password"]
+
+        teams = get_scoreboard(ctfd_url, username, password)
+
+        scoreboard = ""
+        for rank, team in enumerate(teams, start=1):
+            scoreboard += f"{rank:<10}{team['name']:<50}{round(team['score'], 4)}\n"
+
+        if scoreboard:
+            message = (
+                "```ini\n"
+                f"{'[Rank]':<10}{'[Team]':<50}{'[Score]'}\n"
+                f"{scoreboard}"
+                "```"
+            )
+        else:
+            message = "No solves yet."
+
+        # If `channel` was provided (i.e, scoreboard channel), we fetch the scoreboard
+        # message if it was already sent and update it
+        if channel is not None:
+            history = await channel.history(limit=1).flatten()
+            if history:
+                await history[0].edit(content=message)
+            else:
+                await channel.send(message)
+        else:
+            await ctx.send(message)
 
 
 def setup(bot: Bot) -> None:
