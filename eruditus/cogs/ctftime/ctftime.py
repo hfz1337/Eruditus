@@ -49,7 +49,6 @@ class CTFTime(commands.Cog):
 
         Args:
             ctx: The context in which the command is being invoked under.
-
         """
         await ctx.defer()
         no_running_events = True
@@ -113,7 +112,6 @@ class CTFTime(commands.Cog):
         Args:
             ctx: The context in which the command is being invoked under.
             limit: Number of events to show.
-
         """
         await ctx.defer()
         query_filter = {"start": {"$gt": int(time.time())}}
@@ -197,7 +195,6 @@ class CTFTime(commands.Cog):
             ctx: The context in which the command is being invoked under.
             year: The year to show the leaderboard for. Defaults to None, which means
                 the current year.
-
         """
         await ctx.defer()
         year = year or datetime.today().year

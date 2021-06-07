@@ -14,7 +14,6 @@ def scrape_event_info(event_id: int) -> dict:
 
     Returns:
         A dictionary representing the event.
-
     """
     # The date format used by CTFtime
     ctftime_date_format = "%a, %d %B %Y, %H:%M"
@@ -79,7 +78,7 @@ def scrape_current_events() -> Generator[int, None, None]:
     """Scrape current events off the CTFtime home page.
 
     Yields:
-        int: Unique ID of the event.
+        An integer representing the unique ID of the event.
     """
     response = requests.get(url=CTFTIME_URL, headers={"User-Agent": USER_AGENT})
     parser = BeautifulSoup(response.content, "html.parser")

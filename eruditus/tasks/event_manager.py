@@ -254,7 +254,6 @@ class EventManager(commands.Cog):
         Args:
             channel: The guild's text channel where the reminder is sent.
             role: The guild's role to mention on the message.
-
         """
         await asyncio.sleep(countdown)
         await channel.category.edit(name=channel.category.name.replace("⏰", "🔴"))
@@ -269,7 +268,6 @@ class EventManager(commands.Cog):
 
         Args:
             payload: Payload for the `on_raw_reaction_add` event.
-
         """
         # If the reaction was added by us, do nothing
         if payload.member.id == self._bot.user.id:

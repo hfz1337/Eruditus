@@ -85,7 +85,6 @@ class CTF(commands.Cog):
         Args:
             ctx: The context in which the command is being invoked under.
             name: Name of the CTF to create.
-
         """
         # Check if CTF already exists
         if mongo[f"{DBNAME_PREFIX}-{ctx.guild.id}"][CTF_COLLECTION].find_one(
@@ -192,7 +191,6 @@ class CTF(commands.Cog):
         Args:
             ctx: The context in which the command is being invoked under.
             new_name: The new CTF name.
-
         """
         ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
@@ -236,7 +234,6 @@ class CTF(commands.Cog):
                 the important ones only.
             name: Name of the CTF to archive. Defaults to the CTF associated to the
                 category channel from which the command was issued.
-
         """
         await ctx.defer()
 
@@ -371,7 +368,6 @@ class CTF(commands.Cog):
             ctx: The context in which the command is being invoked under.
             name: Name of the CTF to delete. Defaults to the CTF associated with the
                 category channel from which the command was issued.
-
         """
         await ctx.defer()
 
@@ -448,7 +444,6 @@ class CTF(commands.Cog):
         Args:
             ctx: The context in which the command is being invoked under.
             name: Name of the CTF to join.
-
         """
         role = discord.utils.get(ctx.guild.roles, name=name)
         if role is None:
@@ -488,7 +483,6 @@ class CTF(commands.Cog):
 
         Args:
             ctx: The context in which the command is being invoked under.
-
         """
         ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
@@ -548,7 +542,6 @@ class CTF(commands.Cog):
             description: Description of the challenge. Defaults to None.
             tags: Tags of the challenge. Defaults to None.
             files: Attachments provided with the challenge. Defaults to None.
-
         """
         # Avoid having duplicate categories when people mix up upper/lower case
         # or add unnecessary spaces at the beginning or the end.
@@ -668,7 +661,6 @@ class CTF(commands.Cog):
             new_name: New challenge name.
             new_category: New category of the challenge. Defaults to None, which means
                 the category doesn't change and we stick to the previous one.
-
         """
         challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
             CHALLENGE_COLLECTION
@@ -714,7 +706,6 @@ class CTF(commands.Cog):
             name: Name of the challenge to delete. Defaults to None, which means
                 deleting the challenge associated with the channel from which this
                 command was issued.
-
         """
         if name is None:
             challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
@@ -775,7 +766,6 @@ class CTF(commands.Cog):
         Args:
             ctx: The context in which the command is being invoked under.
             **support: One or more members who contributed solving the challenge.
-
         """
         await ctx.defer()
 
@@ -862,7 +852,6 @@ class CTF(commands.Cog):
 
         Args:
             ctx: The context in which the command is being invoked under.
-
         """
         await ctx.defer()
 
@@ -938,7 +927,6 @@ class CTF(commands.Cog):
         Args:
             ctx: The context in which the command is being invoked under.
             name: Name of the challenge.
-
         """
         challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
             CHALLENGE_COLLECTION
@@ -1002,7 +990,6 @@ class CTF(commands.Cog):
         Args:
             ctx: The context in which the command is being invoked under.
             name: Name of the challenge.
-
         """
         if name is None:
             challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
@@ -1065,7 +1052,6 @@ class CTF(commands.Cog):
         Args:
             ctx: The context in which the command is being invoked under.
             name: Name of the CTF.
-
         """
         await ctx.defer()
 
@@ -1202,7 +1188,6 @@ class CTF(commands.Cog):
             username: The username to login with.
             password: The password to login with.
             url: The CTF platform where these credentials are intended to be used.
-
         """
         await ctx.defer()
 
@@ -1257,7 +1242,6 @@ class CTF(commands.Cog):
 
         Args:
             ctx: The context in which the command is being invoked under.
-
         """
         ctf = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][CTF_COLLECTION].find_one(
             {"guild_category": ctx.channel.category_id}
@@ -1298,7 +1282,6 @@ class CTF(commands.Cog):
             ctx: The context in which the command is being invoked under.
             ctfd_url: URL of the CTFd platform. Defaults to None, which means taking
                 the URL from the credentials previously set.
-
         """
         # Don't defer if we already responded to the interaction, this happens when
         # `pull` is invoked by `addcreds`
@@ -1357,7 +1340,6 @@ class CTF(commands.Cog):
             note_type: Whether the note is about a challenge progress or an info.
             note_format: Whether to copy the note in an embed (the default) or take
                 it as is.
-
         """
         challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
             CHALLENGE_COLLECTION
@@ -1438,7 +1420,6 @@ class CTF(commands.Cog):
             ctx: The context in which the command is being invoked under.
             flag: The flag to submit
             **support: One or more members who helped solving the challenge.
-
         """
         await ctx.defer()
 
@@ -1552,7 +1533,6 @@ class CTF(commands.Cog):
 
         Args:
             ctx: The context in which the command is being invoked under.
-
         """
         if channel is None:
             await ctx.defer()

@@ -87,7 +87,6 @@ class Syscalls(commands.Cog):
             ctx: The context in which the command is being invoked under.
             arch: The architecture.
             syscall: The syscall name or ID (in hex or decimal).
-
         """
         table = self.tables.get(arch)
 

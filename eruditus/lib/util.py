@@ -26,8 +26,7 @@ def truncate(text: str, maxlen=1024) -> str:
         maxlen: The maximum length of the paragraph.
 
     Returns:
-        The truncated paragraph
-
+        The truncated paragraph.
     """
     etc = "[…]"
     return f"{text[:maxlen - len(etc)]}{etc}" if len(text) > maxlen - len(etc) else text
@@ -41,7 +40,6 @@ def sanitize_channel_name(name: str) -> str:
 
     Returns:
         Sanitized channel name.
-
     """
     whitelist = ascii_lowercase + digits + "-_"
     name = name.lower().replace(" ", "-")
@@ -65,7 +63,6 @@ def derive_colour(role_name: str) -> int:
 
     Returns:
         An integer representing an RGB colour.
-
     """
     return int(md5(role_name.encode()).hexdigest()[:6], 16)
 
@@ -76,7 +73,6 @@ async def setup_database(mongo: MongoClient, guild: Guild) -> None:
     Args:
         mongo: MongoDB client handle
         guild: The guild to set up the database for.
-
     """
     # Create an announcements channel
     overwrites = {
@@ -115,8 +111,7 @@ def setup_logger(level: int) -> RootLogger:
         level: Logging level.
 
     Returns:
-        The logger
-
+        The logger.
     """
     log_formatter = logging.Formatter(
         "[%(asctime)s] [%(levelname)-8s:%(name)-24s] => %(message)s"

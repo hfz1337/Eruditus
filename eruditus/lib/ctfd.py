@@ -19,7 +19,6 @@ def is_ctfd_platform(ctfd_base_url: str) -> bool:
 
     Returns:
         True if the platform is using CTFd, else False.
-
     """
     ctfd_signature = "Powered by CTFd"
     response = requests.get(url=f"{ctfd_base_url.strip()}/")
@@ -35,8 +34,7 @@ def get_cached_cookies(ctfd_base_url: str, username: str, password: str) -> dict
         password: The password to login with.
 
     Returns:
-        A dictionary containing session cookies
-
+        A dictionary containing session cookies.
     """
     mongo = pymongo.MongoClient(MONGODB_URI)[CACHE_DATABASE]
     cached_session = mongo[SESSION_COLLECTION].find_one(
@@ -57,7 +55,6 @@ def save_cached_session(
         username: The username to login with.
         password: The password to login with.
         cookies: The session cookies to cache.
-
     """
     mongo = pymongo.MongoClient(MONGODB_URI)[CACHE_DATABASE]
     mongo[SESSION_COLLECTION].update_one(
@@ -81,7 +78,6 @@ def login(ctfd_base_url: str, username: str, password: str) -> dict:
 
     Returns:
         A dictionary containing session cookies.
-
     """
     ctfd_base_url = ctfd_base_url.strip("/")
 
@@ -131,7 +127,7 @@ def submit_flag(
         flag: Flag of the challenge.
 
     Returns:
-        a tuple containing the status message and a boolean indicating if we got
+        A tuple containing the status message and a boolean indicating if we got
         first blood.
     """
     ctfd_base_url = ctfd_base_url.strip("/")
@@ -184,8 +180,7 @@ def pull_challenges(
         password: The password to login with.
 
     Yields:
-        dict: Information about the challenge.
-
+        A dictionary representing information about the challenge.
     """
     ctfd_base_url = ctfd_base_url.strip("/")
 
@@ -243,9 +238,8 @@ def get_scoreboard(ctfd_base_url: str, username: str, password: str) -> list:
         username: The username to login with.
         password: The password to login with.
 
-    Yields:
-        dict: Scoreboard starting with the top team.
-
+    Returns:
+        A list of teams sorted by rank in descending order.
     """
     ctfd_base_url = ctfd_base_url.strip("/")
 
