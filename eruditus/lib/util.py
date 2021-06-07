@@ -18,7 +18,7 @@ from config import (
 )
 
 
-def truncate(text: str, maxlen=1024) -> str:
+def truncate(text: str, maxlen: int = 1024) -> str:
     """Truncate a paragraph to a specific length.
 
     Args:
