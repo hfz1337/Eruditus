@@ -64,5 +64,26 @@ cog_help = {
                 },
             ],
         },
+        "search": {
+            "name": "search",
+            "description": "Search for a topic in the CTF write-ups index",
+            "options": [
+                {
+                    "name": "query",
+                    "description": (
+                        "The search query. Use double quotes for exact matches, and "
+                        'prepend a term with a "-" to exclude it'
+                    ),
+                    "option_type": OptionType.STRING,
+                    "required": True,
+                },
+                {
+                    "name": "limit",
+                    "description": "Number of results to display (default: 3)",
+                    "option_type": OptionType.INTEGER,
+                    "required": False,
+                },
+            ],
+        },
     },
 }

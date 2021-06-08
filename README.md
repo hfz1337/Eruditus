@@ -37,6 +37,7 @@ make its usage as intuitive as possible.
 Here's a list of the currently supported commands:
 ```
 /help                                                (Show help about the bot usage)
+/search <query> [<limit>]                            (Search for a topic in the CTF write-ups index)
 /request <feature>                                   (Request a new feature from the developer)
 /report <bug>                                        (Send a bug report to the developer)
 /config [<args>]...                                  (Display or alter configuration specific to the guild)

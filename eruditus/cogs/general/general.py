@@ -9,6 +9,7 @@ from discord.ext.commands import Bot
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
+import requests
 import pymongo
 
 from cogs.general.help import cog_help
@@ -22,6 +23,7 @@ from config import (
     VOTING_VERDICT_COUNTDOWN,
     DATE_FORMAT,
     DEVELOPER_USER_ID,
+    WRITEUP_INDEX_API,
 )
 
 # MongoDB handle
@@ -193,6 +195,63 @@ class General(commands.Cog):
             "✅ Your bug report has been sent to the developer, thanks for your help!",
             hidden=True,
         )
+
+    @cog_ext.cog_slash(
+        name=cog_help["commands"]["search"]["name"],
+        description=cog_help["commands"]["search"]["description"],
+        options=[
+            create_option(**option)
+            for option in cog_help["commands"]["search"]["options"]
+        ],
+    )
+    async def _search(self, ctx: SlashContext, query: str, limit: int = 3) -> None:
+        """Search for a topic in the CTF write-ups index.
+
+        Args:
+            ctx: The context in which the command is being invoked under.
+            query: The search query.
+            limit: Number of results to show.
+        """
+        await ctx.defer()
+
+        limit = limit if 0 < limit < 25 else 3
+        params = {"q": query, "limit": limit}
+        response = requests.get(url=WRITEUP_INDEX_API, params=params)
+
+        if response.status_code != 200:
+            await ctx.send(f"Received a {response.status_code} HTTP response code.")
+            return None
+
+        writeups = response.json()[:limit]
+        embed = discord.Embed(
+            title="🕸️ CTF Write-ups Search Index",
+            colour=discord.Colour.blue(),
+            description=(
+                "No results found, want some cookies instead? 🍪"
+                if len(writeups) == 0
+                else f"🔍 Search results for: {query}"
+            ),
+        )
+        for writeup in writeups:
+            embed.add_field(
+                name=f"🚩 {writeup['ctf']}",
+                value="\n".join(
+                    [
+                        "```yaml",
+                        f"Search score: {writeup['score']:.2f}",
+                        f"Challenge: {writeup['name']}",
+                        f"Tags: {writeup['tags']}",
+                        f"Author: {writeup['author']}" if writeup["author"] else "",
+                        f"Team: {writeup['team']}",
+                        f"Rating: {writeup['rating']}",
+                        "```",
+                        f"{writeup['ctftime']}",
+                        f"{writeup['url']}" if writeup["url"] else "",
+                    ]
+                ),
+                inline=False,
+            )
+        await ctx.send(embed=embed)
 
 
 def setup(bot: Bot) -> None:
