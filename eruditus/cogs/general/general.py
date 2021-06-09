@@ -236,18 +236,20 @@ class General(commands.Cog):
             embed.add_field(
                 name=f"🚩 {writeup['ctf']}",
                 value="\n".join(
-                    [
-                        "```yaml",
-                        f"Search score: {writeup['score']:.2f}",
-                        f"Challenge: {writeup['name']}",
-                        f"Tags: {writeup['tags']}",
-                        f"Author: {writeup['author']}" if writeup["author"] else "",
-                        f"Team: {writeup['team']}",
-                        f"Rating: {writeup['rating']}",
-                        "```",
-                        f"{writeup['ctftime']}",
-                        f"{writeup['url']}" if writeup["url"] else "",
-                    ]
+                    filter(
+                        None,
+                        [
+                            "```yaml",
+                            f"Search score: {writeup['score']:.2f}",
+                            f"Challenge: {writeup['name']}",
+                            f"Tags: {writeup['tags']}" if writeup["tags"] else "",
+                            f"Author: {writeup['author']}" if writeup["author"] else "",
+                            f"Team: {writeup['team']}",
+                            "```",
+                            f"{writeup['ctftime']}",
+                            f"{writeup['url']}" if writeup["url"] else "",
+                        ],
+                    )
                 ),
                 inline=False,
             )
