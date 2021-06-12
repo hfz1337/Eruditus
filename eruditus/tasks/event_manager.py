@@ -1,7 +1,7 @@
 from datetime import datetime
 import time
 import asyncio
-import requests
+import aiohttp
 
 import discord
 from discord import RawReactionActionEvent, TextChannel, Role
@@ -51,35 +51,37 @@ class EventManager(commands.Cog):
         # upcoming events
         params = {"limit": 10, "start": int(time.time())}
         headers = {"User-Agent": USER_AGENT}
-        response = requests.get(
-            url=f"{CTFTIME_URL}/api/v1/events/", params=params, headers=headers
-        )
+        async with aiohttp.request(
+            method="get",
+            url=f"{CTFTIME_URL}/api/v1/events/",
+            params=params,
+            headers=headers,
+        ) as response:
+            if response.status == 200:
+                for event in await response.json():
+                    event_info = await scrape_event_info(event["id"])
+                    if event_info is None:
+                        continue
 
-        if response.status_code == 200:
-            for event in response.json():
-                event_info = scrape_event_info(event["id"])
-                if event_info is None:
-                    continue
-
-                for guild in self._bot.guilds:
-                    # Check if this event was already in the database
-                    if mongo[f"{DBNAME_PREFIX}-{guild.id}"][
-                        CTFTIME_COLLECTION
-                    ].find_one({"id": event_info["id"]}):
-                        # In case it was found, we update it
-                        mongo[f"{DBNAME_PREFIX}-{guild.id}"][
+                    for guild in self._bot.guilds:
+                        # Check if this event was already in the database
+                        if mongo[f"{DBNAME_PREFIX}-{guild.id}"][
                             CTFTIME_COLLECTION
-                        ].update_one({"id": event_info["id"]}, {"$set": event_info})
-                    else:
-                        # If this event was new, we add the `announced` and `created`
-                        # booleans, as well as a field to save the announcement message
-                        # id when the event gets announced
-                        event_info["announced"] = False
-                        event_info["created"] = False
-                        event_info["announcement"] = None
-                        mongo[f"{DBNAME_PREFIX}-{guild.id}"][
-                            CTFTIME_COLLECTION
-                        ].insert_one(event_info)
+                        ].find_one({"id": event_info["id"]}):
+                            # In case it was found, we update it
+                            mongo[f"{DBNAME_PREFIX}-{guild.id}"][
+                                CTFTIME_COLLECTION
+                            ].update_one({"id": event_info["id"]}, {"$set": event_info})
+                        else:
+                            # If this event was new, we add the `announced` and
+                            # `created` booleans, as well as a field to save the
+                            # announcement message id when the event gets announced
+                            event_info["announced"] = False
+                            event_info["created"] = False
+                            event_info["announcement"] = None
+                            mongo[f"{DBNAME_PREFIX}-{guild.id}"][
+                                CTFTIME_COLLECTION
+                            ].insert_one(event_info)
 
         # Prune CTFs that ended
         for guild in self._bot.guilds:

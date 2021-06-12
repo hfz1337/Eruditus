@@ -1,12 +1,12 @@
 from typing import Generator
 from datetime import datetime
-import requests
+import aiohttp
 from bs4 import BeautifulSoup
 from config import CTFTIME_URL, USER_AGENT
 from lib.util import truncate
 
 
-def scrape_event_info(event_id: int) -> dict:
+async def scrape_event_info(event_id: int) -> dict:
     """Scrape event information off the CTFtime website.
 
     Args:
@@ -18,13 +18,14 @@ def scrape_event_info(event_id: int) -> dict:
     # The date format used by CTFtime
     ctftime_date_format = "%a, %d %B %Y, %H:%M"
 
-    response = requests.get(
-        url=f"{CTFTIME_URL}/event/{event_id}", headers={"User-Agent": USER_AGENT}
-    )
-    if response.status_code != 200:
-        return None
-
-    parser = BeautifulSoup(response.content, "html.parser")
+    async with aiohttp.request(
+        method="get",
+        url=f"{CTFTIME_URL}/event/{event_id}",
+        headers={"User-Agent": USER_AGENT},
+    ) as response:
+        if response.status != 200:
+            return None
+        parser = BeautifulSoup(await response.text(), "html.parser")
 
     event_name = parser.find("h2").text.strip()
     event_location = parser.select_one("p b").text.strip()
@@ -74,14 +75,18 @@ def scrape_event_info(event_id: int) -> dict:
     }
 
 
-def scrape_current_events() -> Generator[int, None, None]:
+async def scrape_current_events() -> Generator[int, None, None]:
     """Scrape current events off the CTFtime home page.
 
     Yields:
         An integer representing the unique ID of the event.
     """
-    response = requests.get(url=CTFTIME_URL, headers={"User-Agent": USER_AGENT})
-    parser = BeautifulSoup(response.content, "html.parser")
+    async with aiohttp.request(
+        method="get", url=CTFTIME_URL, headers={"User-Agent": USER_AGENT}
+    ) as response:
+        if response.status != 200:
+            return
+        parser = BeautifulSoup(await response.text(), "html.parser")
 
     # Get ongoing events from the home page
     event_ids = [
@@ -89,4 +94,4 @@ def scrape_current_events() -> Generator[int, None, None]:
     ]
 
     for event_id in event_ids:
-        yield scrape_event_info(event_id)
+        yield await scrape_event_info(event_id)

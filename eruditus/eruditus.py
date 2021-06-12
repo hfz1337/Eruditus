@@ -10,6 +10,7 @@ from discord.ext.commands import Bot
 
 from discord_slash import SlashCommand, SlashContext
 
+import aiohttp
 import pymongo
 
 from lib.util import setup_database, setup_logger
@@ -70,6 +71,8 @@ async def on_slash_command_error(ctx: SlashContext, err: Exception) -> None:
         await ctx.send("I don't have enough privileges to perform this action :(")
     elif isinstance(err, commands.errors.NoPrivateMessage):
         await ctx.send("This command can't be used in DM.")
+    elif isinstance(err, aiohttp.ClientError):
+        await ctx.send("HTTP Client error.")
     else:
         await ctx.send("❌ An error has occured")
         traceback.print_exception(type(err), err, err.__traceback__, file=sys.stderr)

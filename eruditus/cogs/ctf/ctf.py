@@ -90,11 +90,14 @@ class CTF(commands.Cog):
         if mongo[f"{DBNAME_PREFIX}-{ctx.guild.id}"][CTF_COLLECTION].find_one(
             {"name": name}
         ):
-            await ctx.send(
-                "Another CTF with similar name already exists, please choose another "
-                "name.",
-                hidden=True,
-            )
+            # Only send the message if the command was invoked by a member.
+            # When a member invokes the command, it will be a SlashContext instance.
+            if isinstance(ctx, SlashContext):
+                await ctx.send(
+                    "Another CTF with similar name already exists, please choose "
+                    "another name.",
+                    hidden=True,
+                )
             return
 
         if isinstance(ctx, SlashContext):
@@ -168,12 +171,12 @@ class CTF(commands.Cog):
             },
         }
         mongo[f"{DBNAME_PREFIX}-{ctx.guild.id}"][CTF_COLLECTION].insert_one(ctf)
-        # If the command was invoked by us, don't send the confirmation message
-        if ctx.author.id != self._bot.user.id:
+        # If the command was invoked by us (and thus `ctx` would be of type Context),
+        # don't send the confirmation message.
+        if isinstance(ctx, SlashContext):
             await ctx.send(f'✅ CTF "{name}" has been created')
 
     @commands.bot_has_permissions(manage_channels=True)
-    @commands.has_permissions(manage_channels=True)
     @in_ctf_channel()
     @commands.guild_only()
     @cog_ext.cog_subcommand(
@@ -212,7 +215,6 @@ class CTF(commands.Cog):
         await ctx.send(f'✅ CTF "{old_name}" has been renamed to "{new_name}"')
 
     @commands.bot_has_permissions(manage_channels=True, manage_roles=True)
-    @commands.has_permissions(manage_channels=True)
     @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
@@ -350,7 +352,6 @@ class CTF(commands.Cog):
             await ctx.send("No such CTF.", hidden=True)
 
     @commands.bot_has_permissions(manage_channels=True, manage_roles=True)
-    @commands.has_permissions(manage_channels=True)
     @commands.guild_only()
     @cog_ext.cog_subcommand(
         base=cog_help["name"],
@@ -381,6 +382,11 @@ class CTF(commands.Cog):
             )
 
         if ctf:
+            # Stop periodic updater
+            if ctf["credentials"]["url"] in self._updaters:
+                self._updaters[ctf["credentials"]["url"]].cancel()
+                del self._updaters[ctf["credentials"]["url"]]
+
             category_channel = discord.utils.get(
                 ctx.guild.categories, id=ctf["guild_category"]
             )
@@ -506,6 +512,15 @@ class CTF(commands.Cog):
             f"{ctx.author.mention} abandonned the boat :frowning:"
         )
 
+        # Remove role and permissions
+        for challenge in mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
+            CHALLENGE_COLLECTION
+        ].find():
+            if ctx.author.name in challenge["players"]:
+                challenge_channel = discord.utils.get(
+                    ctx.guild.text_channels, id=challenge["channel"]
+                )
+                await challenge_channel.set_permissions(ctx.author, overwrite=None)
         await ctx.author.remove_roles(role)
 
     @commands.bot_has_permissions(manage_channels=True)
@@ -554,7 +569,8 @@ class CTF(commands.Cog):
                 "category": category,
             }
         ):
-            await ctx.send("This challenge already exists.", hidden=True)
+            if id is None:
+                await ctx.send("This challenge already exists.", hidden=True)
             return
 
         # Create a channel for the challenge and set its permissions
@@ -1221,7 +1237,7 @@ class CTF(commands.Cog):
         # Start a background task for this CTF in order to pull new challenges
         # periodically
         self._updaters[ctf["credentials"]["url"]] = tasks.loop(
-            seconds=30.0, reconnect=True
+            minutes=1.0, reconnect=True
         )(self._periodic_updater)
         self._updaters[ctf["credentials"]["url"]].start(ctx)
 
@@ -1298,7 +1314,7 @@ class CTF(commands.Cog):
         if username is None or password is None or url is None:
             await ctx.send("No credentials set for this CTF.", hidden=True)
         else:
-            for challenge in pull_challenges(url, username, password):
+            async for challenge in pull_challenges(url, username, password):
                 # Create this challenge if it didn't exist
                 if not mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
                     CHALLENGE_COLLECTION
@@ -1309,7 +1325,16 @@ class CTF(commands.Cog):
                         "category": challenge["category"],
                     }
                 ):
-                    await self._createchallenge.invoke(ctx, **challenge)
+                    await self._createchallenge.invoke(
+                        ctx,
+                        challenge["name"],
+                        challenge["category"],
+                        challenge["id"],
+                        challenge["value"],
+                        challenge["description"],
+                        challenge["tags"],
+                        challenge["files"],
+                    )
 
             # If we already responded (which happens if `pull` if invoked through
             # `addcreds` or `_periodic_updater`), then don't send the confirmation
@@ -1442,7 +1467,7 @@ class CTF(commands.Cog):
 
         solvers = [ctx.author.name] + [support[member].name for member in support]
 
-        status, first_blood = submit_flag(
+        status, first_blood = await submit_flag(
             ctfd_url, username, password, challenge["id"], flag
         )
         if status is None:
@@ -1544,7 +1569,7 @@ class CTF(commands.Cog):
         username = ctf["credentials"]["username"]
         password = ctf["credentials"]["password"]
 
-        teams = get_scoreboard(ctfd_url, username, password)
+        teams = await get_scoreboard(ctfd_url, username, password)
 
         scoreboard = ""
         for rank, team in enumerate(teams, start=1):

@@ -9,7 +9,7 @@ from discord.ext.commands import Bot
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils.manage_commands import create_option
 
-import requests
+import aiohttp
 import pymongo
 
 from cogs.general.help import cog_help
@@ -216,44 +216,47 @@ class General(commands.Cog):
 
         limit = limit if 0 < limit < 25 else 3
         params = {"q": query, "limit": limit}
-        response = requests.get(url=WRITEUP_INDEX_API, params=params)
+        async with aiohttp.request(
+            method="get", url=WRITEUP_INDEX_API, params=params
+        ) as response:
+            if response.status != 200:
+                await ctx.send(f"Received a {response.status} HTTP response code.")
+                return None
 
-        if response.status_code != 200:
-            await ctx.send(f"Received a {response.status_code} HTTP response code.")
-            return None
-
-        writeups = response.json()[:limit]
-        embed = discord.Embed(
-            title="🕸️ CTF Write-ups Search Index",
-            colour=discord.Colour.blue(),
-            description=(
-                "No results found, want some cookies instead? 🍪"
-                if len(writeups) == 0
-                else f"🔍 Search results for: {query}"
-            ),
-        )
-        for writeup in writeups:
-            embed.add_field(
-                name=f"🚩 {writeup['ctf']}",
-                value="\n".join(
-                    filter(
-                        None,
-                        [
-                            "```yaml",
-                            f"Search score: {writeup['score']:.2f}",
-                            f"Challenge: {writeup['name']}",
-                            f"Tags: {writeup['tags']}" if writeup["tags"] else "",
-                            f"Author: {writeup['author']}" if writeup["author"] else "",
-                            f"Team: {writeup['team']}",
-                            "```",
-                            f"{writeup['ctftime']}",
-                            f"{writeup['url']}" if writeup["url"] else "",
-                        ],
-                    )
+            writeups = (await response.json())[:limit]
+            embed = discord.Embed(
+                title="🕸️ CTF Write-ups Search Index",
+                colour=discord.Colour.blue(),
+                description=(
+                    "No results found, want some cookies instead? 🍪"
+                    if len(writeups) == 0
+                    else f"🔍 Search results for: {query}"
                 ),
-                inline=False,
             )
-        await ctx.send(embed=embed)
+            for writeup in writeups:
+                embed.add_field(
+                    name=f"🚩 {writeup['ctf']}",
+                    value="\n".join(
+                        filter(
+                            None,
+                            [
+                                "```yaml",
+                                f"Search score: {writeup['score']:.2f}",
+                                f"Challenge: {writeup['name']}",
+                                f"Tags: {writeup['tags']}" if writeup["tags"] else "",
+                                f"Author: {writeup['author']}"
+                                if writeup["author"]
+                                else "",
+                                f"Team: {writeup['team']}",
+                                "```",
+                                f"{writeup['ctftime']}",
+                                f"{writeup['url']}" if writeup["url"] else "",
+                            ],
+                        )
+                    ),
+                    inline=False,
+                )
+            await ctx.send(embed=embed)
 
 
 def setup(bot: Bot) -> None:

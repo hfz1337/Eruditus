@@ -1,6 +1,6 @@
 from datetime import datetime
 import time
-import requests
+import aiohttp
 
 import discord
 from discord.ext import commands
@@ -52,7 +52,7 @@ class CTFTime(commands.Cog):
         """
         await ctx.defer()
         no_running_events = True
-        for event in scrape_current_events():
+        async for event in scrape_current_events():
             # Convert timestamps to dates
             event["start"] = datetime.strftime(
                 datetime.fromtimestamp(event["start"]), DATE_FORMAT
@@ -201,23 +201,25 @@ class CTFTime(commands.Cog):
         year = str(year)
 
         headers = {"User-Agent": USER_AGENT}
-        response = requests.get(
-            url=f"{CTFTIME_URL}/api/v1/top/{year}/", headers=headers
-        )
-        if response.status_code == 200 and year in response.json():
-            teams = response.json()[year]
-            leaderboard = f"{'[Rank]':<10}{'[Team]':<50}{'[Score]'}\n"
+        async with aiohttp.request(
+            method="get",
+            url=f"{CTFTIME_URL}/api/v1/top/{year}/",
+            headers=headers,
+        ) as response:
+            if response.status == 200 and year in (json := await response.json()):
+                teams = json[year]
+                leaderboard = f"{'[Rank]':<10}{'[Team]':<50}{'[Score]'}\n"
 
-            for rank, team in enumerate(teams, start=1):
-                score = round(team["points"], 4)
-                leaderboard += f"{rank:<10}{team['team_name']:<50}{score}\n"
+                for rank, team in enumerate(teams, start=1):
+                    score = round(team["points"], 4)
+                    leaderboard += f"{rank:<10}{team['team_name']:<50}{score}\n"
 
-            await ctx.send(
-                f":triangular_flag_on_post:  **{year} CTFtime Leaderboard**"
-                f"```ini\n{leaderboard.strip()}```"
-            )
-        else:
-            await ctx.send("No results.")
+                await ctx.send(
+                    f":triangular_flag_on_post:  **{year} CTFtime Leaderboard**"
+                    f"```ini\n{leaderboard.strip()}```"
+                )
+            else:
+                await ctx.send("No results.")
 
 
 def setup(bot: Bot) -> None:
