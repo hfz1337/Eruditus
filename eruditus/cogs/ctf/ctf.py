@@ -1570,6 +1570,10 @@ class CTF(commands.Cog):
         password = ctf["credentials"]["password"]
 
         teams = await get_scoreboard(ctfd_url, username, password)
+        if teams is None:
+            if channel is None:
+                await ctx.send("Failed to fetch the scoreboard.")
+            return
 
         scoreboard = ""
         for rank, team in enumerate(teams, start=1):
