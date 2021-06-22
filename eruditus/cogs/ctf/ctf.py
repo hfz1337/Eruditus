@@ -1061,7 +1061,9 @@ class CTF(commands.Cog):
             for option in cog_help["subcommands"]["status"]["options"]
         ],
     )
-    async def _status(self, ctx: SlashContext, name: str = None) -> None:
+    async def _status(
+        self, ctx: SlashContext, name: str = None, mode: str = "active"
+    ) -> None:
         """Show all ongoing CTF competitions, and provide details about a specific
         CTF if the command is issued from a CTF channel.
 
@@ -1110,22 +1112,24 @@ class CTF(commands.Cog):
                     await ctx.send(embed=embed)
                 else:
                     embed = None
+                    num_fields = 0
                     for idx, challenge_id in enumerate(challenges):
                         # If we reached Discord's maximum number of fields per
                         # embed, we send the previous one and create a new one
-                        if idx % 25 == 0:
-                            if embed is not None:
+                        if num_fields % 25 == 0:
+                            if embed is not None and num_fields != 0:
                                 await ctx.send(embed=embed)
 
-                            embed = discord.Embed(
-                                title=f"{ctf['name']} status",
-                                colour=discord.Colour.blue(),
-                            )
+                            if embed is None or num_fields != 0:
+                                embed = discord.Embed(
+                                    title=f"{ctf['name']} status",
+                                    colour=discord.Colour.blue(),
+                                )
 
                         challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
                             CHALLENGE_COLLECTION
                         ].find_one(challenge_id)
-                        if challenge["solved"]:
+                        if challenge["solved"] and mode == "all":
                             embed.add_field(
                                 name=(
                                     f"✅ {challenge['name']} ({challenge['category']})"
@@ -1139,7 +1143,8 @@ class CTF(commands.Cog):
                                 ),
                                 inline=False,
                             )
-                        else:
+                            num_fields += 1
+                        elif not challenge["solved"]:
                             workers = (
                                 "```diff\n- No workers.\n```"
                                 if len(challenge["players"]) == 0
@@ -1158,6 +1163,7 @@ class CTF(commands.Cog):
                                 value=workers,
                                 inline=False,
                             )
+                            num_fields += 1
                     # Send the remaining embed
                     await ctx.send(embed=embed)
 

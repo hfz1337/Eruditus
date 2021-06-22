@@ -123,6 +123,16 @@ cog_help = {
                     "option_type": OptionType.STRING,
                     "required": False,
                 },
+                {
+                    "name": "mode",
+                    "description": (
+                        "Whether to display all challenges (all) or those unsolved "
+                        "only (active: default)"
+                    ),
+                    "option_type": OptionType.STRING,
+                    "required": False,
+                    "choices": ["all", "active"],
+                },
             ],
         },
         "workon": {
