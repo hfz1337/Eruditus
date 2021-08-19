@@ -16,7 +16,7 @@ async def scrape_event_info(event_id: int) -> dict:
         A dictionary representing the event.
     """
     # The date format used by CTFtime
-    ctftime_date_format = "%a, %d %B %Y, %H:%M"
+    ctftime_date_format = "%a, %d %b. %Y, %H:%M"
 
     async with aiohttp.request(
         method="get",
@@ -43,8 +43,12 @@ async def scrape_event_info(event_id: int) -> dict:
         .split(" — ")
     )
     # Convert dates to timestamps
-    event_start = datetime.strptime(event_start, ctftime_date_format).timestamp()
-    event_end = datetime.strptime(event_end, ctftime_date_format).timestamp()
+    event_start = datetime.strptime(
+        event_start.replace("Sept", "Sep"), ctftime_date_format
+    ).timestamp()
+    event_end = datetime.strptime(
+        event_end.replace("Sept", "Sep"), ctftime_date_format
+    ).timestamp()
 
     # Get rid of anchor elements to parse the description and prizes correctly
     for anchor in parser.findAll("a"):
