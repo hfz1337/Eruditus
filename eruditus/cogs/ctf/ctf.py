@@ -255,7 +255,8 @@ class CTF(commands.Cog):
                 self._updaters[ctf["credentials"]["url"]].cancel()
                 del self._updaters[ctf["credentials"]["url"]]
 
-            # Post challenge solves summary in the scoreboard channel
+            # Post final scoreboard and challenge solves summary in the scoreboard
+            # channel
             head = (
                 "```diff\n"
                 f"  {'Challenge':<30}{'Category':<30}{'Solved'}\n\n{{}}"
@@ -284,6 +285,7 @@ class CTF(commands.Cog):
             scoreboard_channel = discord.utils.get(
                 ctx.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
             )
+            await self._scoreboard.invoke(ctx, scoreboard_channel)
             for summary in summaries:
                 await scoreboard_channel.send(head.format(summary))
 
