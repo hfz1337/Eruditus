@@ -14,6 +14,8 @@ DEVELOPER_USER_ID = 305076601253789697
 # CTFtime's nginx server is configured to block requests with specific
 # user agents, like those containing "python-requests"
 USER_AGENT = "Eruditus"
+# The max content size allowed by the Discord API
+MAX_CONTENT_SIZE = 2000
 
 ########################################################################################
 # Required configuration variables, can be changed later using a command

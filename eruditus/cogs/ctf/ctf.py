@@ -22,6 +22,7 @@ from config import (
     CONFIG_COLLECTION,
     CTF_COLLECTION,
     DATE_FORMAT,
+    MAX_CONTENT_SIZE,
 )
 
 
@@ -255,29 +256,36 @@ class CTF(commands.Cog):
                 del self._updaters[ctf["credentials"]["url"]]
 
             # Post challenge solves summary in the scoreboard channel
+            head = (
+                "```diff\n"
+                f"  {'Challenge':<30}{'Category':<30}{'Solved'}\n\n{{}}"
+                "```"
+            )
+            summaries = []
             summary = ""
             for challenge_id in ctf["challenges"]:
                 challenge = mongo[f"{DBNAME_PREFIX}-{ctx.guild_id}"][
                     CHALLENGE_COLLECTION
                 ].find_one(challenge_id)
-                summary += (
+                content = (
                     f"{['-', '+'][challenge['solved']]} "
                     f"{challenge['name']:<30}"
                     f"{challenge['category']:<30}"
                     f"{['❌', '✔️'][challenge['solved']]}\n"
                 )
+                if len(head) - 2 + len(summary) + len(content) > MAX_CONTENT_SIZE:
+                    summaries.append(summary)
+                    summary = content
+                else:
+                    summary += content
 
-            if summary:
-                summary = (
-                    "```diff\n"
-                    f"  {'Challenge':<30}{'Category':<30}{'Solved'}\n\n"
-                    f"{summary}"
-                    "```"
-                )
-                scoreboard_channel = discord.utils.get(
-                    ctx.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
-                )
-                await scoreboard_channel.send(summary)
+            summaries.append(summary)
+
+            scoreboard_channel = discord.utils.get(
+                ctx.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
+            )
+            for summary in summaries:
+                await scoreboard_channel.send(head.format(summary))
 
             # Global archive category channel
             archive_category_channel = discord.utils.get(
