@@ -80,10 +80,7 @@ Here's a list of the currently supported commands:
 ```
 
 ## Installation
-### Method 1 - Invite the already hosted bot
-Invite the bot to your server using this [link](https://discord.com/api/oauth2/authorize?client_id=848180282174734378&permissions=8&scope=bot%20applications.commands).
 
-### Method 2 - Host your own copy of the bot
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
 2. Create a new application.
 3. Go to the **Bot** pane and add a bot for your application.
