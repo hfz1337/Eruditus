@@ -23,8 +23,8 @@ MAX_CONTENT_SIZE = 2000
 # The minimum number of players required to create a CTF automatically
 MINIMUM_PLAYER_COUNT = 5
 # The number of seconds remaining for a CTF to start when we announce it for
-# voting (default: 2 days)
-VOTING_STARTS_COUNTDOWN = 172800
+# voting (default: 7 days)
+VOTING_STARTS_COUNTDOWN = 604800
 # The number of seconds before the CTF starts from which we start considering
 # the votes to decide whether to create the CTF or not (default: 2 hours)
 VOTING_VERDICT_COUNTDOWN = 7200
