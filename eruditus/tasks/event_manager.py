@@ -89,7 +89,7 @@ class EventManager(commands.Cog):
                 {"end": {"$lt": int(time.time())}}
             )
 
-    @tasks.loop(minutes=10.0, reconnect=True)
+    @tasks.loop(minutes=1.0, reconnect=True)
     async def _announce_upcoming_events(self) -> None:
         """Announce upcoming CTF competitions."""
         # Wait until the bot's internal cache is ready
@@ -98,6 +98,8 @@ class EventManager(commands.Cog):
         for guild in self._bot.guilds:
             # Get guild config from the database
             config = mongo[f"{DBNAME_PREFIX}-{guild.id}"][CONFIG_COLLECTION].find_one()
+            if config is None:
+                return
             announcement_channel = await self._bot.fetch_channel(
                 config["announcement_channel"]
             )

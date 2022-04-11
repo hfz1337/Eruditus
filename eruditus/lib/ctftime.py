@@ -16,7 +16,7 @@ async def scrape_event_info(event_id: int) -> dict:
         A dictionary representing the event.
     """
     # The date format used by CTFtime
-    ctftime_date_format = "%a, %d %b. %Y, %H:%M"
+    ctftime_date_format = "%a, %d %B %Y, %H:%M"
 
     async with aiohttp.request(
         method="get",
