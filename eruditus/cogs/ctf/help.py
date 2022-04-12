@@ -127,7 +127,7 @@ cog_help = {
                     "name": "mode",
                     "description": (
                         "Whether to display all challenges (all) or those unsolved "
-                        "only (active: default)"
+                        "only (default: active)"
                     ),
                     "option_type": OptionType.STRING,
                     "required": False,
@@ -154,7 +154,7 @@ cog_help = {
             "name": "unworkon",
             "description": (
                 "Stop working on a challenge and leave its channel (default: current "
-                "channel's challenge"
+                "channel's challenge)"
             ),
             "options": [
                 {
