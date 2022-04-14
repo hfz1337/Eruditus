@@ -1,8 +1,27 @@
+import os
+from datetime import datetime, timezone
 from typing import Generator
 import aiohttp
 from bs4 import BeautifulSoup
-from config import CTFTIME_URL, USER_AGENT
 from lib.util import truncate
+
+USER_AGENT = os.getenv("USER_AGENT")
+CTFTIME_URL = os.getenv("CTFTIME_URL")
+
+
+def ctftime_date_to_datetime(ctftime_date: str) -> datetime:
+    """Convert CTFtime date to an offset aware datetime object.
+
+    Args:
+        ctftime_date: Date retrieved from the CTFtime event.
+
+    Returns:
+        Offset aware datetime object.
+    """
+    return datetime.strptime(
+        ctftime_date.replace("Sept", "Sep"),
+        r"%a, %d {} %Y, %H:%M UTC".format(r"%b." if "." in ctftime_date else r"%B"),
+    ).replace(tzinfo=timezone.utc)
 
 
 async def scrape_event_info(event_id: int) -> dict:
