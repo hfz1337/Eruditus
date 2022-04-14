@@ -54,7 +54,7 @@ class Syscalls(app_commands.Command):
     def __init__(self):
         super().__init__(
             name="syscalls",
-            description="Show information about a syscall from a specific architecture",
+            description="Show information for a syscall from a specific architecture.",
             callback=self.callback,
         )
 
