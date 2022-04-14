@@ -1,5 +1,6 @@
+import os
+
 from datetime import datetime
-import time
 import aiohttp
 
 from discord import app_commands
@@ -9,15 +10,14 @@ from lib.ctftime import scrape_current_events, scrape_event_info
 
 from typing import Optional
 
-from config import (
-    CTFTIME_URL,
-    USER_AGENT,
-)
+
+USER_AGENT = os.getenv("USER_AGENT")
+CTFTIME_URL = os.getenv("CTFTIME_URL")
 
 
 class CTFTime(app_commands.Group):
-    """A command group that provides information about ongoing/upcoming events, as well
-    as a specific year's leaderboard.
+    """Show information about ongoing/upcoming events, as well as a rankings
+    from CTFtime.
     """
 
     def __init__(self):
