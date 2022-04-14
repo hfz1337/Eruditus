@@ -1,3 +1,7 @@
+import os
+
+from datetime import datetime, timezone
+
 from string import ascii_lowercase, digits
 from hashlib import md5
 
@@ -9,13 +13,21 @@ from pymongo import MongoClient
 import discord
 from discord import Guild
 
-from config import (
-    DBNAME_PREFIX,
-    CONFIG_COLLECTION,
-    MINIMUM_PLAYER_COUNT,
-    VOTING_STARTS_COUNTDOWN,
-    VOTING_VERDICT_COUNTDOWN,
-)
+DBNAME_PREFIX = os.getenv("DBNAME_PREFIX")
+CONFIG_COLLECTION = os.getenv("CONFIG_COLLECTION")
+MINIMUM_PLAYER_COUNT = os.getenv("MINIMUM_PLAYER_COUNT")
+VOTING_STARTS_COUNTDOWN = os.getenv("VOTING_STARTS_COUNTDOWN")
+VOTING_VERDICT_COUNTDOWN = os.getenv("VOTING_VERDICT_COUNTDOWN")
+
+
+def get_local_time() -> datetime:
+    """Return offset aware local time.
+
+    Returns:
+        Offset aware datetime object.
+    """
+    local_timzone = datetime.now(timezone.utc).astimezone().tzinfo
+    return datetime.now(local_timzone)
 
 
 def truncate(text: str, maxlen: int = 1024) -> str:
@@ -28,7 +40,7 @@ def truncate(text: str, maxlen: int = 1024) -> str:
     Returns:
         The truncated paragraph.
     """
-    etc = "[…]"
+    etc = "\n[…]"
     return f"{text[:maxlen - len(etc)]}{etc}" if len(text) > maxlen - len(etc) else text
 
 
