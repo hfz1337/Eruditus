@@ -1,5 +1,4 @@
 from typing import Generator
-from datetime import datetime
 import aiohttp
 from bs4 import BeautifulSoup
 from config import CTFTIME_URL, USER_AGENT
@@ -15,8 +14,6 @@ async def scrape_event_info(event_id: int) -> dict:
     Returns:
         A dictionary representing the event.
     """
-    # The date format used by CTFtime
-    ctftime_date_format = "%a, %d %B %Y, %H:%M"
 
     async with aiohttp.request(
         method="get",
@@ -37,18 +34,8 @@ async def scrape_event_info(event_id: int) -> dict:
         organizer.text.strip() for organizer in parser.select(".span10 li a")
     ]
     event_start, event_end = (
-        parser.select_one(".span10 p:nth-child(1)")
-        .text.replace(" UTC", "")
-        .strip()
-        .split(" — ")
+        parser.select_one(".span10 p:nth-child(1)").text.strip().split(" — ")
     )
-    # Convert dates to timestamps
-    event_start = datetime.strptime(
-        event_start.replace("Sept", "Sep"), ctftime_date_format
-    ).timestamp()
-    event_end = datetime.strptime(
-        event_end.replace("Sept", "Sep"), ctftime_date_format
-    ).timestamp()
 
     # Get rid of anchor elements to parse the description and prizes correctly
     for anchor in parser.findAll("a"):
