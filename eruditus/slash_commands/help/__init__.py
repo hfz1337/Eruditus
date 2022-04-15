@@ -1,5 +1,9 @@
+import os
+
 import discord
 from discord import app_commands
+
+GUILD_ID = int(os.getenv("GUILD_ID"))
 
 
 class Help(app_commands.Command):
@@ -32,11 +36,24 @@ class Help(app_commands.Command):
             )
         )
 
+        # Show help for global commands.
         for command in interaction.client.tree.get_commands():
             embed.add_field(
                 name=f"/{command.name}",
                 value=command.description,
                 inline=False,
             )
+
+        # If the command was invoked from within the guild, we also show guild
+        # specific commands.
+        if interaction.guild:
+            for command in interaction.client.tree.get_commands(
+                guild=discord.Object(id=GUILD_ID)
+            ):
+                embed.add_field(
+                    name=f"/{command.name}",
+                    value=command.description,
+                    inline=False,
+                )
 
         await interaction.response.send_message(embed=embed)
