@@ -1,6 +1,6 @@
 import os
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import discord
 from discord import app_commands
@@ -33,7 +33,9 @@ class Report(app_commands.Command):
             )
             .set_thumbnail(url=interaction.user.display_avatar.url)
             .set_author(name=interaction.user.display_name)
-            .set_footer(text=datetime.now().strftime(DATE_FORMAT).strip())
+            .set_footer(
+                text=datetime.now(tz=timezone.utc).strftime(DATE_FORMAT).strip()
+            )
         )
         message = await developer.send(embed=embed)
         await message.pin()
