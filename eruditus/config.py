@@ -1,30 +1,20 @@
-########################################################################################
-# CONSTANTS
-########################################################################################
-MONGODB_URI = "mongodb://mongodb:27017/"
-DBNAME_PREFIX = "eruditus"
-CTFTIME_COLLECTION = "ctftime"
-CHALLENGE_COLLECTION = "challenge"
-CTF_COLLECTION = "ctf"
-CONFIG_COLLECTION = "config"
-DATE_FORMAT = "%a, %d %B %Y, %H:%M UTC"
-CTFTIME_URL = "https://ctftime.org"
-WRITEUP_INDEX_API = "http://ctf.hfz-1337.ninja"
-DEVELOPER_USER_ID = 305076601253789697
-# CTFtime's nginx server is configured to block requests with specific
-# user agents, like those containing "python-requests"
-USER_AGENT = "Eruditus"
-# The max content size allowed by the Discord API
-MAX_CONTENT_SIZE = 2000
+import os
+import dotenv
 
-########################################################################################
-# Required configuration variables, can be changed later using a command
-########################################################################################
-# The minimum number of players required to create a CTF automatically
-MINIMUM_PLAYER_COUNT = 5
-# The number of seconds remaining for a CTF to start when we announce it for
-# voting (default: 7 days)
-VOTING_STARTS_COUNTDOWN = 604800
-# The number of seconds before the CTF starts from which we start considering
-# the votes to decide whether to create the CTF or not (default: 2 hours)
-VOTING_VERDICT_COUNTDOWN = 7200
+from pymongo import MongoClient
+
+dotenv.load_dotenv()
+
+CHALLENGE_COLLECTION = os.getenv("CHALLENGE_COLLECTION")
+CTF_COLLECTION = os.getenv("CTF_COLLECTION")
+CTFTIME_URL = os.getenv("CTFTIME_URL")
+DATE_FORMAT = os.getenv("DATE_FORMAT")
+DBNAME = os.getenv("DBNAME")
+DEVELOPER_USER_ID = os.getenv("DEVELOPER_USER_ID")
+GUILD_ID = int(os.getenv("GUILD_ID"))
+MAX_CONTENT_SIZE = int(os.getenv("MAX_CONTENT_SIZE"))
+MONGODB_URI = os.getenv("MONGODB_URI")
+USER_AGENT = os.getenv("USER_AGENT")
+WRITEUP_INDEX_API = os.getenv("WRITEUP_INDEX_API")
+
+MONGO = MongoClient(MONGODB_URI)
