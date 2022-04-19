@@ -1,5 +1,4 @@
-discord-py-slash-command
 beautifulsoup4
-discord.py
+python-dotenv
 pymongo
 urllib3
