@@ -53,7 +53,7 @@ class Syscalls(app_commands.Command):
         )
 
         @self.autocomplete("syscall")
-        async def autocomplete_func(
+        async def _syscall_autocompletion_func(
             interaction: discord.Interaction, current: str
         ) -> List[Choice[str]]:
             """Autocomplete syscall name.
