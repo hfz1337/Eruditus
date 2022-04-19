@@ -5,15 +5,9 @@ import discord
 from discord import app_commands
 from discord.app_commands import Choice
 
-from enum import Enum
 from typing import Union, List
 
-
-class CPUArchitecture(Enum):
-    x86 = 1
-    x64 = 2
-    arm = 3
-    armthumb = 4
+from lib.types import CPUArchitecture
 
 
 class SyscallTable:
