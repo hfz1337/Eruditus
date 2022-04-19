@@ -1,9 +1,7 @@
-import os
-
 import discord
 from discord import app_commands
 
-GUILD_ID = int(os.getenv("GUILD_ID"))
+from config import GUILD_ID
 
 
 class Help(app_commands.Command):
