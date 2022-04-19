@@ -1,5 +1,3 @@
-import os
-
 from typing import Optional
 
 import aiohttp
@@ -7,7 +5,7 @@ import aiohttp
 import discord
 from discord import app_commands
 
-WRITEUP_INDEX_API = os.getenv("WRITEUP_INDEX_API")
+from config import WRITEUP_INDEX_API
 
 
 class Search(app_commands.Command):
