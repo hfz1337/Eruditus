@@ -1,3 +1,4 @@
+from distutils import archive_util
 import re
 
 from typing import Optional, List
@@ -43,6 +44,27 @@ class CTF(app_commands.Group):
             return False
 
         return app_commands.check(predicate)
+
+    async def _ctf_autocompletion_func(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[Choice[str]]:
+        """Autocomplete CTF name.
+        This function is inefficient, might improve it later.
+
+        Args:
+            interaction: The interaction that triggered this command.
+            current: The CTF name typed so far.
+
+        Returns:
+            A list of suggestions.
+        """
+        suggestions = []
+        for ctf in MONGO[DBNAME][CTF_COLLECTION].find({"archived": False}):
+            if current.lower() in ctf["name"].lower():
+                suggestions.append(Choice(name=ctf["name"], value=ctf["name"]))
+            if len(suggestions) == 25:
+                break
+        return suggestions
 
     async def _challenge_autocompletion_func(
         self, interaction: discord.Interaction, current: str
@@ -229,6 +251,7 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.checks.has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.command()
+    @app_commands.autocomplete(name=_ctf_autocompletion_func)
     async def archivectf(
         self,
         interaction: discord.Interaction,
@@ -249,14 +272,20 @@ class CTF(app_commands.Group):
             ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
                 {"guild_category": interaction.channel.category_id}
             )
+            if ctf is None:
+                await interaction.followup.send(
+                    (
+                        "Run this command from within a CTF channel, or provide the "
+                        "name of the CTF you wish to delete."
+                    ),
+                    ephemeral=True,
+                )
+                return
         else:
-            ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
-                {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
-            )
-
-        if ctf is None:
-            await interaction.followup.send("No such CTF.", ephemeral=True)
-            return
+            ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one({"name": name})
+            if ctf is None:
+                await interaction.followup.send("No such CTF.", ephemeral=True)
+                return
 
         category_channel = discord.utils.get(
             interaction.guild.categories, id=ctf["guild_category"]
@@ -357,6 +386,7 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.checks.has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.command()
+    @app_commands.autocomplete(name=_ctf_autocompletion_func)
     async def deletectf(
         self, interaction: discord.Interaction, name: Optional[str] = None
     ) -> None:
@@ -373,14 +403,20 @@ class CTF(app_commands.Group):
             ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
                 {"guild_category": interaction.channel.category_id}
             )
+            if ctf is None:
+                await interaction.followup.send(
+                    (
+                        "Run this command from within a CTF channel, or provide the "
+                        "name of the CTF you wish to delete."
+                    ),
+                    ephemeral=True,
+                )
+                return
         else:
-            ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
-                {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
-            )
-
-        if ctf is None:
-            await interaction.followup.send("No such CTF.", ephemeral=True)
-            return
+            ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one({"name": name})
+            if ctf is None:
+                await interaction.followup.send("No such CTF.", ephemeral=True)
+                return
 
         # # Stop periodic updater
         # if ctf["credentials"]["url"] in self._updaters:
@@ -418,6 +454,7 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_roles=True)
     @app_commands.checks.has_permissions(manage_roles=True)
     @app_commands.command()
+    @app_commands.autocomplete(name=_ctf_autocompletion_func)
     async def addplayers(
         self, interaction: discord.Interaction, name: str, members: str
     ) -> None:
@@ -428,16 +465,16 @@ class CTF(app_commands.Group):
             name: Name of the CTF to add people into (case insensitive).
             members: List of member mentions that you wish to add.
         """
-        ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
-            {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
-        )
+        await interaction.response.defer()
+
+        ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one({"name": name})
         if ctf is None:
-            await interaction.response.send_message("No such CTF.", ephemeral=True)
+            await interaction.followup.send("No such CTF.", ephemeral=True)
             return
 
         role = discord.utils.get(interaction.guild.roles, id=ctf["guild_role"])
         if role is None:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "CTF role was (accidently?) deleted by an admin, aborting.",
                 ephemeral=True,
             )
@@ -458,10 +495,11 @@ class CTF(app_commands.Group):
                 f"{member.mention} was added by {interaction.user.mention} 🔫"
             )
 
-        await interaction.response.send_message(f"✅ Added players to `{ctf['name']}`.")
+        await interaction.followup.send(f"✅ Added players to `{ctf['name']}`.")
 
     @app_commands.checks.bot_has_permissions(manage_roles=True)
     @app_commands.command()
+    @app_commands.autocomplete(name=_ctf_autocompletion_func)
     async def join(self, interaction: discord.Interaction, name: str) -> None:
         """Join and ongoing CTF competition.
 
@@ -469,9 +507,7 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             name: Name of the CTF to join (case insensitive).
         """
-        ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
-            {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
-        )
+        ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one({"name": name})
         if ctf is None:
             await interaction.response.send_message("No such CTF.", ephemeral=True)
             return
@@ -700,7 +736,6 @@ class CTF(app_commands.Group):
             challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
                 {"channel": interaction.channel_id}
             )
-
             if challenge is None:
                 await interaction.response.send_message(
                     (
@@ -712,6 +747,11 @@ class CTF(app_commands.Group):
                 return
         else:
             challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": name})
+            if challenge is None:
+                await interaction.response.send_message(
+                    "No such challenge.", ephemeral=True
+                )
+                return
 
         # Delete challenge from the database.
         MONGO[DBNAME][CHALLENGE_COLLECTION].delete_one(challenge)
@@ -897,6 +937,11 @@ class CTF(app_commands.Group):
             name: Challenge name (case insensitive).
         """
         challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": name})
+        if challenge is None:
+            await interaction.response.send_message(
+                "No such challenge.", ephemeral=True
+            )
+            return
 
         if interaction.user.name in challenge["players"]:
             await interaction.response.send_message(
@@ -948,7 +993,6 @@ class CTF(app_commands.Group):
             challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
                 {"channel": interaction.channel_id}
             )
-
             if challenge is None:
                 await interaction.response.send_message(
                     (
@@ -961,6 +1005,11 @@ class CTF(app_commands.Group):
                 return
         else:
             challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": name})
+            if challenge is None:
+                await interaction.response.send_message(
+                    "No such challenge.", ephemeral=True
+                )
+                return
 
         if interaction.user.name not in challenge["players"]:
             await interaction.response.send_message(
@@ -991,6 +1040,7 @@ class CTF(app_commands.Group):
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
+    @app_commands.autocomplete(name=_ctf_autocompletion_func)
     async def status(
         self,
         interaction: discord.Interaction,
@@ -1025,7 +1075,13 @@ class CTF(app_commands.Group):
         # CTF name was provided, and we're outside a CTF category channel, so
         # we display status of the requested CTF only.
         else:
-            ctfs = MONGO[DBNAME][CTF_COLLECTION].find({"name": name, "archived": False})
+            ctfs = MONGO[DBNAME][CTF_COLLECTION].find_one(
+                {"name": name, "archived": False}
+            )
+            if ctfs is None:
+                await interaction.followup.send("No such CTF.", ephemeral=True)
+                return
+            ctfs = [ctfs]
 
         no_running_ctfs = True
         for ctf in ctfs:
