@@ -1,10 +1,11 @@
 import re
 
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime, timezone
 
 import discord
 from discord import HTTPException, app_commands
+from discord.app_commands import Choice
 
 from lib.util import sanitize_channel_name, derive_colour
 from lib.ctfd import pull_challenges, get_scoreboard
@@ -24,11 +25,14 @@ from config import (
 class CTF(app_commands.Group):
     """Manage a CTF competition."""
 
+    def __init__(self) -> None:
+        super().__init__(name="ctf")
+
     def _in_ctf_channel() -> bool:
         """Wrapper function to check if a command was issued from a CTF channel."""
 
         async def predicate(interaction: discord.Interaction) -> bool:
-            if MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+            if MONGO[DBNAME][CTF_COLLECTION].find_one(
                 {"guild_category": interaction.channel.category_id}
             ):
                 return True
@@ -40,14 +44,44 @@ class CTF(app_commands.Group):
 
         return app_commands.check(predicate)
 
-    def __init__(self) -> None:
-        super().__init__(name="ctf")
+    async def _challenge_autocompletion_func(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[Choice[str]]:
+        """Autocomplete challenge name.
+        This function is inefficient, might improve it later.
+
+        Args:
+            interaction: The interaction that triggered this command.
+            current: The challenge name typed so far.
+
+        Returns:
+            A list of suggestions.
+        """
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
+            {"guild_category": interaction.channel.category_id}
+        )
+        if ctf is None:
+            return []
+
+        suggestions = []
+        for challenge_id in ctf["challenges"]:
+            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(challenge_id)
+            if challenge is None:
+                continue
+
+            if current.lower() in challenge["name"].lower():
+                suggestions.append(
+                    Choice(name=challenge["name"], value=challenge["name"])
+                )
+            if len(suggestions) == 25:
+                break
+        return suggestions
 
     # async def _periodic_updater(self, interaction: discord.Interaction) -> None:
     #     """Pull new challenges from the CTFd platform and update the scoreboard
     #     periodically.
     #     """
-    #     ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+    #     ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
     #         {"guild_category": interaction.channel.category_id}
     #     )
     #     scoreboard_channel = discord.utils.get(
@@ -67,7 +101,7 @@ class CTF(app_commands.Group):
             name: Name of the CTF to create (case insensitive).
         """
         # Check if the CTF already exists (case insensitive).
-        if MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        if MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
         ):
             await interaction.response.send_message(
@@ -155,7 +189,7 @@ class CTF(app_commands.Group):
                 "notes": notes_channel.id,
             },
         }
-        MONGO[f"{DBNAME}"][CTF_COLLECTION].insert_one(ctf)
+        MONGO[DBNAME][CTF_COLLECTION].insert_one(ctf)
         await interaction.followup.send(f"✅ CTF `{name}` has been created.")
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
@@ -169,7 +203,7 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             new_name: New CTF name (case insensitive).
         """
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
         old_name = ctf["name"]
@@ -185,7 +219,7 @@ class CTF(app_commands.Group):
         )
 
         # Update CTF name in the database.
-        MONGO[f"{DBNAME}"][CTF_COLLECTION].update_one(
+        MONGO[DBNAME][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]}, {"$set": {"name": ctf["name"]}}
         )
         await interaction.response.send_message(
@@ -212,11 +246,11 @@ class CTF(app_commands.Group):
         await interaction.response.defer()
 
         if name is None:
-            ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+            ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
                 {"guild_category": interaction.channel.category_id}
             )
         else:
-            ctf = MONGO[f"{DBNAME}"][f"{CTF_COLLECTION}"].find_one(
+            ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
                 {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
             )
 
@@ -235,10 +269,10 @@ class CTF(app_commands.Group):
         #     del self._updaters[ctf["credentials"]["url"]]
 
         # Get all challenges for the CTF.
-        challenges = []
-        for challenge_id in ctf["challenges"]:
-            challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(challenge_id)
-            challenges.append(challenge)
+        challenges = [
+            MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(challenge_id)
+            for challenge_id in ctf["challenges"]
+        ]
 
         # Sort by category, then by name.
         challenges = sorted(
@@ -308,10 +342,10 @@ class CTF(app_commands.Group):
 
         # Delete all challenges for that CTF from the database.
         for challenge_id in ctf["challenges"]:
-            MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].delete_one({"_id": challenge_id})
+            MONGO[DBNAME][CHALLENGE_COLLECTION].delete_one({"_id": challenge_id})
 
         # Update status of the CTF.
-        MONGO[f"{DBNAME}"][CTF_COLLECTION].update_one(
+        MONGO[DBNAME][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]}, {"$set": {"archived": True}}
         )
 
@@ -336,11 +370,11 @@ class CTF(app_commands.Group):
         await interaction.response.defer()
 
         if name is None:
-            ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+            ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
                 {"guild_category": interaction.channel.category_id}
             )
         else:
-            ctf = MONGO[f"{DBNAME}"][f"{CTF_COLLECTION}"].find_one(
+            ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
                 {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
             )
 
@@ -371,10 +405,10 @@ class CTF(app_commands.Group):
 
         # Delete all challenges for that CTF from the database.
         for challenge_id in ctf["challenges"]:
-            MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].delete_one({"_id": challenge_id})
+            MONGO[DBNAME][CHALLENGE_COLLECTION].delete_one({"_id": challenge_id})
 
         # Delete the CTF from the database.
-        MONGO[f"{DBNAME}"][CTF_COLLECTION].delete_one({"_id": ctf["_id"]})
+        MONGO[DBNAME][CTF_COLLECTION].delete_one({"_id": ctf["_id"]})
 
         # Only send a followup message if the channel from which the command was issued
         # still exists, otherwise we will fail with a 404 not found.
@@ -394,7 +428,7 @@ class CTF(app_commands.Group):
             name: Name of the CTF to add people into (case insensitive).
             members: List of member mentions that you wish to add.
         """
-        ctf = MONGO[f"{DBNAME}"][f"{CTF_COLLECTION}"].find_one(
+        ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
             {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
         )
         if ctf is None:
@@ -435,7 +469,7 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             name: Name of the CTF to join (case insensitive).
         """
-        ctf = MONGO[f"{DBNAME}"][f"{CTF_COLLECTION}"].find_one(
+        ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
             {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
         )
         if ctf is None:
@@ -470,7 +504,7 @@ class CTF(app_commands.Group):
         Args:
             interaction: The interaction that triggered this command.
         """
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
         if not ctf:
@@ -492,7 +526,7 @@ class CTF(app_commands.Group):
         )
 
         # Remove role and permissions.
-        for challenge in MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find():
+        for challenge in MONGO[DBNAME][CHALLENGE_COLLECTION].find():
             if interaction.user.name in challenge["players"]:
                 challenge_channel = discord.utils.get(
                     interaction.guild.text_channels, id=challenge["channel"]
@@ -523,7 +557,7 @@ class CTF(app_commands.Group):
         category = category.title().strip()
 
         # Check if challenge already exists.
-        if MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
+        if MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
             {
                 "name": name,
                 "category": category,
@@ -551,7 +585,7 @@ class CTF(app_commands.Group):
         )
 
         # Add challenge to the database.
-        challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].insert_one(
+        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].insert_one(
             {
                 "id": None,
                 "name": name,
@@ -566,11 +600,11 @@ class CTF(app_commands.Group):
         )
 
         # Add reference to the newly created challenge.
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
         ctf["challenges"].append(challenge.inserted_id)
-        MONGO[f"{DBNAME}"][CTF_COLLECTION].update_one(
+        MONGO[DBNAME][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
         )
 
@@ -585,8 +619,8 @@ class CTF(app_commands.Group):
             description=(
                 f"**Challenge name:** {name}\n"
                 f"**Category:** {category}\n\n"
-                f"Use `/ctf workon {name}` or `/ctf workon {len(ctf['challenges'])}` "
-                f"to join.\n{role.mention}"
+                f"Use `/ctf workon {name}` to join.\n"
+                f"{role.mention}"
             ),
             colour=discord.Colour.dark_gold(),
         ).set_footer(text=datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT))
@@ -615,7 +649,7 @@ class CTF(app_commands.Group):
         # or add unnecessary spaces at the beginning or the end.
         new_category = new_category.title().strip() if new_category else None
 
-        challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
+        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
             {"channel": interaction.channel_id}
         )
 
@@ -642,7 +676,7 @@ class CTF(app_commands.Group):
         else:
             await challenge_channel.edit(name=f"❌-{new_channel_name}")
 
-        MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].update_one(
+        MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {"$set": {"name": challenge["name"], "category": challenge["category"]}},
         )
@@ -650,6 +684,7 @@ class CTF(app_commands.Group):
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
+    @app_commands.autocomplete(name=_challenge_autocompletion_func)
     @_in_ctf_channel()
     async def deletechallenge(
         self, interaction: discord.Interaction, name: Optional[str] = None
@@ -662,7 +697,7 @@ class CTF(app_commands.Group):
                 challenge).
         """
         if name is None:
-            challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
+            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
                 {"channel": interaction.channel_id}
             )
 
@@ -676,21 +711,13 @@ class CTF(app_commands.Group):
                 )
                 return
         else:
-            challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
-                {"name": name}
-            )
-
-            if challenge is None:
-                await interaction.response.send_message(
-                    "No such challenge.", ephemeral=True
-                )
-                return
+            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": name})
 
         # Delete challenge from the database.
-        MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].delete_one(challenge)
+        MONGO[DBNAME][CHALLENGE_COLLECTION].delete_one(challenge)
 
         # Get CTF to which the challenge is associated.
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
 
@@ -702,7 +729,7 @@ class CTF(app_commands.Group):
 
         # Delete reference to that challenge from the CTF.
         ctf["challenges"].remove(challenge["_id"])
-        MONGO[f"{DBNAME}"][CTF_COLLECTION].update_one(
+        MONGO[DBNAME][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
         )
 
@@ -725,7 +752,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
+        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
             {"channel": interaction.channel_id}
         )
         if challenge is None:
@@ -758,7 +785,7 @@ class CTF(app_commands.Group):
             # by spamming solve and unsolve.
             pass
 
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
         solves_channel = interaction.client.get_channel(ctf["guild_channels"]["solves"])
@@ -778,7 +805,7 @@ class CTF(app_commands.Group):
         announcement = await solves_channel.send(embed=embed)
 
         challenge["solve_announcement"] = announcement.id
-        MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].update_one(
+        MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {
                 "$set": {
@@ -802,7 +829,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
+        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
             {"channel": interaction.channel_id}
         )
         if challenge is None:
@@ -831,7 +858,7 @@ class CTF(app_commands.Group):
             # by spamming solve and unsolve.
             pass
 
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
         # Delete the challenge solved announcement we made.
@@ -844,7 +871,7 @@ class CTF(app_commands.Group):
         if announcement:
             await announcement.delete()
 
-        MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].update_one(
+        MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {
                 "$set": {
@@ -860,6 +887,7 @@ class CTF(app_commands.Group):
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
+    @app_commands.autocomplete(name=_challenge_autocompletion_func)
     @_in_ctf_channel()
     async def workon(self, interaction: discord.Interaction, name: str) -> None:
         """Start working on a challenge and join its channel.
@@ -868,25 +896,7 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             name: Challenge name (case insensitive).
         """
-        challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
-            {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
-        )
-
-        if challenge is None and name.isdigit():
-            position = int(name)
-            ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
-                {"guild_category": interaction.channel.category_id}
-            )
-            if 0 < position <= len(ctf["challenges"]):
-                challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
-                    ctf["challenges"][position - 1]
-                )
-
-        if challenge is None:
-            await interaction.response.send_message(
-                "No such challenge.", ephemeral=True
-            )
-            return
+        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": name})
 
         if interaction.user.name in challenge["players"]:
             await interaction.response.send_message(
@@ -908,7 +918,7 @@ class CTF(app_commands.Group):
 
         await challenge_channel.set_permissions(interaction.user, read_messages=True)
 
-        MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].update_one(
+        MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {"$set": {"players": challenge["players"]}},
         )
@@ -922,6 +932,7 @@ class CTF(app_commands.Group):
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
+    @app_commands.autocomplete(name=_challenge_autocompletion_func)
     @_in_ctf_channel()
     async def unworkon(
         self, interaction: discord.Interaction, name: Optional[str] = None
@@ -934,29 +945,22 @@ class CTF(app_commands.Group):
             name: Challenge name (case insensitive).
         """
         if name is None:
-            challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
+            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
                 {"channel": interaction.channel_id}
             )
-        else:
-            challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
-                {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
-            )
 
-        if challenge is None and name.isdigit():
-            position = int(name)
-            ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
-                {"guild_category": interaction.channel.category_id}
-            )
-            if 0 < position <= len(ctf["challenges"]):
-                challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
-                    ctf["challenges"][position - 1]
+            if challenge is None:
+                await interaction.response.send_message(
+                    (
+                        "Run this command from within a challenge channel, "
+                        "or provide the name of the challenge you wish to stop "
+                        "working on."
+                    ),
+                    ephemeral=True,
                 )
-
-        if challenge is None:
-            await interaction.response.send_message(
-                "No such challenge.", ephemeral=True
-            )
-            return
+                return
+        else:
+            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": name})
 
         if interaction.user.name not in challenge["players"]:
             await interaction.response.send_message(
@@ -971,7 +975,7 @@ class CTF(app_commands.Group):
             interaction.guild.text_channels, id=challenge["channel"]
         )
 
-        MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].update_one(
+        MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {"$set": {"players": challenge["players"]}},
         )
@@ -1003,14 +1007,14 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
 
         # CTF name wasn't provided, and we're outside a CTF category channel, so
         # we display statuses of all running CTFs.
         if ctf is None and name is None:
-            ctfs = MONGO[f"{DBNAME}"][CTF_COLLECTION].find({"archived": False})
+            ctfs = MONGO[DBNAME][CTF_COLLECTION].find({"archived": False})
         # CTF name wasn't provided, and we're inside a CTF category channel, so
         # we display status of the CTF related to this category channel.
         elif name is None:
@@ -1021,9 +1025,7 @@ class CTF(app_commands.Group):
         # CTF name was provided, and we're outside a CTF category channel, so
         # we display status of the requested CTF only.
         else:
-            ctfs = MONGO[f"{DBNAME}"][CTF_COLLECTION].find(
-                {"name": name, "archived": False}
-            )
+            ctfs = MONGO[DBNAME][CTF_COLLECTION].find({"name": name, "archived": False})
 
         no_running_ctfs = True
         for ctf in ctfs:
@@ -1068,9 +1070,7 @@ class CTF(app_commands.Group):
                             colour=discord.Colour.blue(),
                         )
 
-                challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
-                    challenge_id
-                )
+                challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(challenge_id)
                 if challenge["solved"] and mode == CTFStatusMode.all:
                     icon = "🩸" if challenge["blooded"] else "✅"
                     embed.add_field(
@@ -1132,14 +1132,14 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
         ctf["credentials"]["url"] = url
         ctf["credentials"]["username"] = username
         ctf["credentials"]["password"] = password
 
-        MONGO[f"{DBNAME}"][CTF_COLLECTION].update_one(
+        MONGO[DBNAME][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]},
             {"$set": {"credentials": ctf["credentials"]}},
         )
@@ -1175,7 +1175,7 @@ class CTF(app_commands.Group):
         Args:
             interaction: The interaction that triggered this command.
         """
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
         url = ctf["credentials"]["url"]
@@ -1212,7 +1212,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
         url = ctfd_url or ctf["credentials"]["url"]
@@ -1231,7 +1231,7 @@ class CTF(app_commands.Group):
             challenge["category"] = challenge["category"].title().strip()
 
             # Check if challenge was already created.
-            if MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
+            if MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
                 {
                     "id": challenge["id"],
                     "name": challenge["name"],
@@ -1260,7 +1260,7 @@ class CTF(app_commands.Group):
 
             # Add challenge to the database.
             challenge_object_id = (
-                MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION]
+                MONGO[DBNAME][CHALLENGE_COLLECTION]
                 .insert_one(
                     {
                         "id": challenge["id"],
@@ -1279,7 +1279,7 @@ class CTF(app_commands.Group):
 
             # Add reference to the newly created challenge.
             ctf["challenges"].append(challenge_object_id)
-            MONGO[f"{DBNAME}"][CTF_COLLECTION].update_one(
+            MONGO[DBNAME][CTF_COLLECTION].update_one(
                 {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
             )
 
@@ -1318,8 +1318,8 @@ class CTF(app_commands.Group):
                 description=(
                     f"**Challenge name:** {challenge['name']}\n"
                     f"**Category:** {challenge['category']}\n\n"
-                    f"Use `/ctf workon {challenge['name']}` or "
-                    f"`/ctf workon {len(ctf['challenges'])}` to join.\n{role.mention}"
+                    f"Use `/ctf workon {challenge['name']}` to join.\n"
+                    f"{role.mention}"
                 ),
                 colour=discord.Colour.dark_gold(),
             ).set_footer(
@@ -1347,7 +1347,7 @@ class CTF(app_commands.Group):
             note_format: Whether to create an embed for the note or take it as
                 is (default: embed).
         """
-        challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
+        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
             {"channel": interaction.channel_id}
         )
         if challenge is None:
@@ -1356,7 +1356,7 @@ class CTF(app_commands.Group):
             )
             return
 
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
         notes_channel = discord.utils.get(
@@ -1438,7 +1438,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
         ctfd_url = ctf["credentials"]["url"]
