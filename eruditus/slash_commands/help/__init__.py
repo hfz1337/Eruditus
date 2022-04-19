@@ -25,13 +25,7 @@ class Help(app_commands.Command):
                 colour=discord.Colour.blue(),
             )
             .set_thumbnail(url=interaction.client.user.display_avatar.url)
-            .set_footer(
-                text=(
-                    "“I never desire to converse with a man who has written more than "
-                    "he has read.”\n"
-                    "― Samuel Johnson, Johnsonian Miscellanies - Vol II"
-                )
-            )
+            .set_footer(text="Made with ❤️ by hfz.")
         )
 
         # Show help for global commands.
