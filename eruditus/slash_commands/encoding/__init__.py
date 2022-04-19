@@ -8,12 +8,7 @@ from discord import app_commands
 
 import urllib
 
-from enum import Enum
-
-
-class OperationMode(Enum):
-    encode = 1
-    decode = 2
+from lib.types import EncodingOperationMode
 
 
 class Encoding(app_commands.Group):
@@ -21,7 +16,7 @@ class Encoding(app_commands.Group):
 
     @app_commands.command()
     async def base64(
-        self, interaction: discord.Interaction, mode: OperationMode, data: str
+        self, interaction: discord.Interaction, mode: EncodingOperationMode, data: str
     ) -> None:
         """Base64 encoding/decoding.
 
@@ -49,7 +44,7 @@ class Encoding(app_commands.Group):
 
     @app_commands.command()
     async def base32(
-        self, interaction: discord.Interaction, mode: OperationMode, data: str
+        self, interaction: discord.Interaction, mode: EncodingOperationMode, data: str
     ) -> None:
         """Base32 encoding/decoding.
 
@@ -77,7 +72,7 @@ class Encoding(app_commands.Group):
 
     @app_commands.command()
     async def binary(
-        self, interaction: discord.Interaction, mode: OperationMode, data: str
+        self, interaction: discord.Interaction, mode: EncodingOperationMode, data: str
     ) -> None:
         """Binary encoding/decoding.
 
@@ -107,7 +102,7 @@ class Encoding(app_commands.Group):
 
     @app_commands.command()
     async def hex(
-        self, interaction: discord.Interaction, mode: OperationMode, data: str
+        self, interaction: discord.Interaction, mode: EncodingOperationMode, data: str
     ) -> None:
         """Hex encoding/decoding.
 
@@ -134,7 +129,7 @@ class Encoding(app_commands.Group):
 
     @app_commands.command()
     async def url(
-        self, interaction: discord.Interaction, mode: OperationMode, data: str
+        self, interaction: discord.Interaction, mode: EncodingOperationMode, data: str
     ) -> None:
         """URL encoding/decoding.
 
