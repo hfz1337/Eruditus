@@ -21,7 +21,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer()
-        
+
         challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
             {"channel": interaction.channel_id}
         )
