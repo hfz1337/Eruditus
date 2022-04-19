@@ -1,5 +1,3 @@
-import os
-
 from datetime import datetime, timezone
 
 from string import ascii_lowercase, digits
@@ -7,17 +5,6 @@ from hashlib import md5
 
 import logging
 from logging import RootLogger
-
-from pymongo import MongoClient
-
-import discord
-from discord import Guild
-
-DBNAME_PREFIX = os.getenv("DBNAME_PREFIX")
-CONFIG_COLLECTION = os.getenv("CONFIG_COLLECTION")
-MINIMUM_PLAYER_COUNT = os.getenv("MINIMUM_PLAYER_COUNT")
-VOTING_STARTS_COUNTDOWN = os.getenv("VOTING_STARTS_COUNTDOWN")
-VOTING_VERDICT_COUNTDOWN = os.getenv("VOTING_VERDICT_COUNTDOWN")
 
 
 def get_local_time() -> datetime:
@@ -77,43 +64,6 @@ def derive_colour(role_name: str) -> int:
         An integer representing an RGB colour.
     """
     return int(md5(role_name.encode()).hexdigest()[:6], 16)
-
-
-async def setup_database(mongo: MongoClient, guild: Guild) -> None:
-    """Set up a database for a guild.
-
-    Args:
-        mongo: MongoDB client handle
-        guild: The guild to set up the database for.
-    """
-    # Create an announcements channel
-    overwrites = {
-        guild.default_role: discord.PermissionOverwrite(
-            send_messages=False, add_reactions=False
-        )
-    }
-    announcement_channel = await guild.create_text_channel(
-        name="📢 Event Announcements",
-        overwrites=overwrites,
-    )
-
-    # Create CTF archive category channel
-    overwrites = {guild.default_role: discord.PermissionOverwrite(send_messages=False)}
-    archive_category_channel = await guild.create_category(
-        name="📁 CTF Archive",
-        overwrites=overwrites,
-    )
-
-    # Insert the config document into the config collection of that guild's own db
-    mongo[f"{DBNAME_PREFIX}-{guild.id}"][CONFIG_COLLECTION].insert_one(
-        {
-            "voting_verdict_countdown": VOTING_VERDICT_COUNTDOWN,
-            "voting_starts_countdown": VOTING_STARTS_COUNTDOWN,
-            "minimum_player_count": MINIMUM_PLAYER_COUNT,
-            "archive_category_channel": archive_category_channel.id,
-            "announcement_channel": announcement_channel.id,
-        }
-    )
 
 
 def setup_logger(level: int) -> RootLogger:
