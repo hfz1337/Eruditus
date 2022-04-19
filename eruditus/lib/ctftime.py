@@ -1,12 +1,12 @@
-import os
 from datetime import datetime, timezone
 from typing import Generator
+
 import aiohttp
 from bs4 import BeautifulSoup
+
 from lib.util import truncate
 
-USER_AGENT = os.getenv("USER_AGENT")
-CTFTIME_URL = os.getenv("CTFTIME_URL")
+from config import CTFTIME_URL, USER_AGENT
 
 
 def ctftime_date_to_datetime(ctftime_date: str) -> datetime:
