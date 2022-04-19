@@ -121,94 +121,17 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             name: Name of the CTF to create (case insensitive).
         """
-        # Check if the CTF already exists (case insensitive).
-        if MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
-        ):
-            await interaction.response.send_message(
+        await interaction.response.defer()
+
+        ctf = await interaction.client.create_ctf(name)
+        if ctf is None:
+            await interaction.followup.send(
                 "Another CTF with similar name already exists, please choose "
                 "another name.",
                 ephemeral=True,
             )
-            return
-
-        await interaction.response.defer()
-
-        # Create the role if it didn't exist.
-        role = discord.utils.get(interaction.guild.roles, name=name)
-        if role is None:
-            role = await interaction.guild.create_role(
-                name=name,
-                colour=derive_colour(name),
-                mentionable=True,
-            )
-
-        overwrites = {
-            interaction.guild.default_role: discord.PermissionOverwrite(
-                read_messages=False
-            ),
-            role: discord.PermissionOverwrite(read_messages=True),
-        }
-
-        # Create the category channel if it didn't exist.
-        category_channel = discord.utils.get(interaction.guild.categories, name=name)
-        if category_channel is None:
-            category_channel = await interaction.guild.create_category(
-                name=f"🔴 {name}",
-                overwrites=overwrites,
-            )
-
-        await interaction.guild.create_text_channel(
-            "general", category=category_channel
-        )
-        await interaction.guild.create_voice_channel(
-            "general", category=category_channel
-        )
-
-        overwrites = {
-            interaction.guild.default_role: discord.PermissionOverwrite(
-                read_messages=False
-            ),
-            role: discord.PermissionOverwrite(read_messages=True, send_messages=False),
-        }
-
-        credentials_channel = await interaction.guild.create_text_channel(
-            name="🔑-credentials", category=category_channel, overwrites=overwrites
-        )
-        notes_channel = await interaction.guild.create_text_channel(
-            name="📝-notes", category=category_channel, overwrites=overwrites
-        )
-        announcement_channel = await interaction.guild.create_text_channel(
-            name="📣-announcements", category=category_channel, overwrites=overwrites
-        )
-        solves_channel = await interaction.guild.create_text_channel(
-            name="🎉-solves", category=category_channel, overwrites=overwrites
-        )
-        scoreboard_channel = await interaction.guild.create_text_channel(
-            name="📈-scoreboard", category=category_channel, overwrites=overwrites
-        )
-
-        ctf = {
-            "name": name,
-            "archived": False,
-            "credentials": {
-                "url": None,
-                "username": None,
-                "password": None,
-            },
-            "challenges": [],
-            "guild_role": role.id,
-            "guild_category": category_channel.id,
-            "guild_channels": {
-                "announcements": announcement_channel.id,
-                "credentials": credentials_channel.id,
-                "scoreboard": scoreboard_channel.id,
-                "solves": solves_channel.id,
-                "notes": notes_channel.id,
-            },
-        }
-        MONGO[DBNAME][CTF_COLLECTION].insert_one(ctf)
-        await interaction.followup.send(f"✅ CTF `{name}` has been created.")
+        else:
+            await interaction.followup.send(f"✅ CTF `{name}` has been created.")
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.checks.has_permissions(manage_channels=True)
