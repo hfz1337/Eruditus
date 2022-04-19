@@ -134,6 +134,7 @@ class CTF(app_commands.Group):
 
         await interaction.response.defer()
 
+        # Create the role if it didn't exist.
         role = discord.utils.get(interaction.guild.roles, name=name)
         if role is None:
             role = await interaction.guild.create_role(
@@ -149,15 +150,11 @@ class CTF(app_commands.Group):
             role: discord.PermissionOverwrite(read_messages=True),
         }
 
+        # Create the category channel if it didn't exist.
         category_channel = discord.utils.get(interaction.guild.categories, name=name)
         if category_channel is None:
-            # If the command was invoked by us, then the CTF probably didn't start yet,
-            # the emoji will be set to a clock, and once the CTF starts it will be
-            # substituted with a red dot.
-            # emoji = "⏰" if interaction.user.id == self._bot.user.id else "🔴"
-            emoji = "🔴"
             category_channel = await interaction.guild.create_category(
-                name=f"{emoji} {name}",
+                name=f"🔴 {name}",
                 overwrites=overwrites,
             )
 
@@ -594,8 +591,8 @@ class CTF(app_commands.Group):
         # Check if challenge already exists.
         if MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
             {
-                "name": name,
-                "category": category,
+                "name": re.compile(f"^{name.strip()}$", re.IGNORECASE),
+                "category": re.compile(f"^{category}$", re.IGNORECASE),
             }
         ):
             await interaction.response.send_message(
