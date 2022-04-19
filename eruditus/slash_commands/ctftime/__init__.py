@@ -1,5 +1,3 @@
-import os
-
 from datetime import datetime
 import aiohttp
 
@@ -10,9 +8,7 @@ from lib.ctftime import scrape_current_events, scrape_event_info
 
 from typing import Optional
 
-
-USER_AGENT = os.getenv("USER_AGENT")
-CTFTIME_URL = os.getenv("CTFTIME_URL")
+from config import CTFTIME_URL, USER_AGENT
 
 
 class CTFTime(app_commands.Group):
