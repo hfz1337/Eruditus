@@ -66,11 +66,14 @@ class Syscalls(app_commands.Command):
                 A list of suggestions.
             """
             suggestions = []
-            for syscall_name in Syscalls.architectures[
+            for syscall in Syscalls.architectures[
                 interaction.namespace.arch
-            ].syscalls:
-                if current.lower() in syscall_name:
-                    suggestions.append(Choice(name=syscall_name, value=syscall_name))
+            ].syscalls.values():
+                display_name = (
+                    f"{syscall['Name']} ({syscall['id']}/{int(syscall['id']):#x})"
+                )
+                if current.lower() in display_name:
+                    suggestions.append(Choice(name=display_name, value=syscall["Name"]))
                 if len(suggestions) == 25:
                     break
             return suggestions

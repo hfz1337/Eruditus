@@ -131,7 +131,8 @@ class Eruditus(discord.Client):
                         f"{event_info['description']}\n\n"
                         f"👥 **Organizers**\n{', '.join(event_info['organizers'])}\n\n"
                         f"💰 **Prizes**\n{event_info['prizes']}\n\n"
-                        f"⚙️ **Format**\n {event_info['location']} {event_info['format']}\n\n"
+                        f"⚙️ **Format**\n {event_info['location']} "
+                        f"{event_info['format']}\n\n"
                         f"🎯 **Weight**\n{event_info['weight']}"
                     )
                     parameters = {

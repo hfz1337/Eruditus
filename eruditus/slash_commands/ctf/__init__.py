@@ -1,4 +1,3 @@
-from distutils import archive_util
 import re
 
 from typing import Optional, List
