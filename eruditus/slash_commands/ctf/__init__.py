@@ -7,7 +7,7 @@ import discord
 from discord import HTTPException, app_commands
 from discord.app_commands import Choice
 
-from lib.util import sanitize_channel_name, derive_colour
+from lib.util import sanitize_channel_name
 from lib.ctfd import pull_challenges, get_scoreboard
 
 from lib.types import ArchiveMode, CTFStatusMode, NoteFormat, NoteType
