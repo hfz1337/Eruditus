@@ -124,14 +124,14 @@ class Eruditus(discord.Client):
         return ctf
 
     async def setup_hook(self) -> None:
-        self.tree.add_command(Help(), guild=discord.Object(GUILD_ID))
-        self.tree.add_command(Syscalls(), guild=discord.Object(GUILD_ID))
-        self.tree.add_command(Encoding(), guild=discord.Object(GUILD_ID))
-        self.tree.add_command(CTFTime(), guild=discord.Object(GUILD_ID))
-        self.tree.add_command(Cipher(), guild=discord.Object(GUILD_ID))
-        self.tree.add_command(Report(), guild=discord.Object(GUILD_ID))
-        self.tree.add_command(Request(), guild=discord.Object(GUILD_ID))
-        self.tree.add_command(Search(), guild=discord.Object(GUILD_ID))
+        self.tree.add_command(Help())
+        self.tree.add_command(Syscalls())
+        self.tree.add_command(Encoding())
+        self.tree.add_command(CTFTime())
+        self.tree.add_command(Cipher())
+        self.tree.add_command(Report())
+        self.tree.add_command(Request())
+        self.tree.add_command(Search())
         self.tree.add_command(CTF(), guild=discord.Object(GUILD_ID))
 
         self.create_upcoming_events.start()
