@@ -87,13 +87,12 @@ class CTF(app_commands.Group):
         suggestions = []
         for challenge_id in ctf["challenges"]:
             challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(challenge_id)
-            if challenge is None:
+            if challenge is None or challenge["solved"]:
                 continue
 
-            if current.lower() in challenge["name"].lower():
-                suggestions.append(
-                    Choice(name=challenge["name"], value=challenge["name"])
-                )
+            display_name = f"{challenge['name']} ({challenge['category']})"
+            if current.lower() in display_name.lower():
+                suggestions.append(Choice(name=display_name, value=challenge["name"]))
             if len(suggestions) == 25:
                 break
         return suggestions
