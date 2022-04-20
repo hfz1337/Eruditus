@@ -33,7 +33,7 @@ class ClassicCiphers:
 
 
 class Cipher(app_commands.Group):
-    """Encryption/Decryption using classic ciphers"""
+    """Encryption/Decryption using classic ciphers."""
 
     @app_commands.command()
     async def caesar(
