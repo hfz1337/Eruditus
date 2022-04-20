@@ -29,9 +29,6 @@ from lib.ctftime import (
 )
 from config import CTF_COLLECTION, CTFTIME_URL, DBNAME, GUILD_ID, MONGO, USER_AGENT
 
-# Setup logging
-logger = setup_logger(logging.INFO)
-
 
 class Eruditus(discord.Client):
     def __init__(self) -> None:
@@ -328,5 +325,7 @@ class Eruditus(discord.Client):
                         )
 
 
-client = Eruditus()
-client.run(os.getenv("DISCORD_TOKEN"))
+if __name__ == "__main__":
+    logger = setup_logger(logging.INFO)
+    client = Eruditus()
+    client.run(os.getenv("DISCORD_TOKEN"))
