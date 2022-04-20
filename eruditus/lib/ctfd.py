@@ -33,18 +33,18 @@ async def login(ctfd_base_url: str, username: str, password: str) -> dict:
     """
     ctfd_base_url = ctfd_base_url.strip("/")
 
-    # Confirm that we're dealing with a CTFd platform
+    # Confirm that we're dealing with a CTFd platform.
     if not await is_ctfd_platform(ctfd_base_url):
         return None
 
-    # Get the nonce
+    # Get the nonce.
     async with aiohttp.request(method="get", url=f"{ctfd_base_url}/login") as response:
         cookies = {cookie.key: cookie.value for cookie in response.cookies.values()}
         nonce = BeautifulSoup(await response.text(), "html.parser").find(
             "input", {"id": "nonce"}
         )["value"]
 
-    # Login to CTFd
+    # Login to CTFd.
     data = {
         "name": username,
         "password": password,
@@ -84,7 +84,7 @@ async def submit_flag(
     if cookies is None:
         return (None, None)
 
-    # Get CSRF token
+    # Get CSRF token.
     async with aiohttp.request(
         method="get", url=f"{ctfd_base_url}/challenges", cookies=cookies
     ) as response:
@@ -103,11 +103,11 @@ async def submit_flag(
         cookies=cookies,
         headers={"CSRF-Token": csrf_nonce},
     ) as response:
-        # Check if we got a response
+        # Check if we got a response.
         if response.status == 200 and (json := await response.json())["success"]:
-            # The flag was correct
+            # The flag was correct.
             if json["data"]["status"] == "correct":
-                # Check if we got first blood
+                # Check if we got first blood.
                 async with aiohttp.request(
                     method="get",
                     url=f"{ctfd_base_url}/api/v1/challenges/{challenge_id}",
@@ -121,7 +121,7 @@ async def submit_flag(
                         return ("correct", json["data"]["solves"] == 1)
 
                 return ("correct", None)
-            # We already solved this challenge, or the flag was incorrect
+            # We already solved this challenge, or the flag was incorrect.
             return (json["data"]["status"], None)
 
     return (None, None)
@@ -142,13 +142,13 @@ async def pull_challenges(
     """
     ctfd_base_url = ctfd_base_url.strip("/")
 
-    # Confirm that we're dealing with a CTFd platform
+    # Confirm that we're dealing with a CTFd platform.
     if not await is_ctfd_platform(ctfd_base_url):
         return
 
     cookies = await login(ctfd_base_url, username, password)
 
-    # Get challenges
+    # Get challenges.
     async with aiohttp.request(
         method="get",
         url=f"{ctfd_base_url}/api/v1/challenges",
@@ -157,7 +157,7 @@ async def pull_challenges(
     ) as response:
         if response.status == 200 and (json := await response.json())["success"]:
             # Loop through the challenges and get information about each challenge by
-            # requesting the `/api/v1/challenges/{challenge_id}` endpoint
+            # requesting the `/api/v1/challenges/{challenge_id}` endpoint.
             for challenge_id in [
                 challenge["id"]
                 for challenge in json["data"]
@@ -198,13 +198,13 @@ async def get_scoreboard(ctfd_base_url: str, username: str, password: str) -> li
     """
     ctfd_base_url = ctfd_base_url.strip("/")
 
-    # Confirm that we're dealing with a CTFd platform
+    # Confirm that we're dealing with a CTFd platform.
     if not await is_ctfd_platform(ctfd_base_url):
         return
 
     cookies = await login(ctfd_base_url, username, password)
 
-    # Get scoreboard
+    # Get scoreboard.
     async with aiohttp.request(
         method="get",
         url=f"{ctfd_base_url}/api/v1/scoreboard",

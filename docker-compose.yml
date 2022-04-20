@@ -6,8 +6,6 @@ services:
     image: eruditus:latest
     container_name: eruditus
     restart: unless-stopped
-    environment:
-      - DISCORD_TOKEN=<BOT_TOKEN_GOES_HERE>
   mongodb:
     image: mongo:latest
     container_name: mongodb

@@ -197,7 +197,7 @@ class Eruditus(discord.Client):
     @tasks.loop(hours=1, reconnect=True)
     async def ctf_reminder(self) -> None:
         """Create a CTF for events starting soon and send a reminder."""
-        # Wait until the bot's internal cache is ready
+        # Wait until the bot's internal cache is ready.
         await self.wait_until_ready()
 
         # Timezone aware local time.
@@ -249,7 +249,7 @@ class Eruditus(discord.Client):
     @tasks.loop(hours=3, reconnect=True)
     async def create_upcoming_events(self) -> None:
         """Create a Scheduled Event for each upcoming CTF competition."""
-        # Wait until the bot's internal cache is ready
+        # Wait until the bot's internal cache is ready.
         await self.wait_until_ready()
 
         # Timezone aware local time.

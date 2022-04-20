@@ -98,19 +98,6 @@ class CTF(app_commands.Group):
                 break
         return suggestions
 
-    # async def _periodic_updater(self, interaction: discord.Interaction) -> None:
-    #     """Pull new challenges from the CTFd platform and update the scoreboard
-    #     periodically.
-    #     """
-    #     ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-    #         {"guild_category": interaction.channel.category_id}
-    #     )
-    #     scoreboard_channel = discord.utils.get(
-    #         interaction.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
-    #     )
-    #     await self._scoreboard.invoke(ctx, scoreboard_channel)
-    #     await self._pull.invoke(ctx)
-
     @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.checks.has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.command()
@@ -211,11 +198,6 @@ class CTF(app_commands.Group):
         )
         role = discord.utils.get(interaction.guild.roles, id=ctf["guild_role"])
 
-        # Stop periodic updater
-        # if ctf["credentials"]["url"] in self._updaters:
-        #     self._updaters[ctf["credentials"]["url"]].cancel()
-        #     del self._updaters[ctf["credentials"]["url"]]
-
         # Get all challenges for the CTF.
         challenges = [
             MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(challenge_id)
@@ -257,7 +239,6 @@ class CTF(app_commands.Group):
         scoreboard_channel = discord.utils.get(
             interaction.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
         )
-        # await self._scoreboard.invoke(ctx, scoreboard_channel)
         for summary in summaries:
             await scoreboard_channel.send(head.format(summary))
 
@@ -336,11 +317,6 @@ class CTF(app_commands.Group):
             if ctf is None:
                 await interaction.followup.send("No such CTF.", ephemeral=True)
                 return
-
-        # # Stop periodic updater
-        # if ctf["credentials"]["url"] in self._updaters:
-        #     self._updaters[ctf["credentials"]["url"]].cancel()
-        #     del self._updaters[ctf["credentials"]["url"]]
 
         category_channel = discord.utils.get(
             interaction.guild.categories, id=ctf["guild_category"]
@@ -563,7 +539,7 @@ class CTF(app_commands.Group):
             {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
         )
 
-        # Announce that the challenge was added
+        # Announce that the challenge was added.
         announcements_channel = discord.utils.get(
             interaction.guild.text_channels, id=ctf["guild_channels"]["announcements"]
         )
@@ -724,7 +700,7 @@ class CTF(app_commands.Group):
             )
             return
 
-        # If the challenged was already solved
+        # If the challenged was already solved.
         if challenge["solved"]:
             await interaction.followup.send(
                 "This challenge was already solved.", ephemeral=True
@@ -800,7 +776,7 @@ class CTF(app_commands.Group):
                 ephemeral=True,
             )
 
-        # Check if challenge is already not solved
+        # Check if challenge is already not solved.
         if not challenge["solved"]:
             await interaction.followup.send(
                 "This challenge is already marked as not solved.", ephemeral=True
@@ -1081,7 +1057,7 @@ class CTF(app_commands.Group):
                     )
                     num_fields += 1
 
-            # Send the remaining embed
+            # Send the remaining embed.
             await interaction.followup.send(embed=embed)
             no_running_ctfs = False
 
@@ -1133,13 +1109,6 @@ class CTF(app_commands.Group):
         await creds_channel.purge()
         await creds_channel.send(message)
         await interaction.followup.send("✅ Credentials added.")
-
-        # Start a background task for this CTF in order to pull new challenges
-        # periodically
-        # self._updaters[ctf["credentials"]["url"]] = tasks.loop(
-        #     minutes=1.0, reconnect=True
-        # )(self._periodic_updater)
-        # self._updaters[ctf["credentials"]["url"]].start(ctx)
 
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()

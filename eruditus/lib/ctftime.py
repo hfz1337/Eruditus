@@ -56,10 +56,10 @@ async def scrape_event_info(event_id: int) -> dict:
         parser.select_one(".span10 p:nth-child(1)").text.strip().split(" — ")
     )
 
-    # Get rid of anchor elements to parse the description and prizes correctly
+    # Get rid of anchor elements to parse the description and prizes correctly.
     for anchor in parser.findAll("a"):
         anchor.replaceWithChildren()
-    # Replace br tags with a linebreak
+    # Replace br tags with a linebreak.
     for br in parser.findAll("br"):
         br.replaceWith("\n")
 
@@ -98,7 +98,7 @@ async def scrape_current_events() -> Generator[int, None, None]:
             return
         parser = BeautifulSoup(await response.text(), "html.parser")
 
-    # Get ongoing events from the home page
+    # Get ongoing events from the home page.
     event_ids = [
         int(event["href"].split("/")[-1]) for event in parser.select("td span+ a")
     ]
