@@ -20,13 +20,13 @@ make its usage as intuitive as possible.
 ## Features
 ### Core functionalities
 - Manage channels and their permissions
-- Track CTFtime events and announce them on the server
+- Create Discord scheduled events for upocoming CTF competitions
 - Track CTFs progress
 - Track members' participation in challenges
 - Announcements upon solving a challenge
-- Automatic pulling of challenges from CTFd
-- Automatic flag submission from within the Discord guild
-- Highlighting important notes by moving them to a read-only channel
+- Flag submission from within the Discord guild
+
+and more.
 
 ### Miscellaneous
 - Provides a utility to lookup system calls from a specific architecture
@@ -38,9 +38,8 @@ Here's a list of the currently supported commands:
 ```
 /help                                                (Show help about the bot usage)
 /search <query> [<limit>]                            (Search for a topic in the CTF write-ups index)
-/request <feature>                                   (Request a new feature from the developer)
-/report <bug>                                        (Send a bug report to the developer)
-/config [<args>]...                                  (Display or alter configuration specific to the guild)
+/request                                             (Request a new feature from the developer)
+/report                                              (Send a bug report to the developer)
 
 /ctf createctf <ctf_name>                            (Create a new CTF)
 /ctf renamectf <ctf_name>                            (Rename a CTF)
@@ -53,14 +52,14 @@ Here's a list of the currently supported commands:
 /ctf status [<ctf_name>]                             (Show CTF(s) status)
 /ctf workon <challenge_name>                         (Access the private channel associated to the challenge)
 /ctf unworkon [<challenge_name>]                     (Leave the challenge channel)
-/ctf solve [<support_member>]...                     (Mark a challenge as solved)
+/ctf solve                                           (Mark a challenge as solved)
 /ctf unsolve                                         (Mark a challenge as not solved)
 /ctf createchallenge <name> <category>               (Create a new challenge)
 /ctf renamechallenge <new_name> <new_category>       (Rename a challenge)
 /ctf deletechallenge [<challenge_name>]              (Delete a challenge)
 /ctf pull [<ctfd_url>]                               (Pull unsolved challenges from the CTFd platform)
 /ctf takenote <type> <note_format>                   (Copies the last message into the notes channel)
-/ctf submit <flag> [<support_member>]...             (Submits a flag to CTFd)
+/ctf submit                                          (Submits a flag to CTFd)
 
 /syscalls show <arch> <syscall name/syscall id>      (Show information for a specific syscall)
 
@@ -84,12 +83,12 @@ Here's a list of the currently supported commands:
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
 2. Create a new application.
 3. Go to the **Bot** pane and add a bot for your application.
-4. Copy the bot's token and paste it in the `docker-compose.yml` file like indicated.
-5. Go to the **OAuth2** pane, tick `bot` and `applications.commands` under the **Scopes**
-section, tick `Administrator` under the **Bot Permissions** section and copy the
-generated link.
-6. Deploy the bot by running `docker-compose up -d --build`.
-7. Invite your bot to the guild using the link generated in **5**.
+4. Put your Discord guild ID and bot token inside the [.env](eruditus/.env) file.
+5. Deploy the bot using `docker-compose up -d --build`.
+6. Go to the **OAuth2 URL Generator** pane, tick `bot` and `applications.commands`
+under the **Scopes** section, tick `Administrator` under the **Bot Permissions**
+section and copy the generated link.
+7. Invite your bot to the guild using the generated link.
 8. Enjoy.
 
 ## Contribution Guidelines
