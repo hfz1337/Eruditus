@@ -25,10 +25,9 @@ class WorkonButton(discord.ui.View):
             return
 
         if challenge["solved"]:
-            await interaction.response.send_message(
-                "You can't work on a challenge that has been solved.", ephemeral=True
-            )
-            return
+            button.label = "Already solved."
+            button.disabled = True
+            await interaction.response.edit_message(view=self)
 
         challenge["players"].append(interaction.user.name)
 
