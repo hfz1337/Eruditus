@@ -550,12 +550,14 @@ class CTF(app_commands.Group):
             description=(
                 f"**Challenge name:** {name}\n"
                 f"**Category:** {category}\n\n"
-                f"Use `/ctf workon {name}` to join.\n"
+                f"Use `/ctf workon {challenge['name']}` or the button to join.\n"
                 f"{role.mention}"
             ),
             colour=discord.Colour.dark_gold(),
         ).set_footer(text=datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT))
-        await announcements_channel.send(embed=embed)
+        await announcements_channel.send(
+            embed=embed, view=WorkonButton(name=challenge["name"])
+        )
         await interaction.response.send_message(
             f"✅ Challenge `{name}` has been created."
         )
