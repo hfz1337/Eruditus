@@ -7,7 +7,7 @@ class WorkonButton(discord.ui.View):
     def __init__(self, name: str):
         # Challenge name.
         self.name = name
-        super().__init__()
+        super().__init__(timeout=None)
 
     @discord.ui.button(label="Work on this challenge!", style=discord.ButtonStyle.green)
     async def workon(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -57,7 +57,7 @@ class UnworkonButton(discord.ui.View):
     def __init__(self, name: str):
         # Challenge name.
         self.name = name
-        super().__init__()
+        super().__init__(timeout=None)
 
     @discord.ui.button(
         label="Stop working on this challenge.", style=discord.ButtonStyle.red
