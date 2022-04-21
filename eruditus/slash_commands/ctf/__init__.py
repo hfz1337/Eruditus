@@ -515,28 +515,8 @@ class CTF(app_commands.Group):
             overwrites=overwrites,
         )
 
-        # Add challenge to the database.
-        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].insert_one(
-            {
-                "id": None,
-                "name": name,
-                "category": category,
-                "channel": challenge_channel.id,
-                "solved": False,
-                "blooded": False,
-                "players": [],
-                "solve_time": None,
-                "solve_announcement": None,
-            }
-        )
-
-        # Add reference to the newly created challenge.
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
-        )
-        ctf["challenges"].append(challenge.inserted_id)
-        MONGO[DBNAME][CTF_COLLECTION].update_one(
-            {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
         )
 
         # Announce that the challenge was added.
@@ -550,14 +530,37 @@ class CTF(app_commands.Group):
             description=(
                 f"**Challenge name:** {name}\n"
                 f"**Category:** {category}\n\n"
-                f"Use `/ctf workon {challenge['name']}` or the button to join.\n"
+                f"Use `/ctf workon {name}` or the button to join.\n"
                 f"{role.mention}"
             ),
             colour=discord.Colour.dark_gold(),
         ).set_footer(text=datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT))
-        await announcements_channel.send(
-            embed=embed, view=WorkonButton(name=challenge["name"])
+        announcement = await announcements_channel.send(
+            embed=embed, view=WorkonButton(name=name)
         )
+
+        # Add challenge to the database.
+        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].insert_one(
+            {
+                "id": None,
+                "name": name,
+                "category": category,
+                "channel": challenge_channel.id,
+                "solved": False,
+                "blooded": False,
+                "players": [],
+                "announcement": announcement.id,
+                "solve_time": None,
+                "solve_announcement": None,
+            }
+        )
+
+        # Add reference to the newly created challenge.
+        ctf["challenges"].append(challenge.inserted_id)
+        MONGO[DBNAME][CTF_COLLECTION].update_one(
+            {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
+        )
+
         await interaction.response.send_message(
             f"✅ Challenge `{name}` has been created."
         )
@@ -670,6 +673,17 @@ class CTF(app_commands.Group):
             {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
         )
 
+        # Delete announcement message.
+        announcements_channel = discord.utils.get(
+            interaction.guild.text_channels,
+            id=ctf["guild_channels"]["announcements"],
+        )
+        announcement = await announcements_channel.fetch_message(
+            challenge["announcement"]
+        )
+        if announcement:
+            await announcement.delete()
+
         await interaction.response.send_message(
             f"✅ Challenge `{challenge['name']}` has been deleted."
         )
@@ -744,9 +758,9 @@ class CTF(app_commands.Group):
             .set_thumbnail(url=interaction.user.display_avatar.url)
             .set_footer(text=challenge["solve_time"])
         )
-        announcement = await solves_channel.send(embed=embed)
+        solve_announcement = await solves_channel.send(embed=embed)
 
-        challenge["solve_announcement"] = announcement.id
+        challenge["solve_announcement"] = solve_announcement.id
         MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {
@@ -757,6 +771,18 @@ class CTF(app_commands.Group):
                     "players": challenge["players"],
                 }
             },
+        )
+
+        # Disable workon button for this challenge.
+        announcements_channel = discord.utils.get(
+            interaction.guild.text_channels,
+            id=ctf["guild_channels"]["announcements"],
+        )
+        announcement = await announcements_channel.fetch_message(
+            challenge["announcement"]
+        )
+        await announcement.edit(
+            view=WorkonButton(name=challenge["name"], disabled=True)
         )
 
         await interaction.followup.send("✅ Challenge solved.")
@@ -825,6 +851,16 @@ class CTF(app_commands.Group):
                 }
             },
         )
+
+        # Enable workon button for this challenge.
+        announcements_channel = discord.utils.get(
+            interaction.guild.text_channels,
+            id=ctf["guild_channels"]["announcements"],
+        )
+        announcement = await announcements_channel.fetch_message(
+            challenge["announcement"]
+        )
+        await announcement.edit(view=WorkonButton(name=challenge["name"]))
 
         await interaction.followup.send("✅ Challenge unsolved.")
 
@@ -1210,31 +1246,6 @@ class CTF(app_commands.Group):
                 overwrites=overwrites,
             )
 
-            # Add challenge to the database.
-            challenge_object_id = (
-                MONGO[DBNAME][CHALLENGE_COLLECTION]
-                .insert_one(
-                    {
-                        "id": challenge["id"],
-                        "name": challenge["name"],
-                        "category": challenge["category"],
-                        "channel": challenge_channel.id,
-                        "solved": False,
-                        "blooded": False,
-                        "players": [],
-                        "solve_time": None,
-                        "solve_announcement": None,
-                    }
-                )
-                .inserted_id
-            )
-
-            # Add reference to the newly created challenge.
-            ctf["challenges"].append(challenge_object_id)
-            MONGO[DBNAME][CTF_COLLECTION].update_one(
-                {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
-            )
-
             # Send challenge information in its respective channel.
             description = challenge["description"] or "No description."
             tags = ", ".join(challenge["tags"]) or "No tags."
@@ -1277,8 +1288,34 @@ class CTF(app_commands.Group):
             ).set_footer(
                 text=datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)
             )
-            await announcements_channel.send(
+            announcement = await announcements_channel.send(
                 embed=embed, view=WorkonButton(name=challenge["name"])
+            )
+
+            # Add challenge to the database.
+            challenge_object_id = (
+                MONGO[DBNAME][CHALLENGE_COLLECTION]
+                .insert_one(
+                    {
+                        "id": challenge["id"],
+                        "name": challenge["name"],
+                        "category": challenge["category"],
+                        "channel": challenge_channel.id,
+                        "solved": False,
+                        "blooded": False,
+                        "players": [],
+                        "announcement": announcement.id,
+                        "solve_time": None,
+                        "solve_announcement": None,
+                    }
+                )
+                .inserted_id
+            )
+
+            # Add reference to the newly created challenge.
+            ctf["challenges"].append(challenge_object_id)
+            MONGO[DBNAME][CTF_COLLECTION].update_one(
+                {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
             )
 
         await interaction.followup.send("✅ Done pulling challenges")

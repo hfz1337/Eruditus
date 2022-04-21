@@ -4,6 +4,7 @@ from discord import HTTPException
 from datetime import datetime, timezone
 
 from lib.ctfd import submit_flag
+from buttons.workon import WorkonButton
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
@@ -125,6 +126,19 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
                     }
                 },
             )
+
+            # Disable workon button for this challenge.
+            announcements_channel = discord.utils.get(
+                interaction.guild.text_channels,
+                id=ctf["guild_channels"]["announcements"],
+            )
+            announcement = await announcements_channel.fetch_message(
+                challenge["announcement"]
+            )
+            await announcement.edit(
+                view=WorkonButton(name=challenge["name"], disabled=True)
+            )
+
         elif status == "already_solved":
             await interaction.followup.send(
                 "You already solved this challenge.", ephemeral=True

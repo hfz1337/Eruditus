@@ -4,30 +4,26 @@ from config import MONGO, DBNAME, CHALLENGE_COLLECTION
 
 
 class WorkonButton(discord.ui.View):
-    def __init__(self, name: str):
+    def __init__(self, name: str, disabled: bool = False) -> None:
         # Challenge name.
         self.name = name
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Work on this challenge!", style=discord.ButtonStyle.green)
-    async def workon(self, interaction: discord.Interaction, button: discord.ui.Button):
-        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": self.name})
-        if challenge is None:
-            await interaction.response.send_message(
-                "No such challenge.", ephemeral=True
-            )
-            return
+        self.children[0].disabled = disabled
+        self.children[0].label = (
+            "Already solved." if disabled else "Work on this challenge!"
+        )
 
+    @discord.ui.button(style=discord.ButtonStyle.green)
+    async def workon(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
+        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": self.name})
         if interaction.user.name in challenge["players"]:
             await interaction.response.send_message(
                 "You're already working on this challenge.", ephemeral=True
             )
             return
-
-        if challenge["solved"]:
-            button.label = "Already solved."
-            button.disabled = True
-            await interaction.response.edit_message(view=self)
 
         challenge["players"].append(interaction.user.name)
 
@@ -53,7 +49,7 @@ class WorkonButton(discord.ui.View):
 
 
 class UnworkonButton(discord.ui.View):
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         # Challenge name.
         self.name = name
         super().__init__(timeout=None)
@@ -63,7 +59,7 @@ class UnworkonButton(discord.ui.View):
     )
     async def unworkon(
         self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    ) -> None:
         challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": self.name})
         if challenge is None:
             await interaction.response.edit_message(
