@@ -12,6 +12,7 @@ from lib.ctfd import pull_challenges, get_scoreboard
 
 from lib.types import ArchiveMode, CTFStatusMode, NoteFormat, NoteType
 from forms.flag import FlagSubmissionForm
+from buttons.workon import WorkonButton
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
@@ -1261,14 +1262,16 @@ class CTF(app_commands.Group):
                 description=(
                     f"**Challenge name:** {challenge['name']}\n"
                     f"**Category:** {challenge['category']}\n\n"
-                    f"Use `/ctf workon {challenge['name']}` to join.\n"
+                    f"Use `/ctf workon {challenge['name']}` or the button to join.\n"
                     f"{role.mention}"
                 ),
                 colour=discord.Colour.dark_gold(),
             ).set_footer(
                 text=datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)
             )
-            await announcements_channel.send(embed=embed)
+            await announcements_channel.send(
+                embed=embed, view=WorkonButton(name=challenge["name"])
+            )
 
         await interaction.followup.send("✅ Done pulling challenges")
 
