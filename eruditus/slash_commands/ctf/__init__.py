@@ -720,6 +720,11 @@ class CTF(app_commands.Group):
             # by spamming solve and unsolve.
             pass
 
+        # Add the user who triggered this interaction to the list of players, useful
+        # in case the one who triggered the interaction is an admin.
+        if interaction.user.name not in challenge["players"]:
+            challenge["players"].append(interaction.user.name)
+
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
@@ -728,7 +733,7 @@ class CTF(app_commands.Group):
             discord.Embed(
                 title="🎉 Challenge solved!",
                 description=(
-                    f"{', '.join(challenge['players'])} just solved "
+                    f"**{', '.join(challenge['players'])}** just solved "
                     f"**{challenge['name']}** from the "
                     f"**{challenge['category']}** category!"
                 ),
@@ -747,6 +752,7 @@ class CTF(app_commands.Group):
                     "solved": challenge["solved"],
                     "solve_time": challenge["solve_time"],
                     "solve_announcement": challenge["solve_announcement"],
+                    "players": challenge["players"],
                 }
             },
         )

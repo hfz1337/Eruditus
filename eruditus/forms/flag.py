@@ -57,6 +57,11 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
                 ctf["guild_channels"]["solves"]
             )
 
+            # Add the user who triggered this interaction to the list of players, useful
+            # in case the one who triggered the interaction is an admin.
+            if interaction.user.name not in challenge["players"]:
+                challenge["players"].append(interaction.user.name)
+
             if first_blood:
                 challenge["blooded"] = True
                 await interaction.followup.send("🩸 Well done, you got first blood!")
@@ -116,6 +121,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
                         "blooded": challenge["blooded"],
                         "solve_time": challenge["solve_time"],
                         "solve_announcement": challenge["solve_announcement"],
+                        "players": challenge["players"],
                     }
                 },
             )
