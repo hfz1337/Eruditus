@@ -7,7 +7,7 @@ import discord
 from discord import HTTPException, app_commands
 from discord.app_commands import Choice
 
-from lib.util import sanitize_channel_name
+from lib.util import get_local_time, sanitize_channel_name
 from lib.ctfd import pull_challenges, get_scoreboard
 
 from lib.types import ArchiveMode, CTFStatusMode, NoteFormat, NoteType
@@ -1473,3 +1473,29 @@ class CTF(app_commands.Group):
             await scoreboard_channel.send(message)
 
         await interaction.followup.send(message)
+
+    @app_commands.command()
+    @_in_ctf_channel()
+    async def remaining(self, interaction: discord.Interaction) -> None:
+        """Show remaining time for the CTF.
+
+        Args:
+            interaction: The interaction that triggered this command.
+        """
+        await interaction.response.defer()
+
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
+            {"guild_category": interaction.channel.category_id}
+        )
+
+        for scheduled_event in await interaction.guild.fetch_scheduled_events():
+            if scheduled_event.name == ctf["name"]:
+                break
+        else:
+            await interaction.followup.send("🏁 This CTF has ended.", ephemeral=True)
+            return
+
+        remaining_time = scheduled_event.end_time - get_local_time()
+        await interaction.followup.send(
+            f"⏲️ This CTF ends in {str(remaining_time).split('.')[0]}."
+        )
