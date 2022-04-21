@@ -194,6 +194,36 @@ class Eruditus(discord.Client):
                 f"{role.mention} has started!\nGet to work now ⚔️ 🔪 😠 🔨 ⚒️"
             )
 
+        # If an event ended (status changes from active to ended/completed).
+        elif (
+            before.status == discord.EventStatus.active
+            and after.status == discord.EventStatus.ended
+        ):
+            # Ping players that the CTF ended.
+            ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
+                {"name": re.compile(f"^{after.name.strip()}$", re.IGNORECASE)}
+            )
+            if ctf is None:
+                return
+
+            # Substitue the 🔴 in the category channel name with a 🏁 to say that
+            # the CTF ended.
+            category_channel = discord.utils.get(
+                guild.categories, id=ctf["guild_category"]
+            )
+            await category_channel.edit(name=category_channel.name.replace("🔴", "🏁"))
+
+            # Ping all participants.
+            role = discord.utils.get(guild.roles, id=ctf["guild_role"])
+            ctf_general_channel = discord.utils.get(
+                guild.text_channels,
+                category_id=ctf["guild_category"],
+                name="general",
+            )
+            await ctf_general_channel.send(
+                f"🏁 {role.mention} time is up! The CTF has ended."
+            )
+
     @tasks.loop(hours=1, reconnect=True)
     async def ctf_reminder(self) -> None:
         """Create a CTF for events starting soon and send a reminder."""
