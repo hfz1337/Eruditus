@@ -12,6 +12,8 @@ from datetime import timedelta
 
 import aiohttp
 
+from binascii import hexlify
+
 from slash_commands.help import Help
 from slash_commands.syscalls import Syscalls
 from slash_commands.encoding import Encoding
@@ -27,7 +29,17 @@ from lib.ctftime import (
     scrape_event_info,
     ctftime_date_to_datetime,
 )
-from config import CTF_COLLECTION, CTFTIME_URL, DBNAME, GUILD_ID, MONGO, USER_AGENT
+from lib.ctfd import register_to_ctfd
+from config import (
+    CTF_COLLECTION,
+    CTFTIME_URL,
+    DBNAME,
+    GUILD_ID,
+    MONGO,
+    USER_AGENT,
+    TEAM_NAME,
+    TEAM_EMAIL,
+)
 
 
 class Eruditus(discord.Client):
@@ -170,6 +182,40 @@ class Eruditus(discord.Client):
                 ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
                     {"name": re.compile(f"^{after.name.strip()}$", re.IGNORECASE)}
                 )
+
+            # Register a team account if it's a CTFd platform.
+            url = after.location.split(" — ")[1]
+            password = hexlify(os.urandom(32)).decode()
+            result = await register_to_ctfd(
+                ctfd_base_url=url,
+                username=TEAM_NAME,
+                password=password,
+                email=TEAM_EMAIL,
+            )
+            if "success" in result:
+                # Add credentials.
+                ctf["credentials"]["url"] = url
+                ctf["credentials"]["username"] = TEAM_NAME
+                ctf["credentials"]["password"] = password
+
+                MONGO[DBNAME][CTF_COLLECTION].update_one(
+                    {"_id": ctf["_id"]},
+                    {"$set": {"credentials": ctf["credentials"]}},
+                )
+
+                creds_channel = discord.utils.get(
+                    guild.text_channels, id=ctf["guild_channels"]["credentials"]
+                )
+                message = (
+                    "```yaml\n"
+                    f"CTF platform: {url}\n"
+                    f"Username: {TEAM_NAME}\n"
+                    f"Password: {password}\n"
+                    "```"
+                )
+
+                await creds_channel.purge()
+                await creds_channel.send(message)
 
             # Give the CTF role to the interested people if they didn't get it yet.
             role = discord.utils.get(guild.roles, id=ctf["guild_role"])

@@ -16,5 +16,7 @@ MAX_CONTENT_SIZE = int(os.getenv("MAX_CONTENT_SIZE"))
 MONGODB_URI = os.getenv("MONGODB_URI")
 USER_AGENT = os.getenv("USER_AGENT")
 WRITEUP_INDEX_API = os.getenv("WRITEUP_INDEX_API")
+TEAM_NAME = os.getenv("TEAM_NAME")
+TEAM_EMAIL = os.getenv("TEAM_EMAIL")
 
 MONGO = MongoClient(MONGODB_URI)
