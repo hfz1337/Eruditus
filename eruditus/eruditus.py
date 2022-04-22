@@ -8,11 +8,12 @@ from typing import Union
 import discord
 from discord.ext import tasks
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 import aiohttp
 
 from binascii import hexlify
+from buttons.workon import WorkonButton
 
 from slash_commands.help import Help
 from slash_commands.syscalls import Syscalls
@@ -24,15 +25,23 @@ from slash_commands.request import Request
 from slash_commands.search import Search
 from slash_commands.ctf import CTF
 
-from lib.util import setup_logger, truncate, get_local_time, derive_colour
+from lib.util import (
+    sanitize_channel_name,
+    setup_logger,
+    truncate,
+    get_local_time,
+    derive_colour,
+)
 from lib.ctftime import (
     scrape_event_info,
     ctftime_date_to_datetime,
 )
-from lib.ctfd import register_to_ctfd
+from lib.ctfd import get_scoreboard, pull_challenges, register_to_ctfd
 from config import (
+    CHALLENGE_COLLECTION,
     CTF_COLLECTION,
     CTFTIME_URL,
+    DATE_FORMAT,
     DBNAME,
     GUILD_ID,
     MONGO,
@@ -116,6 +125,7 @@ class Eruditus(discord.Client):
         ctf = {
             "name": name,
             "archived": False,
+            "ended": False,
             "credentials": {
                 "url": None,
                 "username": None,
@@ -148,6 +158,8 @@ class Eruditus(discord.Client):
 
         self.create_upcoming_events.start()
         self.ctf_reminder.start()
+        self.scoreboard_updater.start()
+        self.challenge_puller.start()
 
     async def on_ready(self) -> None:
         for guild in self.guilds:
@@ -268,6 +280,11 @@ class Eruditus(discord.Client):
             )
             await ctf_general_channel.send(
                 f"🏁 {role.mention} time is up! The CTF has ended."
+            )
+
+            # Update status of the CTF.
+            MONGO[DBNAME][CTF_COLLECTION].update_one(
+                {"_id": ctf["_id"]}, {"$set": {"ended": True}}
             )
 
     @tasks.loop(hours=1, reconnect=True)
@@ -399,6 +416,185 @@ class Eruditus(discord.Client):
                         scheduled_event = await guild.create_scheduled_event(
                             **parameters
                         )
+
+    @tasks.loop(minutes=2, reconnect=True)
+    async def challenge_puller(self) -> None:
+        """Periodically pull challenges for all running CTFs."""
+        # Wait until the bot's internal cache is ready.
+        await self.wait_until_ready()
+
+        # The bot is supposed to be part of a single guild.
+        guild = self.get_guild(GUILD_ID)
+
+        for ctf in MONGO[DBNAME][CTF_COLLECTION].find({"ended": False}):
+            url = ctf["credentials"]["url"]
+            username = ctf["credentials"]["username"]
+            password = ctf["credentials"]["password"]
+
+            if url is None:
+                return
+
+            async for challenge in pull_challenges(url, username, password):
+                # Avoid having duplicate categories when people mix up upper/lower case
+                # or add unnecessary spaces at the beginning or the end.
+                challenge["category"] = challenge["category"].title().strip()
+
+                # Check if challenge was already created.
+                if MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
+                    {
+                        "id": challenge["id"],
+                        "name": re.compile(f"^{challenge['name']}$", re.IGNORECASE),
+                        "category": re.compile(
+                            f"^{challenge['category']}$", re.IGNORECASE
+                        ),
+                    }
+                ):
+                    continue
+
+                # Create a channel for the challenge and set its permissions.
+                category_channel = discord.utils.get(
+                    guild.categories, id=ctf["guild_category"]
+                )
+                overwrites = {
+                    guild.default_role: discord.PermissionOverwrite(read_messages=False)
+                }
+                channel_name = sanitize_channel_name(
+                    f"{challenge['category']}-{challenge['name']}"
+                )
+                challenge_channel = await guild.create_text_channel(
+                    name=f"❌-{channel_name}",
+                    category=category_channel,
+                    overwrites=overwrites,
+                )
+
+                # Send challenge information in its respective channel.
+                description = challenge["description"] or "No description."
+                tags = ", ".join(challenge["tags"]) or "No tags."
+                files = [
+                    f"{ctf['credentials']['url'].strip('/')}{file}"
+                    for file in challenge["files"]
+                ]
+                files = "\n- " + "\n- ".join(files) if files else "No files."
+                embed = discord.Embed(
+                    title=f"{challenge['name']} - {challenge['value']} points",
+                    description=(
+                        f"**Category:** {challenge['category']}\n"
+                        f"**Description:** {description}\n"
+                        f"**Files:** {files}\n"
+                        f"**Tags:** {tags}"
+                    ),
+                    colour=discord.Colour.blue(),
+                ).set_footer(
+                    text=datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)
+                )
+                message = await challenge_channel.send(embed=embed)
+                await message.pin()
+
+                # Announce that the challenge was added.
+                announcements_channel = discord.utils.get(
+                    guild.text_channels,
+                    id=ctf["guild_channels"]["announcements"],
+                )
+                role = discord.utils.get(guild.roles, id=ctf["guild_role"])
+
+                embed = discord.Embed(
+                    title="🔔 New challenge created!",
+                    description=(
+                        f"**Challenge name:** {challenge['name']}\n"
+                        f"**Category:** {challenge['category']}\n\n"
+                        f"Use `/ctf workon {challenge['name']}` or the button to join."
+                        f"\n{role.mention}"
+                    ),
+                    colour=discord.Colour.dark_gold(),
+                ).set_footer(
+                    text=datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)
+                )
+                announcement = await announcements_channel.send(
+                    embed=embed, view=WorkonButton(name=challenge["name"])
+                )
+
+                # Add challenge to the database.
+                challenge_object_id = (
+                    MONGO[DBNAME][CHALLENGE_COLLECTION]
+                    .insert_one(
+                        {
+                            "id": challenge["id"],
+                            "name": challenge["name"],
+                            "category": challenge["category"],
+                            "channel": challenge_channel.id,
+                            "solved": False,
+                            "blooded": False,
+                            "players": [],
+                            "announcement": announcement.id,
+                            "solve_time": None,
+                            "solve_announcement": None,
+                        }
+                    )
+                    .inserted_id
+                )
+
+                # Add reference to the newly created challenge.
+                ctf["challenges"].append(challenge_object_id)
+                MONGO[DBNAME][CTF_COLLECTION].update_one(
+                    {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
+                )
+
+    @tasks.loop(minutes=1, reconnect=True)
+    async def scoreboard_updater(self) -> None:
+        """Periodically update scoreboard for all running CTFs."""
+        # Wait until the bot's internal cache is ready.
+        await self.wait_until_ready()
+
+        # The bot is supposed to be part of a single guild.
+        guild = self.get_guild(GUILD_ID)
+
+        for ctf in MONGO[DBNAME][CTF_COLLECTION].find({"ended": False}):
+            ctfd_url = ctf["credentials"]["url"]
+            username = ctf["credentials"]["username"]
+            password = ctf["credentials"]["password"]
+
+            if ctfd_url is None:
+                continue
+
+            try:
+                teams = await get_scoreboard(ctfd_url, username, password)
+            except aiohttp.client_exceptions.InvalidURL:
+                continue
+
+            if not teams:
+                continue
+
+            name_field_width = max(len(team["name"]) for team in teams) + 10
+            scoreboard = ""
+            for rank, team in enumerate(teams, start=1):
+                scoreboard += (
+                    f"{['-', '+'][team['name'] == username]} "
+                    f"{rank:<10}{team['name']:<{name_field_width}}"
+                    f"{round(team['score'], 4)}\n"
+                )
+
+            if scoreboard:
+                message = (
+                    f"**Scoreboard as of "
+                    f"{datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)}"
+                    "**"
+                    "```diff\n"
+                    f"  {'Rank':<10}{'Team':<{name_field_width}}{'Score'}\n"
+                    f"{scoreboard}"
+                    "```"
+                )
+            else:
+                message = "No solves yet, or platform isn't CTFd."
+
+            # Update scoreboard in the scoreboard channel.
+            scoreboard_channel = discord.utils.get(
+                guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
+            )
+            async for last_message in scoreboard_channel.history(limit=1):
+                await last_message.edit(content=message)
+                break
+            else:
+                await scoreboard_channel.send(message)
 
 
 if __name__ == "__main__":
