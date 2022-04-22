@@ -60,6 +60,7 @@ Here's a list of the currently supported commands:
 /ctf pull [<ctfd_url>]                               (Pull unsolved challenges from the CTFd platform)
 /ctf takenote <type> <note_format>                   (Copies the last message into the notes channel)
 /ctf submit                                          (Submits a flag to CTFd)
+/ctf remaining                                       (Show remaining time for the CTF)
 
 /syscalls show <arch> <syscall name/syscall id>      (Show information for a specific syscall)
 
