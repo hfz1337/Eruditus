@@ -188,7 +188,9 @@ class CTF(app_commands.Group):
                 )
                 return
         else:
-            ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one({"name": name})
+            ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
+                {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
+            )
             if ctf is None:
                 await interaction.followup.send("No such CTF.", ephemeral=True)
                 return
@@ -313,7 +315,9 @@ class CTF(app_commands.Group):
                 )
                 return
         else:
-            ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one({"name": name})
+            ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
+                {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
+            )
             if ctf is None:
                 await interaction.followup.send("No such CTF.", ephemeral=True)
                 return
@@ -362,7 +366,9 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one({"name": name})
+        ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
+            {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
+        )
         if ctf is None:
             await interaction.followup.send("No such CTF.", ephemeral=True)
             return
@@ -402,7 +408,9 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             name: Name of the CTF to join (case insensitive).
         """
-        ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one({"name": name})
+        ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
+            {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
+        )
         if ctf is None:
             await interaction.response.send_message("No such CTF.", ephemeral=True)
             return
@@ -646,7 +654,9 @@ class CTF(app_commands.Group):
                 )
                 return
         else:
-            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": name})
+            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
+                {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
+            )
             if challenge is None:
                 await interaction.response.send_message(
                     "No such challenge.", ephemeral=True
@@ -875,7 +885,9 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             name: Challenge name (case insensitive).
         """
-        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": name})
+        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
+            {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
+        )
         if challenge is None:
             await interaction.response.send_message(
                 "No such challenge.", ephemeral=True
@@ -943,7 +955,9 @@ class CTF(app_commands.Group):
                 )
                 return
         else:
-            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": name})
+            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
+                {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
+            )
             if challenge is None:
                 await interaction.response.send_message(
                     "No such challenge.", ephemeral=True
@@ -1015,7 +1029,10 @@ class CTF(app_commands.Group):
         # we display status of the requested CTF only.
         else:
             ctfs = MONGO[DBNAME][CTF_COLLECTION].find_one(
-                {"name": name, "archived": False}
+                {
+                    "name": re.compile(f"^{name.strip()}$", re.IGNORECASE),
+                    "archived": False,
+                }
             )
             if ctfs is None:
                 await interaction.followup.send("No such CTF.", ephemeral=True)
@@ -1222,8 +1239,8 @@ class CTF(app_commands.Group):
             if MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
                 {
                     "id": challenge["id"],
-                    "name": challenge["name"],
-                    "category": challenge["category"],
+                    "name": re.compile(f"^{challenge['name']}$", re.IGNORECASE),
+                    "category": re.compile(f"^{challenge['category']}$", re.IGNORECASE),
                 }
             ):
                 continue
