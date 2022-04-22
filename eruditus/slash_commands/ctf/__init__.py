@@ -8,7 +8,7 @@ from discord import HTTPException, app_commands
 from discord.app_commands import Choice
 
 from lib.util import get_local_time, sanitize_channel_name
-from lib.ctfd import pull_challenges, get_scoreboard
+from lib.ctfd import pull_challenges, get_scoreboard, register_to_ctfd
 
 from lib.types import ArchiveMode, CTFStatusMode, NoteFormat, NoteType
 from forms.flag import FlagSubmissionForm
@@ -1516,3 +1516,57 @@ class CTF(app_commands.Group):
         await interaction.followup.send(
             f"⏲️ This CTF ends in {str(remaining_time).split('.')[0]}."
         )
+
+    @app_commands.command()
+    @_in_ctf_channel()
+    async def register(
+        self,
+        interaction: discord.Interaction,
+        url: str,
+        username: str,
+        password: str,
+        email: str,
+    ) -> None:
+        """Register team account in the CTFd platform.
+
+        Args:
+            interaction: The interaction that triggered this command.
+            url: CTFd base url.
+            username: Username to register with (also the team name).
+            password: Password to register with (also the team password).
+            email: Email to register with.
+        """
+        await interaction.response.defer()
+
+        result = await register_to_ctfd(url, username, password, email)
+        if "error" in result:
+            await interaction.followup.send(result["error"])
+            return
+
+        # Add credentials.
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
+            {"guild_category": interaction.channel.category_id}
+        )
+        ctf["credentials"]["url"] = url
+        ctf["credentials"]["username"] = username
+        ctf["credentials"]["password"] = password
+
+        MONGO[DBNAME][CTF_COLLECTION].update_one(
+            {"_id": ctf["_id"]},
+            {"$set": {"credentials": ctf["credentials"]}},
+        )
+
+        creds_channel = discord.utils.get(
+            interaction.guild.text_channels, id=ctf["guild_channels"]["credentials"]
+        )
+        message = (
+            "```yaml\n"
+            f"CTF platform: {url}\n"
+            f"Username: {username}\n"
+            f"Password: {password}\n"
+            "```"
+        )
+
+        await creds_channel.purge()
+        await creds_channel.send(message)
+        await interaction.followup.send(result["success"])

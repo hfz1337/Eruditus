@@ -216,3 +216,98 @@ async def get_scoreboard(ctfd_base_url: str, username: str, password: str) -> li
                 {"name": team["name"], "score": team["score"]}
                 for team in json["data"][:20]
             ]
+
+
+async def register_to_ctfd(
+    ctfd_base_url: str, username: str, password: str, email: str
+) -> dict:
+    """Registers an account in the CTFd platform.
+
+    Args:
+        ctfd_base_url: The CTFd platform to register into.
+        username: The username.
+        password: The password.
+        email: The email address.
+
+    Returns:
+        A dictionary containing either a "success" or "error" key with an explanatory
+        message.
+    """
+    ctfd_base_url = ctfd_base_url.strip("/")
+    if not await is_ctfd_platform(ctfd_base_url):
+        return {"error": "Platform isn't CTFd"}
+
+    # Get the nonce.
+    async with aiohttp.request(
+        method="get", url=f"{ctfd_base_url}/register"
+    ) as response:
+        cookies = {cookie.key: cookie.value for cookie in response.cookies.values()}
+        nonce = BeautifulSoup(await response.text(), "html.parser").find(
+            "input", {"id": "nonce"}
+        )["value"]
+
+    async with aiohttp.request(
+        method="post",
+        url=f"{ctfd_base_url}/register",
+        data={
+            "name": username,
+            "email": email,
+            "password": password,
+            "nonce": nonce,
+            "_submit": "Submit",
+        },
+        cookies=cookies,
+        allow_redirects=False,
+    ) as response:
+        if response.status == 200:
+            # User/Email already taken.
+            errors = []
+            for error in BeautifulSoup(await response.text(), "html.parser").findAll(
+                "div", {"role": "alert"}
+            ):
+                if error.span:
+                    errors.append(error.span.text)
+            return {"error": "\n".join(errors or ["Registration failure"])}
+
+        elif response.status != 302:
+            # Other errors occured.
+            return {"error": "Registration failure"}
+
+        # Registration successful, we proceed to create a team.
+        # First, get the nonce.
+        async with aiohttp.request(
+            method="get",
+            url=f"{ctfd_base_url}/teams/new",
+            cookies=cookies,
+        ) as response:
+            nonce = BeautifulSoup(await response.text(), "html.parser").find(
+                "input", {"id": "nonce"}
+            )["value"]
+
+        async with aiohttp.request(
+            method="post",
+            url=f"{ctfd_base_url}/teams/new",
+            data={
+                "name": username,
+                "password": password,
+                "_submit": "Create",
+                "nonce": nonce,
+            },
+            cookies=cookies,
+            allow_redirects=False,
+        ) as response:
+            if response.status == 200:
+                # Team name was already taken.
+                errors = []
+                for error in BeautifulSoup(
+                    await response.text(), "html.parser"
+                ).findAll("div", {"role": "alert"}):
+                    if error.span:
+                        errors.append(error.span.text)
+                return {"error": "\n".join(errors or ["Team name already taken"])}
+
+            elif response.status != 302:
+                # Other errors occured.
+                return {"error": "Couldn't create a team"}
+
+            return {"success": "Registration successful"}

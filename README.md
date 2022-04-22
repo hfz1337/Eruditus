@@ -61,6 +61,7 @@ Here's a list of the currently supported commands:
 /ctf takenote <type> <note_format>                   (Copies the last message into the notes channel)
 /ctf submit                                          (Submits a flag to CTFd)
 /ctf remaining                                       (Show remaining time for the CTF)
+/ctf register                                        (Register a CTFd account)
 
 /syscalls show <arch> <syscall name/syscall id>      (Show information for a specific syscall)
 
