@@ -2,6 +2,7 @@ import re
 
 from typing import Optional, List
 from datetime import datetime, timezone
+import aiohttp
 
 import discord
 from discord import HTTPException, app_commands
@@ -59,7 +60,9 @@ class CTF(app_commands.Group):
             A list of suggestions.
         """
         suggestions = []
-        for ctf in MONGO[DBNAME][CTF_COLLECTION].find({"archived": False}):
+        for ctf in MONGO[DBNAME][CTF_COLLECTION].find(
+            {"archived": False, "ended": False}
+        ):
             if current.lower() in ctf["name"].lower():
                 suggestions.append(Choice(name=ctf["name"], value=ctf["name"]))
             if len(suggestions) == 25:
@@ -277,7 +280,7 @@ class CTF(app_commands.Group):
 
         # Update status of the CTF.
         MONGO[DBNAME][CTF_COLLECTION].update_one(
-            {"_id": ctf["_id"]}, {"$set": {"archived": True}}
+            {"_id": ctf["_id"]}, {"$set": {"archived": True, "ended": True}}
         )
 
         # Only send a followup message if the channel from which the command was issued
@@ -1017,7 +1020,9 @@ class CTF(app_commands.Group):
         # CTF name wasn't provided, and we're outside a CTF category channel, so
         # we display statuses of all running CTFs.
         if ctf is None and name is None:
-            ctfs = MONGO[DBNAME][CTF_COLLECTION].find({"archived": False})
+            ctfs = MONGO[DBNAME][CTF_COLLECTION].find(
+                {"archived": False, "ended": False}
+            )
         # CTF name wasn't provided, and we're inside a CTF category channel, so
         # we display status of the CTF related to this category channel.
         elif name is None:
@@ -1032,6 +1037,7 @@ class CTF(app_commands.Group):
                 {
                     "name": re.compile(f"^{name.strip()}$", re.IGNORECASE),
                     "archived": False,
+                    "ended": False,
                 }
             )
             if ctfs is None:
@@ -1453,8 +1459,19 @@ class CTF(app_commands.Group):
         username = ctf["credentials"]["username"]
         password = ctf["credentials"]["password"]
 
-        teams = await get_scoreboard(ctfd_url, username, password)
-        if teams is None:
+        if ctfd_url is None:
+            await interaction.followup.send(
+                "No credentials set for this CTF.", ephemeral=True
+            )
+            return
+
+        try:
+            teams = await get_scoreboard(ctfd_url, username, password)
+        except aiohttp.client_exceptions.InvalidURL:
+            interaction.followup.send("Invalid URL set for this CTF.")
+            return
+
+        if not teams:
             await interaction.response.send_message(
                 "Failed to fetch the scoreboard.", ephemeral=True
             )
