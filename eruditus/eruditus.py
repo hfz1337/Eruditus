@@ -69,7 +69,7 @@ class Eruditus(discord.Client):
         """
         # Check if the CTF already exists (case insensitive).
         if MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"name": re.compile(f"^{name.strip()}$", re.IGNORECASE)}
+            {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
         ):
             return None
 
@@ -192,7 +192,11 @@ class Eruditus(discord.Client):
             ctf = await self.create_ctf(after.name, live=True)
             if ctf is None:
                 ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-                    {"name": re.compile(f"^{after.name.strip()}$", re.IGNORECASE)}
+                    {
+                        "name": re.compile(
+                            f"^{re.escape(after.name.strip())}$", re.IGNORECASE
+                        )
+                    }
                 )
 
             # Register a team account if it's a CTFd platform.
@@ -259,7 +263,11 @@ class Eruditus(discord.Client):
         ):
             # Ping players that the CTF ended.
             ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-                {"name": re.compile(f"^{after.name.strip()}$", re.IGNORECASE)}
+                {
+                    "name": re.compile(
+                        f"^{re.escape(after.name.strip())}$", re.IGNORECASE
+                    )
+                }
             )
             if ctf is None:
                 return
@@ -319,7 +327,8 @@ class Eruditus(discord.Client):
                     ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
                         {
                             "name": re.compile(
-                                f"^{scheduled_event.name.strip()}$", re.IGNORECASE
+                                f"^{re.escape(scheduled_event.name.strip())}$",
+                                re.IGNORECASE,
                             )
                         }
                     )
@@ -443,9 +452,11 @@ class Eruditus(discord.Client):
                 if MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
                     {
                         "id": challenge["id"],
-                        "name": re.compile(f"^{challenge['name']}$", re.IGNORECASE),
+                        "name": re.compile(
+                            f"^{re.escape(challenge['name'])}$", re.IGNORECASE
+                        ),
                         "category": re.compile(
-                            f"^{challenge['category']}$", re.IGNORECASE
+                            f"^{re.escape(challenge['category'])}$", re.IGNORECASE
                         ),
                     }
                 ):
