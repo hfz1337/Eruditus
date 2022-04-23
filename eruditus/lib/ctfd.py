@@ -13,11 +13,10 @@ async def is_ctfd_platform(ctfd_base_url: str) -> bool:
     Returns:
         True if the platform is using CTFd, else False.
     """
-    ctfd_signature = "Powered by CTFd"
     async with aiohttp.request(
-        method="get", url=f"{ctfd_base_url.strip()}/"
+        method="get", url=f"{ctfd_base_url.strip()}/plugins/challenges/assets/view.js"
     ) as response:
-        return ctfd_signature in await response.text()
+        return "CTFd" in await response.text()
 
 
 async def login(ctfd_base_url: str, username: str, password: str) -> dict:
