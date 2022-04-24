@@ -240,6 +240,9 @@ async def register_to_ctfd(
     async with aiohttp.request(
         method="get", url=f"{ctfd_base_url}/register"
     ) as response:
+        if response.status != 200:
+            return {"error": "Registrations might be closed"}
+
         cookies = {cookie.key: cookie.value for cookie in response.cookies.values()}
         nonce = BeautifulSoup(await response.text(), "html.parser").find(
             "input", {"id": "nonce"}
