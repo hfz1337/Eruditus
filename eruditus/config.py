@@ -18,5 +18,6 @@ USER_AGENT = os.getenv("USER_AGENT")
 WRITEUP_INDEX_API = os.getenv("WRITEUP_INDEX_API")
 TEAM_NAME = os.getenv("TEAM_NAME")
 TEAM_EMAIL = os.getenv("TEAM_EMAIL")
+MIN_PLAYERS = int(os.getenv("MIN_PLAYERS"))
 
 MONGO = MongoClient(MONGODB_URI)
