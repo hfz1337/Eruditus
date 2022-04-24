@@ -113,6 +113,9 @@ class Eruditus(discord.Client):
         notes_channel = await guild.create_text_channel(
             name="📝-notes", category=category_channel, overwrites=overwrites
         )
+        bot_cmds_channel = await guild.create_text_channel(
+            name="🤖-bot-cmds", category=category_channel, overwrites=overwrites
+        )
         announcement_channel = await guild.create_text_channel(
             name="📣-announcements", category=category_channel, overwrites=overwrites
         )
@@ -141,6 +144,7 @@ class Eruditus(discord.Client):
                 "scoreboard": scoreboard_channel.id,
                 "solves": solves_channel.id,
                 "notes": notes_channel.id,
+                "bot-cmds": bot_cmds_channel.id,
             },
         }
         MONGO[DBNAME][CTF_COLLECTION].insert_one(ctf)
