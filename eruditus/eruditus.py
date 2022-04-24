@@ -189,7 +189,10 @@ class Eruditus(discord.Client):
             before.status == discord.EventStatus.scheduled
             and after.status == discord.EventStatus.active
         ):
-            # Create the CTF if it wasn't already created.
+            # Create the CTF if it wasn't already created and enough people are willing
+            # to play it.
+            if after.user_count < MIN_PLAYERS:
+                return
             ctf = await self.create_ctf(after.name, live=True)
             if ctf is None:
                 ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
