@@ -1047,6 +1047,7 @@ class CTF(app_commands.Group):
 
         no_running_ctfs = True
         for ctf in ctfs:
+            no_running_ctfs = False
             # Let the user know that they should join the CTF first to see its
             # details in case the command was run from outside the CTF channel.
             if ctf["guild_category"] != interaction.channel.category_id:
@@ -1059,7 +1060,7 @@ class CTF(app_commands.Group):
                     ),
                 )
                 await interaction.followup.send(embed=embed)
-                return
+                continue
 
             # Otherwise, display details about the CTF status.
             challenges = ctf["challenges"]
@@ -1126,7 +1127,6 @@ class CTF(app_commands.Group):
 
             # Send the remaining embed.
             await interaction.followup.send(embed=embed)
-            no_running_ctfs = False
 
         if no_running_ctfs:
             if name is None:
