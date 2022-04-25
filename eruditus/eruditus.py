@@ -107,14 +107,21 @@ class Eruditus(discord.Client):
             role: discord.PermissionOverwrite(read_messages=True, send_messages=False),
         }
 
+        bot_cmds_channel = await guild.create_text_channel(
+            name="🤖-bot-cmds",
+            category=category_channel,
+            overwrites={
+                guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                role: discord.PermissionOverwrite(
+                    read_messages=True, send_messages=True
+                ),
+            },
+        )
         credentials_channel = await guild.create_text_channel(
             name="🔑-credentials", category=category_channel, overwrites=overwrites
         )
         notes_channel = await guild.create_text_channel(
             name="📝-notes", category=category_channel, overwrites=overwrites
-        )
-        bot_cmds_channel = await guild.create_text_channel(
-            name="🤖-bot-cmds", category=category_channel, overwrites=overwrites
         )
         announcement_channel = await guild.create_text_channel(
             name="📣-announcements", category=category_channel, overwrites=overwrites
