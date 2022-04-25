@@ -112,9 +112,7 @@ class Eruditus(discord.Client):
             category=category_channel,
             overwrites={
                 guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                role: discord.PermissionOverwrite(
-                    read_messages=True, send_messages=True
-                ),
+                role: discord.PermissionOverwrite(read_messages=True),
             },
         )
         credentials_channel = await guild.create_text_channel(
