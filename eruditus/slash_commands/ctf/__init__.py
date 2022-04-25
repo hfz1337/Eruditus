@@ -164,7 +164,7 @@ class CTF(app_commands.Group):
     async def archivectf(
         self,
         interaction: discord.Interaction,
-        mode: Optional[ArchiveMode] = ArchiveMode.minimal,
+        mode: Optional[ArchiveMode] = ArchiveMode.all,
         name: Optional[str] = None,
     ):
         """Archive a CTF by making its channels read-only.
@@ -172,7 +172,7 @@ class CTF(app_commands.Group):
         Args:
             interaction: The interaction that triggered this command.
             mode: Whether to archive all channels, or the important ones
-               only (default: minimal).
+               only (default: all).
             name: CTF name (default: current channel's CTF).
         """
         await interaction.response.defer()
@@ -213,39 +213,41 @@ class CTF(app_commands.Group):
         challenges = sorted(
             challenges, key=lambda challenge: (challenge["category"], challenge["name"])
         )
-        name_field_width = max(len(challenge["name"]) for challenge in challenges) + 10
-
-        # Post final scoreboard and challenge solves summary in the scoreboard
-        # channel.
-        head = (
-            "```diff\n"
-            f"  {'Challenge':<{name_field_width}}"
-            f"{'Category':<30}{'Solved':<30}{'Blood'}\n\n{{}}"
-            "```"
-        )
-        summaries = []
-        summary = ""
-        for challenge in challenges:
-            content = (
-                f"{['-', '+'][challenge['solved']]} "
-                f"{challenge['name']:<{name_field_width}}"
-                f"{challenge['category']:<30}"
-                f"{['❌', '✔️'][challenge['solved']]:<30}"
-                f"{['', '🩸'][challenge['blooded']]}\n"
+        if challenges:
+            name_field_width = (
+                max(len(challenge["name"]) for challenge in challenges) + 10
             )
-            if len(head) - 2 + len(summary) + len(content) > MAX_CONTENT_SIZE:
-                summaries.append(summary)
-                summary = content
-            else:
-                summary += content
 
-        summaries.append(summary)
+            # Post challenge solves summary in the scoreboard channel.
+            head = (
+                "```diff\n"
+                f"  {'Challenge':<{name_field_width}}"
+                f"{'Category':<30}{'Solved':<30}{'Blood'}\n\n{{}}"
+                "```"
+            )
+            summaries = []
+            summary = ""
+            for challenge in challenges:
+                content = (
+                    f"{['-', '+'][challenge['solved']]} "
+                    f"{challenge['name']:<{name_field_width}}"
+                    f"{challenge['category']:<30}"
+                    f"{['❌', '✔️'][challenge['solved']]:<30}"
+                    f"{['', '🩸'][challenge['blooded']]}\n"
+                )
+                if len(head) - 2 + len(summary) + len(content) > MAX_CONTENT_SIZE:
+                    summaries.append(summary)
+                    summary = content
+                else:
+                    summary += content
 
-        scoreboard_channel = discord.utils.get(
-            interaction.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
-        )
-        for summary in summaries:
-            await scoreboard_channel.send(head.format(summary))
+            summaries.append(summary)
+
+            scoreboard_channel = discord.utils.get(
+                interaction.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
+            )
+            for summary in summaries:
+                await scoreboard_channel.send(head.format(summary))
 
         # Delete unimportant channels if we are in minimal mode.
         if mode == ArchiveMode.minimal:
@@ -257,16 +259,17 @@ class CTF(app_commands.Group):
                 ):
                     await ctf_channel.delete()
 
-        # Make the channels world readable.
+        # Make the channels read-only by participants.
         overwrites = {
-            interaction.guild.default_role: discord.PermissionOverwrite(
-                send_messages=False
-            )
+            member: discord.PermissionOverwrite(read_messages=True, send_messages=False)
+            async for member in interaction.guild.fetch_members(limit=None)
+            if role in member.roles
         }
-        await category_channel.edit(
-            name=f"🔒 {ctf['name']}",
-            overwrites=overwrites,
+        overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(
+            read_messages=False
         )
+
+        await category_channel.edit(name=f"🔒 {ctf['name']}", overwrites=overwrites)
         for ctf_channel in category_channel.channels:
             await ctf_channel.edit(sync_permissions=True)
 

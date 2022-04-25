@@ -54,7 +54,10 @@ from config import (
 
 class Eruditus(discord.Client):
     def __init__(self) -> None:
-        super().__init__(intents=discord.Intents.default())
+        intents = discord.Intents.default()
+        intents.members = True
+        intents.message_content = True
+        super().__init__(intents=intents)
         self.tree = discord.app_commands.CommandTree(self)
 
     async def create_ctf(self, name: str, live: bool = True) -> Union[dict, None]:
@@ -198,7 +201,10 @@ class Eruditus(discord.Client):
             before.status == discord.EventStatus.scheduled
             and after.status == discord.EventStatus.active
         ):
-            # Create the CTF if it wasn't already created.
+            # Create the CTF if it wasn't already created and enough people are willing
+            # to play it.
+            if after.user_count < MIN_PLAYERS:
+                return
             ctf = await self.create_ctf(after.name, live=True)
             if ctf is None:
                 ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
