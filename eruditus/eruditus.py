@@ -110,6 +110,14 @@ class Eruditus(discord.Client):
             role: discord.PermissionOverwrite(read_messages=True, send_messages=False),
         }
 
+        bot_cmds_channel = await guild.create_text_channel(
+            name="🤖-bot-cmds",
+            category=category_channel,
+            overwrites={
+                guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                role: discord.PermissionOverwrite(read_messages=True),
+            },
+        )
         credentials_channel = await guild.create_text_channel(
             name="🔑-credentials", category=category_channel, overwrites=overwrites
         )
@@ -144,6 +152,7 @@ class Eruditus(discord.Client):
                 "scoreboard": scoreboard_channel.id,
                 "solves": solves_channel.id,
                 "notes": notes_channel.id,
+                "bot-cmds": bot_cmds_channel.id,
             },
         }
         MONGO[DBNAME][CTF_COLLECTION].insert_one(ctf)
