@@ -54,7 +54,10 @@ from config import (
 
 class Eruditus(discord.Client):
     def __init__(self) -> None:
-        super().__init__(intents=discord.Intents.default())
+        intents = discord.Intents.default()
+        intents.members = True
+        intents.message_content = True
+        super().__init__(intents=intents)
         self.tree = discord.app_commands.CommandTree(self)
 
     async def create_ctf(self, name: str, live: bool = True) -> Union[dict, None]:

@@ -85,13 +85,15 @@ Here's a list of the currently supported commands:
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
 2. Create a new application.
 3. Go to the **Bot** pane and add a bot for your application.
-4. Put your Discord guild ID and bot token inside the [.env](eruditus/.env) file.
-5. Deploy the bot using `docker-compose up -d --build`.
-6. Go to the **OAuth2 URL Generator** pane, tick `bot` and `applications.commands`
+4. Enable **Server Members Intent** and **Message Content Intent** under
+**Privileged Gateway Intents**.
+5. Put your Discord guild ID and bot token inside the [.env](eruditus/.env) file.
+6. Deploy the bot using `docker-compose up -d --build`.
+7. Go to the **OAuth2 URL Generator** pane, tick `bot` and `applications.commands`
 under the **Scopes** section, tick `Administrator` under the **Bot Permissions**
 section and copy the generated link.
-7. Invite your bot to the guild using the generated link.
-8. Enjoy.
+8. Invite your bot to the guild using the generated link.
+9. Enjoy.
 
 ## Contribution Guidelines
 Please consider reading our [Contribution Guidelines](.github/CONTRIBUTING.md) before
