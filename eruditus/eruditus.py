@@ -1,3 +1,4 @@
+import traceback
 import logging
 import io
 import os
@@ -683,6 +684,26 @@ class Eruditus(discord.Client):
                 break
             else:
                 await scoreboard_channel.send(message)
+
+    @create_upcoming_events.error
+    async def create_upcoming_events_err_handler(self, error: Exception) -> None:
+        traceback.print_exc()
+        self.create_upcoming_events.restart()
+
+    @ctf_reminder.error
+    async def ctf_reminder_err_handler(self, error: Exception) -> None:
+        traceback.print_exc()
+        self.ctf_reminder.restart()
+
+    @scoreboard_updater.error
+    async def scoreboard_updater_err_handler(self, error: Exception) -> None:
+        traceback.print_exc()
+        self.scoreboard_updater.restart()
+
+    @challenge_puller.error
+    async def challenge_puller_err_handler(self, error: Exception) -> None:
+        traceback.print_exc()
+        self.challenge_puller.restart()
 
 
 if __name__ == "__main__":
