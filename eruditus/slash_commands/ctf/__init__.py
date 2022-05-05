@@ -8,7 +8,7 @@ import discord
 from discord import HTTPException, app_commands
 from discord.app_commands import Choice
 
-from lib.util import get_local_time, sanitize_channel_name
+from lib.util import get_local_time, sanitize_channel_name, truncate
 from lib.ctfd import pull_challenges, get_scoreboard, register_to_ctfd
 
 from lib.types import ArchiveMode, CTFStatusMode, NoteFormat, NoteType
@@ -513,10 +513,21 @@ class CTF(app_commands.Group):
             )
             return
 
-        # Create a channel for the challenge and set its permissions.
         category_channel = discord.utils.get(
             interaction.guild.categories, id=interaction.channel.category_id
         )
+
+        # Make sure we didn't reach 50 channels, otherwise channel creation
+        # will throw an exception.
+        if len(category_channel.channels) == 50:
+            await interaction.response.send_message(
+                "Max channels per category exceeded, please delete some "
+                "challenges first.",
+                ephemeral=True,
+            )
+            return
+
+        # Create a channel for the challenge and set its permissions.
         overwrites = {
             interaction.guild.default_role: discord.PermissionOverwrite(
                 read_messages=False
@@ -1239,6 +1250,10 @@ class CTF(app_commands.Group):
             )
             return
 
+        category_channel = discord.utils.get(
+            interaction.guild.categories, id=interaction.channel.category_id
+        )
+
         async for challenge in pull_challenges(url, username, password):
             # Avoid having duplicate categories when people mix up upper/lower case
             # or add unnecessary spaces at the beginning or the end.
@@ -1258,10 +1273,17 @@ class CTF(app_commands.Group):
             ):
                 continue
 
+            # Make sure we didn't reach 50 channels, otherwise channel creation
+            # will throw an exception.
+            if len(category_channel.channels) == 50:
+                await interaction.followup.send(
+                    "Max channels per category exceeded, please delete some "
+                    "challenges first.",
+                    ephemeral=True,
+                )
+                return
+
             # Create a channel for the challenge and set its permissions.
-            category_channel = discord.utils.get(
-                interaction.guild.categories, id=interaction.channel.category_id
-            )
             overwrites = {
                 interaction.guild.default_role: discord.PermissionOverwrite(
                     read_messages=False
@@ -1286,11 +1308,12 @@ class CTF(app_commands.Group):
             files = "\n- " + "\n- ".join(files) if files else "No files."
             embed = discord.Embed(
                 title=f"{challenge['name']} - {challenge['value']} points",
-                description=(
+                description=truncate(
                     f"**Category:** {challenge['category']}\n"
                     f"**Description:** {description}\n"
                     f"**Files:** {files}\n"
-                    f"**Tags:** {tags}"
+                    f"**Tags:** {tags}",
+                    maxlen=4096,
                 ),
                 colour=discord.Colour.blue(),
             ).set_footer(
@@ -1485,21 +1508,27 @@ class CTF(app_commands.Group):
             return
 
         name_field_width = max(len(team["name"]) for team in teams) + 10
+        message = (
+            f"**Scoreboard as of "
+            f"{datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)}**"
+            "```diff\n"
+            f"  {'Rank':<10}{'Team':<{name_field_width}}{'Score'}\n"
+            "{}"
+            "```"
+        )
         scoreboard = ""
         for rank, team in enumerate(teams, start=1):
-            scoreboard += (
+            line = (
                 f"{['-', '+'][team['name'] == username]} "
                 f"{rank:<10}{team['name']:<{name_field_width}}"
                 f"{round(team['score'], 4)}\n"
             )
+            if len(message) + len(scoreboard) + len(line) - 2 > MAX_CONTENT_SIZE:
+                break
+            scoreboard += line
 
         if scoreboard:
-            message = (
-                "```diff\n"
-                f"  {'Rank':<10}{'Team':<{name_field_width}}{'Score'}\n"
-                f"{scoreboard}"
-                "```"
-            )
+            message = message.format(scoreboard)
         else:
             message = "No solves yet, or platform isn't CTFd."
 

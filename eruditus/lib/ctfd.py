@@ -41,7 +41,10 @@ async def login(ctfd_base_url: str, username: str, password: str) -> dict:
         cookies = {cookie.key: cookie.value for cookie in response.cookies.values()}
         nonce = BeautifulSoup(await response.text(), "html.parser").find(
             "input", {"id": "nonce"}
-        )["value"]
+        )
+        if nonce is None:
+            return None
+        nonce = nonce["value"]
 
     # Login to CTFd.
     data = {

@@ -44,6 +44,7 @@ from config import (
     DATE_FORMAT,
     DBNAME,
     GUILD_ID,
+    MAX_CONTENT_SIZE,
     MIN_PLAYERS,
     MONGO,
     USER_AGENT,
@@ -471,6 +472,10 @@ class Eruditus(discord.Client):
             if url is None:
                 return
 
+            category_channel = discord.utils.get(
+                guild.categories, id=ctf["guild_category"]
+            )
+
             async for challenge in pull_challenges(url, username, password):
                 # Avoid having duplicate categories when people mix up upper/lower case
                 # or add unnecessary spaces at the beginning or the end.
@@ -490,10 +495,12 @@ class Eruditus(discord.Client):
                 ):
                     continue
 
+                # Make sure we didn't reach 50 channels, otherwise channel creation
+                # will throw an exception.
+                if len(category_channel.channels) == 50:
+                    return
+
                 # Create a channel for the challenge and set its permissions.
-                category_channel = discord.utils.get(
-                    guild.categories, id=ctf["guild_category"]
-                )
                 overwrites = {
                     guild.default_role: discord.PermissionOverwrite(read_messages=False)
                 }
@@ -516,11 +523,12 @@ class Eruditus(discord.Client):
                 files = "\n- " + "\n- ".join(files) if files else "No files."
                 embed = discord.Embed(
                     title=f"{challenge['name']} - {challenge['value']} points",
-                    description=(
+                    description=truncate(
                         f"**Category:** {challenge['category']}\n"
                         f"**Description:** {description}\n"
                         f"**Files:** {files}\n"
-                        f"**Tags:** {tags}"
+                        f"**Tags:** {tags}",
+                        maxlen=4096,
                     ),
                     colour=discord.Colour.blue(),
                 ).set_footer(
@@ -604,24 +612,27 @@ class Eruditus(discord.Client):
                 continue
 
             name_field_width = max(len(team["name"]) for team in teams) + 10
+            message = (
+                f"**Scoreboard as of "
+                f"{datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)}**"
+                "```diff\n"
+                f"  {'Rank':<10}{'Team':<{name_field_width}}{'Score'}\n"
+                "{}"
+                "```"
+            )
             scoreboard = ""
             for rank, team in enumerate(teams, start=1):
-                scoreboard += (
+                line = (
                     f"{['-', '+'][team['name'] == username]} "
                     f"{rank:<10}{team['name']:<{name_field_width}}"
                     f"{round(team['score'], 4)}\n"
                 )
+                if len(message) + len(scoreboard) + len(line) - 2 > MAX_CONTENT_SIZE:
+                    break
+                scoreboard += line
 
             if scoreboard:
-                message = (
-                    f"**Scoreboard as of "
-                    f"{datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)}"
-                    "**"
-                    "```diff\n"
-                    f"  {'Rank':<10}{'Team':<{name_field_width}}{'Score'}\n"
-                    f"{scoreboard}"
-                    "```"
-                )
+                message = message.format(scoreboard)
             else:
                 message = "No solves yet, or platform isn't CTFd."
 
