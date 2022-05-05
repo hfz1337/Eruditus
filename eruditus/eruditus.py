@@ -204,7 +204,8 @@ class Eruditus(discord.Client):
         ):
             # Create the CTF if it wasn't already created and enough people are willing
             # to play it.
-            if after.user_count < MIN_PLAYERS:
+            users = [user async for user in after.users()]
+            if len(users) < MIN_PLAYERS:
                 return
             ctf = await self.create_ctf(after.name, live=True)
             if ctf is None:
@@ -216,9 +217,43 @@ class Eruditus(discord.Client):
                     }
                 )
 
+            # Register a team account if it's a CTFd platform.
+            url = after.location.split(" — ")[1]
+            password = hexlify(os.urandom(32)).decode()
+            result = await register_to_ctfd(
+                ctfd_base_url=url,
+                username=TEAM_NAME,
+                password=password,
+                email=TEAM_EMAIL,
+            )
+            if "success" in result:
+                # Add credentials.
+                ctf["credentials"]["url"] = url
+                ctf["credentials"]["username"] = TEAM_NAME
+                ctf["credentials"]["password"] = password
+
+                MONGO[DBNAME][CTF_COLLECTION].update_one(
+                    {"_id": ctf["_id"]},
+                    {"$set": {"credentials": ctf["credentials"]}},
+                )
+
+                creds_channel = discord.utils.get(
+                    guild.text_channels, id=ctf["guild_channels"]["credentials"]
+                )
+                message = (
+                    "```yaml\n"
+                    f"CTF platform: {url}\n"
+                    f"Username: {TEAM_NAME}\n"
+                    f"Password: {password}\n"
+                    "```"
+                )
+
+                await creds_channel.purge()
+                await creds_channel.send(message)
+
             # Give the CTF role to the interested people if they didn't get it yet.
             role = discord.utils.get(guild.roles, id=ctf["guild_role"])
-            async for user in after.users():
+            for user in users:
                 member = await guild.fetch_member(user.id)
                 await member.add_roles(role)
 
@@ -303,79 +338,82 @@ class Eruditus(discord.Client):
                 continue
 
             remaining_time = scheduled_event.start_time - local_time
-            if remaining_time < timedelta(hours=1):
-                # Ignore this event if not too many people are interested in it.
-                if scheduled_event.user_count < MIN_PLAYERS:
-                    if public_channel:
-                        await public_channel.send(
-                            f"🔔 CTF `{scheduled_event.name}` starting in "
-                            f"`{str(remaining_time).split('.')[0]}`.\n"
-                            f"This CTF was not created automatically because less than"
-                            f" {MIN_PLAYERS} players were willing to participate.\n"
-                            f"You can still create it manually using `/ctf createctf`."
-                        )
-                    continue
+            if remaining_time > timedelta(hours=1):
+                continue
 
-                # If a CTF is starting soon, we create it if it wasn't created yet.
-                ctf = await self.create_ctf(scheduled_event.name, live=False)
-                if ctf is None:
-                    ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-                        {
-                            "name": re.compile(
-                                f"^{re.escape(scheduled_event.name.strip())}$",
-                                re.IGNORECASE,
-                            )
-                        }
-                    )
-
-                # Register a team account if it's a CTFd platform.
-                url = scheduled_event.location.split(" — ")[1]
-                password = hexlify(os.urandom(32)).decode()
-                result = await register_to_ctfd(
-                    ctfd_base_url=url,
-                    username=TEAM_NAME,
-                    password=password,
-                    email=TEAM_EMAIL,
-                )
-                if "success" in result:
-                    # Add credentials.
-                    ctf["credentials"]["url"] = url
-                    ctf["credentials"]["username"] = TEAM_NAME
-                    ctf["credentials"]["password"] = password
-
-                    MONGO[DBNAME][CTF_COLLECTION].update_one(
-                        {"_id": ctf["_id"]},
-                        {"$set": {"credentials": ctf["credentials"]}},
-                    )
-
-                    creds_channel = discord.utils.get(
-                        guild.text_channels, id=ctf["guild_channels"]["credentials"]
-                    )
-                    message = (
-                        "```yaml\n"
-                        f"CTF platform: {url}\n"
-                        f"Username: {TEAM_NAME}\n"
-                        f"Password: {password}\n"
-                        "```"
-                    )
-
-                    await creds_channel.purge()
-                    await creds_channel.send(message)
-
-                # Add interested people automatically.
-                role = discord.utils.get(guild.roles, id=ctf["guild_role"])
-                async for user in scheduled_event.users():
-                    member = await guild.fetch_member(user.id)
-                    await member.add_roles(role)
-
-                # Send a reminder that the CTF is starting soon.
+            # Ignore this event if not too many people are interested in it.
+            users = [user async for user in scheduled_event.users()]
+            if len(users) < MIN_PLAYERS:
                 if public_channel:
                     await public_channel.send(
-                        f"🔔 CTF `{ctf['name']}` starting in "
+                        f"🔔 CTF `{scheduled_event.name}` starting in "
                         f"`{str(remaining_time).split('.')[0]}`.\n"
-                        f"@here you can still use `/ctf join` to participate in case "
-                        f"you forgot to hit the `Interested` button of the event."
+                        f"This CTF was not created automatically because less than"
+                        f" {MIN_PLAYERS} players were willing to participate.\n"
+                        f"You can still create it manually using `/ctf createctf`."
                     )
+                continue
+
+            # If a CTF is starting soon, we create it if it wasn't created yet.
+            ctf = await self.create_ctf(scheduled_event.name, live=False)
+            if ctf is None:
+                ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
+                    {
+                        "name": re.compile(
+                            f"^{re.escape(scheduled_event.name.strip())}$",
+                            re.IGNORECASE,
+                        )
+                    }
+                )
+
+            # Register a team account if it's a CTFd platform.
+            url = scheduled_event.location.split(" — ")[1]
+            password = hexlify(os.urandom(32)).decode()
+            result = await register_to_ctfd(
+                ctfd_base_url=url,
+                username=TEAM_NAME,
+                password=password,
+                email=TEAM_EMAIL,
+            )
+            if "success" in result:
+                # Add credentials.
+                ctf["credentials"]["url"] = url
+                ctf["credentials"]["username"] = TEAM_NAME
+                ctf["credentials"]["password"] = password
+
+                MONGO[DBNAME][CTF_COLLECTION].update_one(
+                    {"_id": ctf["_id"]},
+                    {"$set": {"credentials": ctf["credentials"]}},
+                )
+
+                creds_channel = discord.utils.get(
+                    guild.text_channels, id=ctf["guild_channels"]["credentials"]
+                )
+                message = (
+                    "```yaml\n"
+                    f"CTF platform: {url}\n"
+                    f"Username: {TEAM_NAME}\n"
+                    f"Password: {password}\n"
+                    "```"
+                )
+
+                await creds_channel.purge()
+                await creds_channel.send(message)
+
+            # Add interested people automatically.
+            role = discord.utils.get(guild.roles, id=ctf["guild_role"])
+            for user in users:
+                member = await guild.fetch_member(user.id)
+                await member.add_roles(role)
+
+            # Send a reminder that the CTF is starting soon.
+            if public_channel:
+                await public_channel.send(
+                    f"🔔 CTF `{ctf['name']}` starting in "
+                    f"`{str(remaining_time).split('.')[0]}`.\n"
+                    f"@here you can still use `/ctf join` to participate in case "
+                    f"you forgot to hit the `Interested` button of the event."
+                )
 
     @tasks.loop(hours=3, reconnect=True)
     async def create_upcoming_events(self) -> None:
