@@ -435,7 +435,7 @@ class Eruditus(discord.Client):
         async with aiohttp.request(
             method="get",
             url=f"{CTFTIME_URL}/api/v1/events/",
-            params={"limit": 10},
+            params={"limit": 20},
             headers={"User-Agent": USER_AGENT},
         ) as response:
             if response.status == 200:
@@ -449,7 +449,27 @@ class Eruditus(discord.Client):
 
                     # If the event starts in more than a week, then it's too soon to
                     # schedule it, we ignore it for now.
-                    if event_start > local_time + timedelta(weeks=1):
+                    # But if it's not our first run, we make sure to not recreate
+                    # events that were already created, in order to avoid adding back
+                    # manually cancelled events.
+                    # Note: this only works for events added at least 7 days prior to
+                    # their start date in CTFtime, the other case should be rare.
+                    #
+                    #                            .-> e.g., events happening in this
+                    #                            |   window won't be recreated in the
+                    #                            |   second iteration.
+                    #              ,-------------`---------,
+                    #              v                       v
+                    #  |-----------|-----------------------|-----------|-------------->
+                    # t0        t0 + 3h                 7 days   (7 days + 3h)
+                    # `...,
+                    #     |
+                    # initial run
+                    if (event_start > local_time + timedelta(weeks=1)) or (
+                        self.create_upcoming_events.current_loop != 0
+                        and event_start
+                        <= local_time + timedelta(weeks=1) - timedelta(hours=3)
+                    ):
                         continue
 
                     async with aiohttp.request(
