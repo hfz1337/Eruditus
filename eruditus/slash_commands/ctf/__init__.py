@@ -1,7 +1,7 @@
 import re
 
 from typing import Optional, List
-from datetime import datetime, timezone
+from datetime import datetime
 import aiohttp
 
 import discord
@@ -559,7 +559,8 @@ class CTF(app_commands.Group):
                 f"{role.mention}"
             ),
             colour=discord.Colour.dark_gold(),
-        ).set_footer(text=datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT))
+            timestamp=datetime.now(),
+        )
         announcement = await announcements_channel.send(
             embed=embed, view=WorkonButton(name=name)
         )
@@ -751,7 +752,7 @@ class CTF(app_commands.Group):
             return
 
         challenge["solved"] = True
-        challenge["solve_time"] = datetime.now(tz=timezone.utc).strftime(DATE_FORMAT)
+        challenge["solve_time"] = int(datetime.now().timestamp())
 
         try:
             await interaction.channel.edit(
@@ -772,19 +773,16 @@ class CTF(app_commands.Group):
             {"guild_category": interaction.channel.category_id}
         )
         solves_channel = interaction.client.get_channel(ctf["guild_channels"]["solves"])
-        embed = (
-            discord.Embed(
-                title="🎉 Challenge solved!",
-                description=(
-                    f"**{', '.join(challenge['players'])}** just solved "
-                    f"**{challenge['name']}** from the "
-                    f"**{challenge['category']}** category!"
-                ),
-                colour=discord.Colour.dark_gold(),
-            )
-            .set_thumbnail(url=interaction.user.display_avatar.url)
-            .set_footer(text=challenge["solve_time"])
-        )
+        embed = discord.Embed(
+            title="🎉 Challenge solved!",
+            description=(
+                f"**{', '.join(challenge['players'])}** just solved "
+                f"**{challenge['name']}** from the "
+                f"**{challenge['category']}** category!"
+            ),
+            colour=discord.Colour.dark_gold(),
+            timestamp=datetime.now(),
+        ).set_thumbnail(url=interaction.user.display_avatar.url)
         solve_announcement = await solves_channel.send(embed=embed)
 
         challenge["solve_announcement"] = solve_announcement.id
@@ -1104,6 +1102,9 @@ class CTF(app_commands.Group):
                         )
 
                 challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(challenge_id)
+                solve_time = datetime.utcfromtimestamp(
+                    challenge["solve_time"]
+                ).strftime(DATE_FORMAT)
                 if challenge["solved"] and mode == CTFStatusMode.all:
                     icon = "🩸" if challenge["blooded"] else "✅"
                     embed.add_field(
@@ -1112,7 +1113,7 @@ class CTF(app_commands.Group):
                             "```diff\n"
                             f"+ Solver{['', 's'][len(challenge['players'])>1]}:"
                             f" {', '.join(challenge['players']).strip()}\n"
-                            f"+ Date: {challenge['solve_time']}\n"
+                            f"+ Date: {solve_time}\n"
                             "```"
                         ),
                         inline=False,
@@ -1326,8 +1327,7 @@ class CTF(app_commands.Group):
                     maxlen=4096,
                 ),
                 colour=discord.Colour.blue(),
-            ).set_footer(
-                text=datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)
+                timestamp=datetime.now(),
             )
             message = await challenge_channel.send(embed=embed)
             await message.pin()
@@ -1348,8 +1348,7 @@ class CTF(app_commands.Group):
                     f"{role.mention}"
                 ),
                 colour=discord.Colour.dark_gold(),
-            ).set_footer(
-                text=datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)
+                timestamp=datetime.now(),
             )
             announcement = await announcements_channel.send(
                 embed=embed, view=WorkonButton(name=challenge["name"])
@@ -1442,21 +1441,17 @@ class CTF(app_commands.Group):
                     title=title,
                     description=message.content,
                     colour=colour,
+                    timestamp=datetime.now(),
                 )
                 .set_thumbnail(url=interaction.user.display_avatar.url)
                 .set_author(name=interaction.user.name)
-                .set_footer(text=datetime.now(tz=timezone.utc).strftime(DATE_FORMAT))
             )
             await notes_channel.send(embed=embed)
         else:
             embed = (
-                discord.Embed(
-                    title=title,
-                    colour=colour,
-                )
+                discord.Embed(title=title, colour=colour, timestamp=datetime.now())
                 .set_thumbnail(url=interaction.user.display_avatar.url)
                 .set_author(name=interaction.user.name)
-                .set_footer(text=datetime.now(tz=timezone.utc).strftime(DATE_FORMAT))
             )
             # If we send the embed and the content in the same command, the embed
             # would be placed after the content, which is not what we want.
@@ -1520,7 +1515,7 @@ class CTF(app_commands.Group):
         name_field_width = max(len(team["name"]) for team in teams) + 10
         message = (
             f"**Scoreboard as of "
-            f"{datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)}**"
+            f"<t:{datetime.now().timestamp():.0f}>**"
             "```diff\n"
             f"  {'Rank':<10}{'Team':<{name_field_width}}{'Score'}\n"
             "{}"

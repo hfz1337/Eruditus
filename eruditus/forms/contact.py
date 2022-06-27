@@ -1,8 +1,8 @@
 import discord
 
-from datetime import datetime, timezone
+from datetime import datetime
 
-from config import DATE_FORMAT, DEVELOPER_USER_ID
+from config import DEVELOPER_USER_ID
 
 
 class FeatureRequestForm(discord.ui.Modal, title="Contact form"):
@@ -21,12 +21,10 @@ class FeatureRequestForm(discord.ui.Modal, title="Contact form"):
                 title="💡 **Feature request**",
                 description=self.feature_request.value,
                 colour=discord.Colour.green(),
+                timestamp=datetime.now(),
             )
             .set_thumbnail(url=interaction.user.display_avatar.url)
             .set_author(name=interaction.user.display_name)
-            .set_footer(
-                text=datetime.now(tz=timezone.utc).strftime(DATE_FORMAT).strip()
-            )
         )
         message = await developer.send(embed=embed)
         await message.pin()
@@ -52,12 +50,10 @@ class BugReportForm(discord.ui.Modal, title="Contact form"):
                 title="🐛 **Bug report**",
                 description=self.bug_report.value,
                 colour=discord.Colour.dark_orange(),
+                timestamp=datetime.now(),
             )
             .set_thumbnail(url=interaction.user.display_avatar.url)
             .set_author(name=interaction.user.display_name)
-            .set_footer(
-                text=datetime.now(tz=timezone.utc).strftime(DATE_FORMAT).strip()
-            )
         )
         message = await developer.send(embed=embed)
         await message.pin()

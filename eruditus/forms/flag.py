@@ -1,14 +1,13 @@
 import discord
 from discord import HTTPException
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from lib.ctfd import submit_flag
 from buttons.workon import WorkonButton
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
-    DATE_FORMAT,
     DBNAME,
     MONGO,
 )
@@ -50,9 +49,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         elif status == "correct":
             # Announce that the challenge was solved.
             challenge["solved"] = True
-            challenge["solve_time"] = datetime.now(tz=timezone.utc).strftime(
-                DATE_FORMAT
-            )
+            challenge["solve_time"] = int(datetime.now().timestamp())
 
             solves_channel = interaction.client.get_channel(
                 ctf["guild_channels"]["solves"]
@@ -66,34 +63,28 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             if first_blood:
                 challenge["blooded"] = True
                 await interaction.followup.send("🩸 Well done, you got first blood!")
-                embed = (
-                    discord.Embed(
-                        title="🩸 First blood!",
-                        description=(
-                            f"**{', '.join(challenge['players'])}** just blooded "
-                            f"**{challenge['name']}** from the "
-                            f"**{challenge['category']}** category!"
-                        ),
-                        colour=discord.Colour.red(),
-                    )
-                    .set_thumbnail(url=interaction.user.display_avatar.url)
-                    .set_footer(text=challenge["solve_time"])
-                )
+                embed = discord.Embed(
+                    title="🩸 First blood!",
+                    description=(
+                        f"**{', '.join(challenge['players'])}** just blooded "
+                        f"**{challenge['name']}** from the "
+                        f"**{challenge['category']}** category!"
+                    ),
+                    colour=discord.Colour.red(),
+                    timestamp=datetime.now(),
+                ).set_thumbnail(url=interaction.user.display_avatar.url)
             else:
                 await interaction.followup.send("✅ Well done, challenge solved!")
-                embed = (
-                    discord.Embed(
-                        title="🎉 Challenge solved!",
-                        description=(
-                            f"**{', '.join(challenge['players'])}** just solved "
-                            f"**{challenge['name']}** from the "
-                            f"**{challenge['category']}** category!"
-                        ),
-                        colour=discord.Colour.dark_gold(),
-                    )
-                    .set_thumbnail(url=interaction.user.display_avatar.url)
-                    .set_footer(text=challenge["solve_time"])
-                )
+                embed = discord.Embed(
+                    title="🎉 Challenge solved!",
+                    description=(
+                        f"**{', '.join(challenge['players'])}** just solved "
+                        f"**{challenge['name']}** from the "
+                        f"**{challenge['category']}** category!"
+                    ),
+                    colour=discord.Colour.dark_gold(),
+                    timestamp=datetime.now(),
+                ).set_thumbnail(url=interaction.user.display_avatar.url)
             announcement = await solves_channel.send(embed=embed)
 
             challenge_channel = discord.utils.get(

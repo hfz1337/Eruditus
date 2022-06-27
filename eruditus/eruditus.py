@@ -9,7 +9,7 @@ from typing import Union
 import discord
 from discord.ext import tasks
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import aiohttp
 
@@ -42,7 +42,6 @@ from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
     CTFTIME_URL,
-    DATE_FORMAT,
     DBNAME,
     GUILD_ID,
     MAX_CONTENT_SIZE,
@@ -600,8 +599,7 @@ class Eruditus(discord.Client):
                         maxlen=4096,
                     ),
                     colour=discord.Colour.blue(),
-                ).set_footer(
-                    text=datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)
+                    timestamp=datetime.now(),
                 )
                 message = await challenge_channel.send(embed=embed)
                 await message.pin()
@@ -622,8 +620,7 @@ class Eruditus(discord.Client):
                         f"\n{role.mention}"
                     ),
                     colour=discord.Colour.dark_gold(),
-                ).set_footer(
-                    text=datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)
+                    timestamp=datetime.now(),
                 )
                 announcement = await announcements_channel.send(
                     embed=embed, view=WorkonButton(name=challenge["name"])
@@ -683,7 +680,7 @@ class Eruditus(discord.Client):
             name_field_width = max(len(team["name"]) for team in teams) + 10
             message = (
                 f"**Scoreboard as of "
-                f"{datetime.strftime(datetime.now(tz=timezone.utc), DATE_FORMAT)}**"
+                f"<t:{datetime.now().timestamp():.0f}>**"
                 "```diff\n"
                 f"  {'Rank':<10}{'Team':<{name_field_width}}{'Score'}\n"
                 "{}"
