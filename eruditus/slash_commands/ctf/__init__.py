@@ -1299,7 +1299,17 @@ class CTF(app_commands.Group):
             )
 
             # Send challenge information in its respective channel.
-            description = challenge["description"] or "No description."
+            description = (
+                "\n\n".join(
+                    (
+                        challenge["description"],
+                        challenge["connection_info"]
+                        if "connection_info" in challenge
+                        else "",
+                    )
+                )
+                or "No description."
+            )
             tags = ", ".join(challenge["tags"]) or "No tags."
             files = [
                 f"{ctf['credentials']['url'].strip('/')}{file}"
