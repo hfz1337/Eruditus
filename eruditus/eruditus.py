@@ -682,7 +682,7 @@ class Eruditus(discord.Client):
             scoreboard = ""
             for rank, team in enumerate(teams, start=1):
                 line = (
-                    f"{['-', '+'][team['name'] == username]} "
+                    f"{['-', '+'][team['name'] == TEAM_NAME]} "
                     f"{rank:<10}{team['name']:<{name_field_width}}"
                     f"{round(team['score'], 4)}\n"
                 )
