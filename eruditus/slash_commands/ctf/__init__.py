@@ -1102,11 +1102,11 @@ class CTF(app_commands.Group):
                         )
 
                 challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(challenge_id)
-                solve_time = datetime.utcfromtimestamp(
-                    challenge["solve_time"]
-                ).strftime(DATE_FORMAT)
                 if challenge["solved"] and mode == CTFStatusMode.all:
                     icon = "🩸" if challenge["blooded"] else "✅"
+                    solve_time = datetime.utcfromtimestamp(
+                        challenge["solve_time"]
+                    ).strftime(DATE_FORMAT)
                     embed.add_field(
                         name=(f"{icon} {challenge['name']} ({challenge['category']})"),
                         value=(
@@ -1301,7 +1301,7 @@ class CTF(app_commands.Group):
 
             # Send challenge information in its respective channel.
             description = (
-                "\n\n".join(
+                "\n".join(
                     (
                         challenge["description"],
                         challenge["connection_info"]

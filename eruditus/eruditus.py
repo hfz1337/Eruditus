@@ -573,7 +573,7 @@ class Eruditus(discord.Client):
 
                 # Send challenge information in its respective channel.
                 description = (
-                    "\n\n".join(
+                    "\n".join(
                         (
                             challenge["description"],
                             challenge["connection_info"]
