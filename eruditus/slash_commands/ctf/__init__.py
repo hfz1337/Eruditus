@@ -739,14 +739,14 @@ class CTF(app_commands.Group):
     @app_commands.command()
     @_in_ctf_channel()
     async def solve(
-        self,
-        interaction: discord.Interaction,
+        self, interaction: discord.Interaction, members: Optional[str] = None
     ) -> None:
         """Mark the challenge as solved by you and other collaborators in
         the channel.
 
         Args:
             interaction: The interaction that triggered this command.
+            members: List of member mentions who contributed in solving the challenge.
         """
         await interaction.response.defer()
 
@@ -763,7 +763,7 @@ class CTF(app_commands.Group):
             )
             return
 
-        # If the challenged was already solved.
+        # If the challenge was already solved.
         if challenge["solved"]:
             await interaction.followup.send(
                 "This challenge was already solved.", ephemeral=True
@@ -788,6 +788,16 @@ class CTF(app_commands.Group):
         if interaction.user.name not in challenge["players"]:
             challenge["players"].append(interaction.user.name)
 
+        solvers = [interaction.user.name] + (
+            []
+            if members is None
+            else [
+                member.name
+                for member_id in re.findall(r"<@!?([0-9]{15,20})>", members)
+                if (member := await interaction.guild.fetch_member(int(member_id)))
+            ]
+        )
+
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
@@ -795,7 +805,7 @@ class CTF(app_commands.Group):
         embed = discord.Embed(
             title="🎉 Challenge solved!",
             description=(
-                f"**{', '.join(challenge['players'])}** just solved "
+                f"**{', '.join(solvers)}** just solved "
                 f"**{challenge['name']}** from the "
                 f"**{challenge['category']}** category!"
             ),
@@ -1488,13 +1498,16 @@ class CTF(app_commands.Group):
 
     @app_commands.command()
     @_in_ctf_channel()
-    async def submit(self, interaction: discord.Interaction) -> None:
+    async def submit(
+        self, interaction: discord.Interaction, members: Optional[str] = None
+    ) -> None:
         """Submit a flag to the CTFd platform.
 
         Args:
             interaction: The interaction that triggered this command.
+            members: List of member mentions who contributed in solving the challenge.
         """
-        await interaction.response.send_modal(FlagSubmissionForm())
+        await interaction.response.send_modal(FlagSubmissionForm(members=members))
 
     @app_commands.command()
     @_in_ctf_channel()

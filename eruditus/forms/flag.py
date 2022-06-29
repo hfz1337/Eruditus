@@ -1,3 +1,5 @@
+import re
+
 import discord
 from discord import HTTPException
 
@@ -19,8 +21,13 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         placeholder=r"ctf{s0m3th1ng_l33t}",
     )
 
+    def __init__(self, members: str) -> None:
+        super().__init__()
+        self.members = members
+
     async def on_submit(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer()
+        members = self.members
 
         challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
             {"channel": interaction.channel_id}
@@ -60,13 +67,23 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             if interaction.user.name not in challenge["players"]:
                 challenge["players"].append(interaction.user.name)
 
+            solvers = [interaction.user.name] + (
+                []
+                if members is None
+                else [
+                    member.name
+                    for member_id in re.findall(r"<@!?([0-9]{15,20})>", members)
+                    if (member := await interaction.guild.fetch_member(int(member_id)))
+                ]
+            )
+
             if first_blood:
                 challenge["blooded"] = True
                 await interaction.followup.send("🩸 Well done, you got first blood!")
                 embed = discord.Embed(
                     title="🩸 First blood!",
                     description=(
-                        f"**{', '.join(challenge['players'])}** just blooded "
+                        f"**{', '.join(solvers)}** just blooded "
                         f"**{challenge['name']}** from the "
                         f"**{challenge['category']}** category!"
                     ),
@@ -78,7 +95,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
                 embed = discord.Embed(
                     title="🎉 Challenge solved!",
                     description=(
-                        f"**{', '.join(challenge['players'])}** just solved "
+                        f"**{', '.join(solvers)}** just solved "
                         f"**{challenge['name']}** from the "
                         f"**{challenge['category']}** category!"
                     ),
