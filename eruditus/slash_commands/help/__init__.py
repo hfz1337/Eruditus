@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 
-from config import GUILD_ID
+from config import GUILD_ID, COMMIT_HASH
 
 
 class Help(app_commands.Command):
@@ -20,7 +20,9 @@ class Help(app_commands.Command):
                 url="https://github.com/hfz1337/Eruditus",
                 description=(
                     "Eruditus is dedicated to CTF teams who communicate via Discord "
-                    "during CTF competitions."
+                    "during CTF competitions.\n"
+                    f"Current revision: [`{COMMIT_HASH:.8}`]"
+                    f"(https://github.com/hfz1337/Eruditus/commit/{COMMIT_HASH})."
                 ),
                 colour=discord.Colour.blue(),
             )
