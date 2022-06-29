@@ -259,18 +259,37 @@ class CTF(app_commands.Group):
                 ):
                     await ctf_channel.delete()
 
-        # Make the channels read-only by participants.
-        overwrites = {
-            member: discord.PermissionOverwrite(read_messages=True, send_messages=False)
+        # Make the channels read-only by participants, except #general which must be
+        # kept readable and writable.
+        members = [
+            member
             async for member in interaction.guild.fetch_members(limit=None)
             if role in member.roles
-        }
+        ]
+
+        perm_rdwr = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        perm_rdonly = discord.PermissionOverwrite(
+            read_messages=True, send_messages=False
+        )
+
+        ctf_general_channel = discord.utils.get(
+            interaction.guild.text_channels,
+            category_id=ctf["guild_category"],
+            name="general",
+        )
+        overwrites = {member: perm_rdwr for member in members}
         overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(
             read_messages=False
         )
+        await ctf_general_channel.edit(overwrites=overwrites)
 
+        for member in members:
+            overwrites[member] = perm_rdonly
         await category_channel.edit(name=f"🔒 {ctf['name']}", overwrites=overwrites)
+
         for ctf_channel in category_channel.channels:
+            if ctf_channel.name == "general":
+                continue
             await ctf_channel.edit(sync_permissions=True)
 
         # Delete the CTF role.
@@ -1181,15 +1200,15 @@ class CTF(app_commands.Group):
             interaction.guild.text_channels, id=ctf["guild_channels"]["credentials"]
         )
         message = (
-            "```yaml\n"
             f"CTF platform: {url}\n"
+            "```yaml\n"
             f"Username: {username}\n"
             f"Password: {password}\n"
             "```"
         )
 
         await creds_channel.purge()
-        await creds_channel.send(message)
+        await creds_channel.send(message, suppress_embeds=True)
         await interaction.followup.send("✅ Credentials added.")
 
     @app_commands.checks.bot_has_permissions(manage_messages=True)
