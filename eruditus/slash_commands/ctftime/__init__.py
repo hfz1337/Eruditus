@@ -12,7 +12,7 @@ from config import CTFTIME_URL, USER_AGENT
 
 
 class CTFTime(app_commands.Group):
-    """Show information about ongoing/upcoming events, as well as a rankings
+    """Show information about ongoing/upcoming events, as well as rankings
     from CTFtime.
     """
 
