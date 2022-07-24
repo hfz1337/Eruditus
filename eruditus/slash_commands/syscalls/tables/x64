@@ -1,4 +1,4 @@
-id	Name	rax	rdi	rsi	rdx	rcx	r8	r9	Definition
+id	Name	rax	rdi	rsi	rdx	r10	r8	r9	Definition
 0	read	0x00	unsigned int fd	char *buf	size_t count	-	-	-	fs/read_write.c:460
 1	write	0x01	unsigned int fd	const char *buf	size_t count	-	-	-	fs/read_write.c:477
 2	open	0x02	const char *filename	int flags	umode_t mode	-	-	-	fs/open.c:1046
