@@ -312,3 +312,19 @@ id	Name	rax	rdi	rsi	rdx	rcx	r8	r9	Definition
 310	process_vm_readv	0x136	pid_t pid	const struct iovec *lvec	unsigned long liovcnt	const struct iovec *rvec	unsigned long riovcnt	unsigned long flags	mm/process_vm_access.c:398
 311	process_vm_writev	0x137	pid_t pid	const struct iovec *lvec	unsigned long liovcnt	const struct iovec *rvec	unsigned long riovcnt	unsigned long flags	mm/process_vm_access.c:405
 312	kcmp	0x138	pid_t pid1	pid_t pid2	int type	unsigned long idx1	unsigned long idx2	-	kernel/kcmp.c:95
+313	finit_module	0x139	int fd	const char __user *uargs	int flags	-	-	-	-
+314	sched_setattr	0x13a	pid_t pid	struct sched_attr __user *attr	unsigned int flags	-	-	-	-
+315	sched_getattr	0x13b	pid_t pid	struct sched_attr __user *attr	unsigned int size	unsigned int flags	-	-	-
+316	renameat2	0x13c	int olddfd	const char __user *oldname	int newdfd	const char __user *newname	unsigned int flags	-	-
+317	seccomp 0x13d	unsigned int op	unsigned int flags	const char __user *uargs	-	-	-	-	-
+318	getrandom	0x13e	char __user *buf	size_t count	unsigned int flags	-	-	-	-
+319	memfd_create	0x13f	const char __user *uname_ptr	unsigned int flags	-	-	-	-	-
+320	kexec_file_load	0x140	int kernel_fd	int initrd_fd	unsigned long cmdline_len	const char __user *cmdline_ptr	unsigned long flags	-	-
+321	bpf	int cmd	0x141	union bpf_attr *attr	unsigned int size	-	-	-	-
+322	stub_execveat	0x142	int dfd	const char __user *filename	const char __user *const __user *argv	const char __user *const __user *envp	int flags	-	-
+323	userfaultfd	0x143	int flags	-	-	-	-	-	-
+324	membarrier	0x144	int cmd	int flags	-	-	-	-	-
+325	mlock2	0x145	unsigned long start	size_t len	int flags	-	-	-	-
+326	copy_file_range 0x146	int fd_in	loff_t __user *off_in	int fd_out	loff_t __user * off_out	size_t len	unsigned int flags	-	-
+327	preadv2	0x147	unsigned long fd	const struct iovec __user *vec	unsigned long vlen	unsigned long pos_l	unsigned long pos_h	int flags	-
+328	pwritev2	0x148	unsigned long fd	const struct iovec __user *vec	unsigned long vlen	unsigned long pos_l	unsigned long pos_h	int flags	-
