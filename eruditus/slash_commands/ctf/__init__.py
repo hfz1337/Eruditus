@@ -1244,8 +1244,8 @@ class CTF(app_commands.Group):
             )
         else:
             message = (
-                "```yaml\n"
                 f"CTF platform: {url}\n"
+                "```yaml\n"
                 f"Username: {username}\n"
                 f"Password: {password}\n"
                 "```"
@@ -1651,8 +1651,8 @@ class CTF(app_commands.Group):
             interaction.guild.text_channels, id=ctf["guild_channels"]["credentials"]
         )
         message = (
-            "```yaml\n"
             f"CTF platform: {url}\n"
+            "```yaml\n"
             f"Username: {username}\n"
             f"Password: {password}\n"
             "```"
