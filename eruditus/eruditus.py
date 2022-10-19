@@ -493,10 +493,11 @@ class Eruditus(discord.Client):
                         "end_time": event_end,
                         "entity_type": discord.EntityType.external,
                         "image": raw_image,
-                        "location": (
+                        "location": truncate(
                             f"{CTFTIME_URL}/event/{event_info['id']}"
                             " — "
-                            f"{event_info['website']}"
+                            f"{event_info['website']}",
+                            maxlen=100,
                         ),
                     }
 

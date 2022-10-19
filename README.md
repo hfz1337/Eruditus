@@ -68,6 +68,7 @@ Here's a list of the currently supported commands:
 /ctftime upcoming [<limit>]                          (Show upcoming CTF competitions)
 /ctftime current                                     (Show ongoing CTF competitions)
 /ctftime top [<year>]                                (Show leaderboard for a specific year)
+/ctftime pull                                        (Create events starting in less than a week)
 
 /cipher caesar <message> [<key>]                     (Caesar cipher)
 /cipher rot13 <message>                              (Rot13 cipher)

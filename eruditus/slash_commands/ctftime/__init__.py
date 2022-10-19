@@ -1,14 +1,20 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import aiohttp
+import io
 
 from discord import app_commands
 import discord
 
-from lib.ctftime import scrape_current_events, scrape_event_info
+from lib.ctftime import (
+    scrape_current_events,
+    scrape_event_info,
+    ctftime_date_to_datetime,
+)
+from lib.util import get_local_time, truncate
 
 from typing import Optional
 
-from config import CTFTIME_URL, USER_AGENT
+from config import CTFTIME_URL, USER_AGENT, GUILD_ID
 
 
 class CTFTime(app_commands.Group):
@@ -169,3 +175,82 @@ class CTFTime(app_commands.Group):
                 )
             else:
                 await interaction.followup.send("No results.")
+
+    @app_commands.checks.has_permissions(manage_events=True)
+    @app_commands.command()
+    async def pull(self, interaction: discord.Interaction) -> None:
+        """Pull events starting in less than a week."""
+        await interaction.response.defer()
+
+        # Timezone aware local time.
+        local_time = get_local_time()
+
+        # The bot is supposed to be part of a single guild.
+        guild = interaction.client.get_guild(GUILD_ID)
+
+        scheduled_events = {
+            scheduled_event.name: scheduled_event.id
+            for scheduled_event in await guild.fetch_scheduled_events()
+        }
+        async with aiohttp.request(
+            method="get",
+            url=f"{CTFTIME_URL}/api/v1/events/",
+            params={"limit": 20},
+            headers={"User-Agent": USER_AGENT},
+        ) as response:
+            if response.status == 200:
+                for event in await response.json():
+                    event_info = await scrape_event_info(event["id"])
+                    if event_info is None:
+                        continue
+
+                    event_start = ctftime_date_to_datetime(event_info["start"])
+                    event_end = ctftime_date_to_datetime(event_info["end"])
+
+                    if event_start > local_time + timedelta(weeks=1):
+                        continue
+
+                    async with aiohttp.request(
+                        method="get",
+                        url=event_info["logo"],
+                        headers={"User-Agent": USER_AGENT},
+                    ) as image:
+                        raw_image = io.BytesIO(await image.read()).read()
+
+                    event_description = (
+                        f"{event_info['description']}\n\n"
+                        f"👥 **Organizers**\n{', '.join(event_info['organizers'])}\n\n"
+                        f"💰 **Prizes**\n{event_info['prizes']}\n\n"
+                        f"⚙️ **Format**\n {event_info['location']} "
+                        f"{event_info['format']}\n\n"
+                        f"🎯 **Weight**\n{event_info['weight']}"
+                    )
+                    parameters = {
+                        "name": event_info["name"],
+                        "description": truncate(text=event_description, maxlen=1000),
+                        "start_time": event_start,
+                        "end_time": event_end,
+                        "entity_type": discord.EntityType.external,
+                        "image": raw_image,
+                        "location": truncate(
+                            f"{CTFTIME_URL}/event/{event_info['id']}"
+                            " — "
+                            f"{event_info['website']}",
+                            maxlen=100,
+                        ),
+                    }
+
+                    # In case the event was already scheduled, we update it, otherwise
+                    # we create a new event.
+                    if event_info["name"] in scheduled_events:
+                        scheduled_event = guild.get_scheduled_event(
+                            scheduled_events[event_info["name"]]
+                        )
+                        scheduled_event = await scheduled_event.edit(**parameters)
+
+                    else:
+                        scheduled_event = await guild.create_scheduled_event(
+                            **parameters
+                        )
+
+        await interaction.followup.send("✅ Done pulling events", ephemeral=True)
