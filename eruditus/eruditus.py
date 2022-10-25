@@ -50,6 +50,7 @@ from config import (
     USER_AGENT,
     TEAM_NAME,
     TEAM_EMAIL,
+    REMINDER_CHANNEL,
 )
 
 
@@ -325,13 +326,16 @@ class Eruditus(discord.Client):
         # The bot is supposed to be part of a single guild.
         guild = self.get_guild(GUILD_ID)
 
-        # Find a public channel where we can send our reminders.
-        public_channel = None
-        for channel in guild.text_channels:
-            if channel.permissions_for(guild.default_role).read_messages:
-                public_channel = channel
-                if "general" in public_channel.name:
-                    break
+        if REMINDER_CHANNEL is None:
+            # Find a public channel where we can send our reminders.
+            reminder_channel = None
+            for channel in guild.text_channels:
+                if channel.permissions_for(guild.default_role).read_messages:
+                    reminder_channel = channel
+                    if "general" in reminder_channel.name:
+                        break
+        else:
+            reminder_channel = self.get_channel(REMINDER_CHANNEL)
 
         for scheduled_event in await guild.fetch_scheduled_events():
             if scheduled_event.status != discord.EventStatus.scheduled:
@@ -344,8 +348,8 @@ class Eruditus(discord.Client):
             # Ignore this event if not too many people are interested in it.
             users = [user async for user in scheduled_event.users()]
             if len(users) < MIN_PLAYERS:
-                if public_channel:
-                    await public_channel.send(
+                if reminder_channel:
+                    await reminder_channel.send(
                         f"🔔 CTF `{scheduled_event.name}` starting in "
                         f"`{str(remaining_time).split('.')[0]}`.\n"
                         f"This CTF was not created automatically because less than"
@@ -407,8 +411,8 @@ class Eruditus(discord.Client):
                 await member.add_roles(role)
 
             # Send a reminder that the CTF is starting soon.
-            if public_channel:
-                await public_channel.send(
+            if reminder_channel:
+                await reminder_channel.send(
                     f"🔔 CTF `{ctf['name']}` starting in "
                     f"`{str(remaining_time).split('.')[0]}`.\n"
                     f"@here you can still use `/ctf join` to participate in case "

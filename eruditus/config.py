@@ -20,5 +20,8 @@ TEAM_NAME = os.getenv("TEAM_NAME")
 TEAM_EMAIL = os.getenv("TEAM_EMAIL")
 MIN_PLAYERS = int(os.getenv("MIN_PLAYERS"))
 COMMIT_HASH = open(".revision").read().strip()
+REMINDER_CHANNEL = (
+    int(os.getenv("REMINDER_CHANNEL")) if os.getenv("REMINDER_CHANNEL") else None
+)
 
 MONGO = MongoClient(MONGODB_URI)
