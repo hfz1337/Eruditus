@@ -350,8 +350,8 @@ class Eruditus(discord.Client):
             if len(users) < MIN_PLAYERS:
                 if reminder_channel:
                     await reminder_channel.send(
-                        f"🔔 CTF `{scheduled_event.name}` starting in "
-                        f"`{str(remaining_time).split('.')[0]}`.\n"
+                        f"🔔 CTF `{scheduled_event.name}` starting "
+                        f"<t:{scheduled_event.start_time.timestamp():.0f}:R>.\n"
                         f"This CTF was not created automatically because less than"
                         f" {MIN_PLAYERS} players were willing to participate.\n"
                         f"You can still create it manually using `/ctf createctf`."
@@ -413,8 +413,8 @@ class Eruditus(discord.Client):
             # Send a reminder that the CTF is starting soon.
             if reminder_channel:
                 await reminder_channel.send(
-                    f"🔔 CTF `{ctf['name']}` starting in "
-                    f"`{str(remaining_time).split('.')[0]}`.\n"
+                    f"🔔 CTF `{ctf['name']}` starting "
+                    f"<t:{scheduled_event.start_time.timestamp():.0f}:R>.\n"
                     f"@here you can still use `/ctf join` to participate in case "
                     f"you forgot to hit the `Interested` button of the event."
                 )
