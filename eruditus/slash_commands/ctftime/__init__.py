@@ -5,6 +5,8 @@ import io
 from discord import app_commands
 import discord
 
+import dotenv
+
 from lib.ctftime import (
     scrape_current_events,
     scrape_event_info,
@@ -14,7 +16,7 @@ from lib.util import get_local_time, truncate
 
 from typing import Optional
 
-from config import CTFTIME_URL, USER_AGENT, GUILD_ID
+from config import CTFTIME_URL, USER_AGENT, GUILD_ID, REMINDER_CHANNEL  # noqa: F401
 
 
 class CTFTime(app_commands.Group):
@@ -254,3 +256,55 @@ class CTFTime(app_commands.Group):
                         )
 
         await interaction.followup.send("✅ Done pulling events", ephemeral=True)
+
+    @app_commands.checks.has_permissions(manage_channels=True)
+    @app_commands.command()
+    async def setchannel(
+        self, interaction: discord.Interaction, channel_id: Optional[str]
+    ) -> None:
+        """Set the text channel where CTF reminders will be sent.
+
+        Args:
+            interaction: The interaction that triggered this command.
+            channel_id: The channel ID.
+        """
+        global REMINDER_CHANNEL
+
+        # The bot is supposed to be part of a single guild.
+        guild = interaction.client.get_guild(GUILD_ID)
+
+        if channel_id is None:
+            reminder_channel = guild.get_channel(REMINDER_CHANNEL)
+            await interaction.response.send_message(
+                "Current reminder channel: {}".format(
+                    f"<#{reminder_channel.id}>"
+                    if reminder_channel is not None
+                    else "Not found."
+                ),
+                ephemeral=True,
+            )
+            return
+
+        # Since integers greater than 2^53 - 1 aren't accepted in JSON, we can't set
+        # channel_id to be of type `int`, and let Discord validate the input for us.
+        # Instead, we use `str` and do the validation ourselves.
+        # https://github.com/discord/discord-api-docs/issues/2448#issuecomment-753820715
+        if not channel_id.isdigit():
+            await interaction.response.send_message(
+                "Channel ID must be numeric.", ephemeral=True
+            )
+            return
+
+        channel_id = int(channel_id)
+
+        # Check if the channel exists.
+        reminder_channel = guild.get_channel(channel_id)
+        if reminder_channel is None:
+            await interaction.response.send_message("No such channel.", ephemeral=True)
+            return
+
+        REMINDER_CHANNEL = reminder_channel.id
+        dotenv.set_key(".env", "REMINDER_CHANNEL", str(REMINDER_CHANNEL))
+        await interaction.response.send_message(
+            "⚙️ Reminder channel updated.", ephemeral=True
+        )
