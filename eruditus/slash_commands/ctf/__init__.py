@@ -118,8 +118,7 @@ class CTF(app_commands.Group):
         if ctf is None:
             await interaction.followup.send(
                 "Another CTF with similar name already exists, please choose "
-                "another name.",
-                ephemeral=True,
+                "another name."
             )
         else:
             await interaction.followup.send(f"✅ CTF `{name}` has been created.")
@@ -187,8 +186,7 @@ class CTF(app_commands.Group):
                     (
                         "Run this command from within a CTF channel, or provide the "
                         "name of the CTF you wish to delete."
-                    ),
-                    ephemeral=True,
+                    )
                 )
                 return
         else:
@@ -196,7 +194,7 @@ class CTF(app_commands.Group):
                 {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
             )
             if ctf is None:
-                await interaction.followup.send("No such CTF.", ephemeral=True)
+                await interaction.followup.send("No such CTF.")
                 return
 
         category_channel = discord.utils.get(
@@ -336,8 +334,7 @@ class CTF(app_commands.Group):
                     (
                         "Run this command from within a CTF channel, or provide the "
                         "name of the CTF you wish to delete."
-                    ),
-                    ephemeral=True,
+                    )
                 )
                 return
         else:
@@ -345,7 +342,7 @@ class CTF(app_commands.Group):
                 {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
             )
             if ctf is None:
-                await interaction.followup.send("No such CTF.", ephemeral=True)
+                await interaction.followup.send("No such CTF.")
                 return
 
         category_channel = discord.utils.get(
@@ -396,14 +393,13 @@ class CTF(app_commands.Group):
             {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
         )
         if ctf is None:
-            await interaction.followup.send("No such CTF.", ephemeral=True)
+            await interaction.followup.send("No such CTF.")
             return
 
         role = discord.utils.get(interaction.guild.roles, id=ctf["guild_role"])
         if role is None:
             await interaction.followup.send(
-                "CTF role was (accidently?) deleted by an admin, aborting.",
-                ephemeral=True,
+                "CTF role was (accidently?) deleted by an admin, aborting."
             )
             return
 
@@ -759,16 +755,13 @@ class CTF(app_commands.Group):
             # the command was run, then we're probably in the wrong channel.
             await interaction.followup.send(
                 "You may only run this command in the channel associated to the "
-                "challenge.",
-                ephemeral=True,
+                "challenge."
             )
             return
 
         # If the challenge was already solved.
         if challenge["solved"]:
-            await interaction.followup.send(
-                "This challenge was already solved.", ephemeral=True
-            )
+            await interaction.followup.send("This challenge was already solved.")
             return
 
         challenge["solved"] = True
@@ -861,14 +854,13 @@ class CTF(app_commands.Group):
             # the command was run, then we're probably in a non-challenge channel.
             await interaction.followup.send(
                 "You may only run this command in the channel associated to the "
-                "challenge.",
-                ephemeral=True,
+                "challenge."
             )
 
         # Check if challenge is already not solved.
         if not challenge["solved"]:
             await interaction.followup.send(
-                "This challenge is already marked as not solved.", ephemeral=True
+                "This challenge is already marked as not solved."
             )
             return
 
@@ -1083,7 +1075,7 @@ class CTF(app_commands.Group):
                 }
             )
             if ctfs is None:
-                await interaction.followup.send("No such CTF.", ephemeral=True)
+                await interaction.followup.send("No such CTF.")
                 return
             ctfs = [ctfs]
 
@@ -1175,9 +1167,9 @@ class CTF(app_commands.Group):
 
         if no_running_ctfs:
             if name is None:
-                await interaction.followup.send("No running CTFs.", ephemeral=True)
+                await interaction.followup.send("No running CTFs.")
             else:
-                await interaction.followup.send("No such CTF.", ephemeral=True)
+                await interaction.followup.send("No such CTF.")
 
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
@@ -1276,9 +1268,7 @@ class CTF(app_commands.Group):
         password = ctf["credentials"]["password"]
 
         if url is None:
-            await interaction.followup.send(
-                "No credentials set for this CTF.", ephemeral=True
-            )
+            await interaction.followup.send("No credentials set for this CTF.")
             return
 
         category_channel = discord.utils.get(
@@ -1309,8 +1299,7 @@ class CTF(app_commands.Group):
             if len(category_channel.channels) == 50:
                 await interaction.followup.send(
                     "Max channels per category exceeded, please delete some "
-                    "challenges first.",
-                    ephemeral=True,
+                    "challenges first."
                 )
                 return
 
@@ -1528,9 +1517,7 @@ class CTF(app_commands.Group):
         password = ctf["credentials"]["password"]
 
         if ctfd_url is None:
-            await interaction.followup.send(
-                "No credentials set for this CTF.", ephemeral=True
-            )
+            await interaction.followup.send("No credentials set for this CTF.")
             return
 
         try:
@@ -1600,7 +1587,7 @@ class CTF(app_commands.Group):
             if scheduled_event.name == ctf["name"]:
                 break
         else:
-            await interaction.followup.send("🏁 This CTF has ended.", ephemeral=True)
+            await interaction.followup.send("🏁 This CTF has ended.")
             return
 
         remaining_time = scheduled_event.end_time - get_local_time()

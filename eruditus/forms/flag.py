@@ -34,8 +34,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         )
         if challenge is None:
             await interaction.followup.send(
-                "❌ This command may only be used from within a challenge channel.",
-                ephemeral=True,
+                "❌ This command may only be used from within a challenge channel."
             )
             return
 
@@ -50,9 +49,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             ctfd_url, username, password, challenge["id"], self.flag.value
         )
         if status is None:
-            await interaction.followup.send(
-                "❌ Failed to submit the flag.", ephemeral=True
-            )
+            await interaction.followup.send("❌ Failed to submit the flag.")
         elif status == "correct":
             # Announce that the challenge was solved.
             challenge["solved"] = True
@@ -148,8 +145,6 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             )
 
         elif status == "already_solved":
-            await interaction.followup.send(
-                "You already solved this challenge.", ephemeral=True
-            )
+            await interaction.followup.send("You already solved this challenge.")
         else:
-            await interaction.followup.send("❌ Incorrect flag.", ephemeral=True)
+            await interaction.followup.send("❌ Incorrect flag.")

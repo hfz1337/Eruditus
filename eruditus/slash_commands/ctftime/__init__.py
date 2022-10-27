@@ -255,7 +255,7 @@ class CTFTime(app_commands.Group):
                             **parameters
                         )
 
-        await interaction.followup.send("✅ Done pulling events", ephemeral=True)
+        await interaction.followup.send("✅ Done pulling events")
 
     @app_commands.checks.has_permissions(manage_channels=True)
     @app_commands.command()
