@@ -69,6 +69,7 @@ Here's a list of the currently supported commands:
 /ctftime current                                     (Show ongoing CTF competitions)
 /ctftime top [<year>]                                (Show leaderboard for a specific year)
 /ctftime pull                                        (Create events starting in less than a week)
+/ctftime setchannel                                  (Set the text channel where CTF reminders will be sent)
 
 /cipher caesar <message> [<key>]                     (Caesar cipher)
 /cipher rot13 <message>                              (Rot13 cipher)
