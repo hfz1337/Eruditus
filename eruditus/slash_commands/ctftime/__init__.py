@@ -16,7 +16,8 @@ from lib.util import get_local_time, truncate
 
 from typing import Optional
 
-from config import CTFTIME_URL, USER_AGENT, GUILD_ID, REMINDER_CHANNEL  # noqa: F401
+from config import CTFTIME_URL, USER_AGENT, GUILD_ID
+import config
 
 
 class CTFTime(app_commands.Group):
@@ -268,13 +269,11 @@ class CTFTime(app_commands.Group):
             interaction: The interaction that triggered this command.
             channel_id: The channel ID.
         """
-        global REMINDER_CHANNEL
-
         # The bot is supposed to be part of a single guild.
         guild = interaction.client.get_guild(GUILD_ID)
 
         if channel_id is None:
-            reminder_channel = guild.get_channel(REMINDER_CHANNEL)
+            reminder_channel = guild.get_channel(config.REMINDER_CHANNEL)
             await interaction.response.send_message(
                 "Current reminder channel: {}".format(
                     f"<#{reminder_channel.id}>"
@@ -303,8 +302,8 @@ class CTFTime(app_commands.Group):
             await interaction.response.send_message("No such channel.", ephemeral=True)
             return
 
-        REMINDER_CHANNEL = reminder_channel.id
-        dotenv.set_key(".env", "REMINDER_CHANNEL", str(REMINDER_CHANNEL))
+        config.REMINDER_CHANNEL = reminder_channel.id
+        dotenv.set_key(".env", "REMINDER_CHANNEL", str(config.REMINDER_CHANNEL))
         await interaction.response.send_message(
             "⚙️ Reminder channel updated.", ephemeral=True
         )

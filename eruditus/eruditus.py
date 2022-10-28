@@ -50,8 +50,8 @@ from config import (
     USER_AGENT,
     TEAM_NAME,
     TEAM_EMAIL,
-    REMINDER_CHANNEL,
 )
+import config
 
 
 class Eruditus(discord.Client):
@@ -326,7 +326,7 @@ class Eruditus(discord.Client):
         # The bot is supposed to be part of a single guild.
         guild = self.get_guild(GUILD_ID)
 
-        if REMINDER_CHANNEL is None:
+        if config.REMINDER_CHANNEL is None:
             # Find a public channel where we can send our reminders.
             reminder_channel = None
             for channel in guild.text_channels:
@@ -335,7 +335,7 @@ class Eruditus(discord.Client):
                     if "general" in reminder_channel.name:
                         break
         else:
-            reminder_channel = self.get_channel(REMINDER_CHANNEL)
+            reminder_channel = self.get_channel(config.REMINDER_CHANNEL)
 
         for scheduled_event in await guild.fetch_scheduled_events():
             if scheduled_event.status != discord.EventStatus.scheduled:
