@@ -47,7 +47,7 @@ async def scrape_event_info(event_id: int) -> dict:
     event_location = parser.select_one("p b").text.strip()
     event_format = parser.select_one("p:nth-child(5)").text.split(": ")[1].strip()
     event_website = parser.select_one("p:nth-child(6) a").text
-    event_logo = parser.select_one(".span2 img")["src"]
+    event_logo = parser.select_one(".span2 img")["src"].lstrip("/")
     event_weight = parser.select_one("p:nth-child(8)").text.split(": ")[1].strip()
     event_organizers = [
         organizer.text.strip() for organizer in parser.select(".span10 li a")
@@ -63,11 +63,29 @@ async def scrape_event_info(event_id: int) -> dict:
     for br in parser.findAll("br"):
         br.replaceWith("\n")
 
-    event_description = "\n".join(
-        p.getText() for p in parser.select("#id_description p")
+    event_description = (
+        "\n".join(p.getText() for p in parser.select("#id_description p"))
+        or r"No description ¯\_(ツ)_/¯"
     )
     event_prizes = "\n".join(p.getText() for p in parser.select("h3+ .well p"))
     event_prizes = event_prizes or "No prizes."
+
+    # Check if logo actually exists and doesn't 404s.
+    # In case it doesn't exist, we fall back to the event's logo.
+    async with aiohttp.request(
+        method="get",
+        url=f"{CTFTIME_URL}/{event_logo}",
+        headers={"User-Agent": USER_AGENT},
+    ) as response:
+        if response.status == 404:
+            async with aiohttp.request(
+                method="get",
+                url=f"{CTFTIME_URL}/api/v1/events/{event_id}/",
+                headers={"User-Agent": USER_AGENT},
+            ) as response:
+                event_logo = (await response.json())["logo"]
+        else:
+            event_logo = f"{CTFTIME_URL}/{event_logo}"
 
     return {
         "id": event_id,
@@ -77,7 +95,7 @@ async def scrape_event_info(event_id: int) -> dict:
         "location": event_location,
         "format": event_format,
         "website": event_website,
-        "logo": f"{CTFTIME_URL}{event_logo}",
+        "logo": event_logo,
         "weight": event_weight,
         "organizers": event_organizers,
         "start": event_start,
