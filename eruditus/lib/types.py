@@ -31,3 +31,8 @@ class NoteType(Enum):
 class NoteFormat(Enum):
     embed = 1
     raw = 2
+
+
+class PromptPrivacy(Enum):
+    private = 1
+    public = 0

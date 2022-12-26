@@ -23,5 +23,7 @@ COMMIT_HASH = open(".revision").read().strip()
 REMINDER_CHANNEL = (
     int(os.getenv("REMINDER_CHANNEL")) if os.getenv("REMINDER_CHANNEL") else None
 )
+OPENAI_URL = os.getenv("OPENAI_URL")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 MONGO = MongoClient(MONGODB_URI)

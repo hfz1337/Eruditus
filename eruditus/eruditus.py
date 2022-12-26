@@ -25,6 +25,7 @@ from slash_commands.report import Report
 from slash_commands.request import Request
 from slash_commands.search import Search
 from slash_commands.ctf import CTF
+from slash_commands.chatgpt import ChatGPT
 
 from lib.util import (
     sanitize_channel_name,
@@ -169,6 +170,7 @@ class Eruditus(discord.Client):
         self.tree.add_command(Report())
         self.tree.add_command(Request())
         self.tree.add_command(Search())
+        self.tree.add_command(ChatGPT(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(CTF(), guild=discord.Object(GUILD_ID))
 
         self.create_upcoming_events.start()
