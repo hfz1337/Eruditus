@@ -12,8 +12,8 @@ from lib.util import get_local_time, sanitize_channel_name, truncate
 from lib.ctfd import pull_challenges, get_scoreboard, register_to_ctfd
 
 from lib.types import ArchiveMode, CTFStatusMode, NoteFormat, NoteType
-from forms.flag import FlagSubmissionForm
-from buttons.workon import WorkonButton
+from msg_components.forms.flag import FlagSubmissionForm
+from msg_components.buttons.workon import WorkonButton
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,

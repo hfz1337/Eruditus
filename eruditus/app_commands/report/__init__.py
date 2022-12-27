@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 
-from forms.contact import BugReportForm
+from msg_components.forms.contact import BugReportForm
 
 
 class Report(app_commands.Command):

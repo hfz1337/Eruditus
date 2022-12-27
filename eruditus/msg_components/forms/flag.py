@@ -6,7 +6,7 @@ from discord import HTTPException
 from datetime import datetime
 
 from lib.ctfd import submit_flag
-from buttons.workon import WorkonButton
+from msg_components.buttons.workon import WorkonButton
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,

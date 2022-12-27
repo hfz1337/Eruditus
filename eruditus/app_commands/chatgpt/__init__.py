@@ -3,7 +3,7 @@ from typing import Optional
 import discord
 from discord import app_commands
 
-from forms.chatgpt import ChatGPTForm
+from msg_components.forms.chatgpt import ChatGPTForm
 
 from lib.types import PromptPrivacy
 

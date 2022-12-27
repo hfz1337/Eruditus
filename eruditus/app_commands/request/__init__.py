@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 
-from forms.contact import FeatureRequestForm
+from msg_components.forms.contact import FeatureRequestForm
 
 
 class Request(app_commands.Command):

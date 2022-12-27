@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 import aiohttp
 
 from binascii import hexlify
-from buttons.workon import WorkonButton
+from msg_components.buttons.workon import WorkonButton
 
 from app_commands.help import Help
 from app_commands.syscalls import Syscalls
