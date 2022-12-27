@@ -378,7 +378,7 @@ class CTF(app_commands.Group):
     @app_commands.command()
     @app_commands.autocomplete(name=_ctf_autocompletion_func)
     async def addplayers(
-        self, interaction: discord.Interaction, name: str, members: str
+        self, interaction: discord.Interaction, name: str, members: Optional[str] = None
     ) -> None:
         """Add members to a CTF.
 
@@ -409,14 +409,32 @@ class CTF(app_commands.Group):
             name="general",
         )
 
-        for member_id in re.findall(r"<@!?([0-9]{15,20})>", members):
-            member = await interaction.guild.fetch_member(int(member_id))
-            if member is None:
-                continue
-            await member.add_roles(role)
-            await ctf_general_channel.send(
-                f"{member.mention} was added by {interaction.user.mention} 🔫"
-            )
+        if members is None:
+            for scheduled_event in await interaction.guild.fetch_scheduled_events():
+                if scheduled_event.name == ctf["name"]:
+                    break
+            else:
+                await interaction.followup.send(
+                    "No event matching the provided CTF name was found.",
+                    ephemeral=True,
+                )
+                return
+
+            async for user in scheduled_event.users():
+                member = await interaction.guild.fetch_member(user.id)
+                await member.add_roles(role)
+                await ctf_general_channel.send(
+                    f"{member.mention} was added by {interaction.user.mention} 🔫"
+                )
+        else:
+            for member_id in re.findall(r"<@!?([0-9]{15,20})>", members):
+                member = await interaction.guild.fetch_member(int(member_id))
+                if member is None:
+                    continue
+                await member.add_roles(role)
+                await ctf_general_channel.send(
+                    f"{member.mention} was added by {interaction.user.mention} 🔫"
+                )
 
         await interaction.followup.send(f"✅ Added players to `{ctf['name']}`.")
 
