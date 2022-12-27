@@ -32,6 +32,10 @@ class Help(app_commands.Command):
 
         # Show help for global commands.
         for command in interaction.client.tree.get_commands():
+            # Skip context menu commands.
+            if command.__class__.__bases__[0] == discord.app_commands.ContextMenu:
+                continue
+
             embed.add_field(
                 name=f"/{command.name}",
                 value=command.description,
@@ -44,10 +48,14 @@ class Help(app_commands.Command):
             for command in interaction.client.tree.get_commands(
                 guild=discord.Object(id=GUILD_ID)
             ):
+                # Skip context menu commands.
+                if command.__class__.__bases__[0] == discord.app_commands.ContextMenu:
+                    continue
+
                 embed.add_field(
                     name=f"/{command.name}",
                     value=command.description,
                     inline=False,
                 )
 
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
