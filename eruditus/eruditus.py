@@ -16,16 +16,16 @@ import aiohttp
 from binascii import hexlify
 from buttons.workon import WorkonButton
 
-from slash_commands.help import Help
-from slash_commands.syscalls import Syscalls
-from slash_commands.encoding import Encoding
-from slash_commands.ctftime import CTFTime
-from slash_commands.cipher import Cipher
-from slash_commands.report import Report
-from slash_commands.request import Request
-from slash_commands.search import Search
-from slash_commands.ctf import CTF
-from slash_commands.chatgpt import ChatGPT
+from app_commands.help import Help
+from app_commands.syscalls import Syscalls
+from app_commands.encoding import Encoding
+from app_commands.ctftime import CTFTime
+from app_commands.cipher import Cipher
+from app_commands.report import Report
+from app_commands.request import Request
+from app_commands.search import Search
+from app_commands.ctf import CTF
+from app_commands.chatgpt import ChatGPT
 
 from lib.util import (
     sanitize_channel_name,
