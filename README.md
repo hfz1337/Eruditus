@@ -58,7 +58,6 @@ Here's a list of the currently supported commands:
 /ctf renamechallenge                                 (Rename a challenge)
 /ctf deletechallenge                                 (Delete a challenge)
 /ctf pull                                            (Pull unsolved challenges from the CTFd platform)
-/ctf takenote                                        (Copies the last message into the notes channel)
 /ctf submit                                          (Submits a flag to CTFd)
 /ctf remaining                                       (Show remaining time for the CTF)
 /ctf register                                        (Register a CTFd account)
@@ -91,7 +90,7 @@ Here's a list of the currently supported commands:
 3. Go to the **Bot** pane and add a bot for your application.
 4. Enable **Server Members Intent** and **Message Content Intent** under
 **Privileged Gateway Intents**.
-5. Put your Discord guild ID and bot token inside the [.env](eruditus/.env) file.
+5. Put your configuration in the [.env](eruditus/.env) file.
 6. Deploy the bot using `docker-compose up -d --build`.
 7. Go to the **OAuth2 URL Generator** pane, tick `bot` and `applications.commands`
 under the **Scopes** section, tick `Administrator` under the **Bot Permissions**

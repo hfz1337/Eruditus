@@ -11,7 +11,7 @@ from discord.app_commands import Choice
 from lib.util import get_local_time, sanitize_channel_name, truncate
 from lib.ctfd import pull_challenges, get_scoreboard, register_to_ctfd
 
-from lib.types import ArchiveMode, CTFStatusMode, NoteFormat, NoteType
+from lib.types import ArchiveMode, CTFStatusMode
 from msg_components.forms.flag import FlagSubmissionForm
 from msg_components.buttons.workon import WorkonButton
 from config import (
@@ -1400,91 +1400,6 @@ class CTF(app_commands.Group):
             )
 
         await interaction.followup.send("✅ Done pulling challenges")
-
-    @app_commands.checks.bot_has_permissions(manage_messages=True)
-    @app_commands.command()
-    @_in_ctf_channel()
-    async def takenote(
-        self,
-        interaction: discord.Interaction,
-        note_type: NoteType,
-        note_format: Optional[NoteFormat] = NoteFormat.embed,
-    ) -> None:
-        """Copy the last message into the notes channel.
-
-        Args:
-            interaction: The interaction that triggered this command.
-            note_type: Whether the note is about a challenge progress or otherwise
-                (default: progress).
-            note_format: Whether to create an embed for the note or take it as
-                is (default: embed).
-        """
-        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-            {"channel": interaction.channel_id}
-        )
-        if challenge is None:
-            await interaction.response.send_message(
-                "❌ Not within a challenge channel.", ephemeral=True
-            )
-            return
-
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
-        notes_channel = discord.utils.get(
-            interaction.guild.text_channels, id=ctf["guild_channels"]["notes"]
-        )
-
-        # Get last message.
-        async for message in interaction.channel.history(limit=1):
-            break
-        else:
-            await interaction.response.send_message(
-                "Nothing to take note of.", ephemeral=True
-            )
-            return
-
-        if note_type == NoteType.progress:
-            title = (
-                f"🔄 **Challenge progress - "
-                f"{challenge['name']} ({challenge['category']})**"
-            )
-            colour = discord.Colour.red()
-        else:
-            title = "📝 **Note**"
-            colour = discord.Colour.green()
-
-        if note_format == NoteFormat.embed:
-            embed = (
-                discord.Embed(
-                    title=title,
-                    description=message.content,
-                    colour=colour,
-                    timestamp=datetime.now(),
-                )
-                .set_thumbnail(url=interaction.user.display_avatar.url)
-                .set_author(name=interaction.user.name)
-            )
-            await notes_channel.send(embed=embed)
-        else:
-            embed = (
-                discord.Embed(title=title, colour=colour, timestamp=datetime.now())
-                .set_thumbnail(url=interaction.user.display_avatar.url)
-                .set_author(name=interaction.user.name)
-            )
-            # If we send the embed and the content in the same command, the embed
-            # would be placed after the content, which is not what we want.
-            await notes_channel.send(embed=embed)
-            await notes_channel.send(
-                message.content,
-                files=[
-                    await attachment.to_file() for attachment in message.attachments
-                ],
-            )
-
-        await interaction.response.send_message(
-            "✅ Note taken successfully", ephemeral=True
-        )
 
     @app_commands.command()
     @_in_ctf_channel()

@@ -23,16 +23,6 @@ class CTFStatusMode(Enum):
     all = 2
 
 
-class NoteType(Enum):
-    progress = 1
-    note = 2
-
-
-class NoteFormat(Enum):
-    embed = 1
-    raw = 2
-
-
 class PromptPrivacy(Enum):
     private = 1
     public = 0
