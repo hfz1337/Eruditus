@@ -47,7 +47,7 @@ class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):
 
             message = f"> {response}"
             if len(message) > MAX_CONTENT_SIZE:
-                buffer = BytesIO(response["data"].encode())
+                buffer = BytesIO(message.encode())
                 file = discord.File(buffer, filename="answer.txt")
                 await interaction.followup.send(file=file, ephemeral=self.ephemeral)
             else:
