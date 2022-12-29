@@ -20,11 +20,16 @@ class ChatGPT(app_commands.Command):
         self,
         interaction: discord.Interaction,
         privacy: Optional[PromptPrivacy] = PromptPrivacy.public,
+        temperature: Optional[float] = 0.9,
     ) -> None:
         """Ask ChatGPT a question.
 
         Args:
             interaction: The interaction that triggered this command.
             privacy: Set the prompt's privacy (defaults to public).
+            temperature: Defaults to 0.9, use lower values for applications with a
+                well-defined answer (e.g., 0).
         """
-        await interaction.response.send_modal(ChatGPTForm(private=privacy.value))
+        await interaction.response.send_modal(
+            ChatGPTForm(private=privacy.value, temperature=temperature)
+        )

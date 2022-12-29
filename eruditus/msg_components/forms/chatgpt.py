@@ -15,9 +15,10 @@ class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):
         max_length=4000,
     )
 
-    def __init__(self, private: int) -> None:
+    def __init__(self, private: int, temperature: float) -> None:
         super().__init__()
         self.ephemeral = bool(private)
+        self.temperature = temperature
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer()
@@ -29,6 +30,7 @@ class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):
             json={
                 "model": "text-davinci-003",
                 "prompt": self.prompt.value,
+                "temperature": self.temperature,
                 "max_tokens": 2048,
                 "echo": True,
             },
