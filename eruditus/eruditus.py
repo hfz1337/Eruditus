@@ -343,7 +343,7 @@ class Eruditus(discord.Client):
         else:
             reminder_channel = self.get_channel(config.REMINDER_CHANNEL)
 
-        for scheduled_event in await guild.fetch_scheduled_events():
+        for scheduled_event in guild.scheduled_events:
             if scheduled_event.status != discord.EventStatus.scheduled:
                 continue
 
@@ -439,7 +439,7 @@ class Eruditus(discord.Client):
 
         scheduled_events = {
             scheduled_event.name: scheduled_event.id
-            for scheduled_event in await guild.fetch_scheduled_events()
+            for scheduled_event in guild.scheduled_events
         }
         async with aiohttp.request(
             method="get",

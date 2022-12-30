@@ -193,7 +193,7 @@ class CTFTime(app_commands.Group):
 
         scheduled_events = {
             scheduled_event.name: scheduled_event.id
-            for scheduled_event in await guild.fetch_scheduled_events()
+            for scheduled_event in guild.scheduled_events
         }
         async with aiohttp.request(
             method="get",

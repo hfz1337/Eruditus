@@ -8,7 +8,7 @@ import discord
 from discord import HTTPException, app_commands
 from discord.app_commands import Choice
 
-from lib.util import get_local_time, sanitize_channel_name, truncate
+from lib.util import sanitize_channel_name, truncate
 from lib.ctfd import pull_challenges, get_scoreboard, register_to_ctfd
 
 from lib.types import ArchiveMode, CTFStatusMode
@@ -410,7 +410,7 @@ class CTF(app_commands.Group):
         )
 
         if members is None:
-            for scheduled_event in await interaction.guild.fetch_scheduled_events():
+            for scheduled_event in interaction.guild.scheduled_events:
                 if scheduled_event.name == ctf["name"]:
                     break
             else:
@@ -1516,16 +1516,15 @@ class CTF(app_commands.Group):
             {"guild_category": interaction.channel.category_id}
         )
 
-        for scheduled_event in await interaction.guild.fetch_scheduled_events():
+        for scheduled_event in interaction.guild.scheduled_events:
             if scheduled_event.name == ctf["name"]:
                 break
         else:
             await interaction.followup.send("🏁 This CTF has ended.")
             return
 
-        remaining_time = scheduled_event.end_time - get_local_time()
         await interaction.followup.send(
-            f"⏲️ This CTF ends in {str(remaining_time).split('.')[0]}."
+            f"⏲️ This CTF ends <t:{scheduled_event.end_time.timestamp():.0f}:R>."
         )
 
     @app_commands.command()
