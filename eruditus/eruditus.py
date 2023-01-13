@@ -519,8 +519,8 @@ class Eruditus(discord.Client):
                         )
                         # We only update an event's date if it's more than 2 days away.
                         if local_time + timedelta(days=2) >= event_start:
-                            del parameters["start_time"]
-                            del parameters["end_time"]
+                            parameters["start_time"] = scheduled_event.start_time
+                            parameters["end_time"] = scheduled_event.end_time
                         scheduled_event = await scheduled_event.edit(**parameters)
 
                     else:
