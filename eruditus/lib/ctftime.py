@@ -45,10 +45,15 @@ async def scrape_event_info(event_id: int) -> dict:
 
     event_name = parser.find("h2").text.strip()
     event_location = parser.select_one("p b").text.strip()
-    event_format = parser.select_one("p:nth-child(5)").text.split(": ")[1].strip()
-    event_website = parser.select_one("p:nth-child(6) a").text
     event_logo = parser.select_one(".span2 img")["src"].lstrip("/")
-    event_weight = parser.select_one("p:nth-child(8)").text.split(": ")[1].strip()
+    event_format = parser.select_one("p:nth-child(5)").text.split(": ")[1].strip()
+    event_weight = parser.select_one("p:nth-child(8)")
+    if event_weight:
+        event_website = parser.select_one("p:nth-child(6) a").text
+    else:
+        event_weight = parser.select_one("p:nth-child(7)")
+        event_website = ""
+    event_weight = event_weight.text.split(": ")[1].strip()
     event_organizers = [
         organizer.text.strip() for organizer in parser.select(".span10 li a")
     ]
