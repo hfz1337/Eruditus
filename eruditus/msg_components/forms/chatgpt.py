@@ -3,7 +3,7 @@ from io import BytesIO
 
 import discord
 
-from config import OPENAI_URL, OPENAI_API_KEY, MAX_CONTENT_SIZE
+from config import OPENAI_URL, OPENAI_API_KEY, MAX_CONTENT_SIZE, OPENAI_GPT_MODEL
 
 
 class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):
@@ -28,7 +28,7 @@ class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):
             url=f"{OPENAI_URL}/v1/completions",
             headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
             json={
-                "model": "text-davinci-003",
+                "model": OPENAI_GPT_MODEL,
                 "prompt": self.prompt.value,
                 "temperature": self.temperature,
                 "max_tokens": 2048,
