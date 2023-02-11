@@ -204,6 +204,7 @@ class Eruditus(discord.Client):
         # The bot is supposed to be part of a single guild.
         guild = self.get_guild(GUILD_ID)
 
+        event_name = after.name.lstrip("🚩 ")
         # If an event started (status changes from scheduled to active).
         if (
             before.status == discord.EventStatus.scheduled
@@ -214,12 +215,12 @@ class Eruditus(discord.Client):
             users = [user async for user in after.users()]
             if len(users) < MIN_PLAYERS:
                 return
-            ctf = await self.create_ctf(after.name, live=True)
+            ctf = await self.create_ctf(event_name, live=True)
             if ctf is None:
                 ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
                     {
                         "name": re.compile(
-                            f"^{re.escape(after.name.strip())}$", re.IGNORECASE
+                            f"^{re.escape(event_name.strip())}$", re.IGNORECASE
                         )
                     }
                 )
@@ -290,7 +291,7 @@ class Eruditus(discord.Client):
             ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
                 {
                     "name": re.compile(
-                        f"^{re.escape(after.name.strip())}$", re.IGNORECASE
+                        f"^{re.escape(event_name.strip())}$", re.IGNORECASE
                     )
                 }
             )
@@ -320,7 +321,7 @@ class Eruditus(discord.Client):
                 {"_id": ctf["_id"]}, {"$set": {"ended": True}}
             )
 
-    @tasks.loop(hours=1, reconnect=True)
+    @tasks.loop(minutes=5, reconnect=True)
     async def ctf_reminder(self) -> None:
         """Create a CTF for events starting soon and send a reminder."""
         # Wait until the bot's internal cache is ready.
@@ -344,9 +345,21 @@ class Eruditus(discord.Client):
             reminder_channel = self.get_channel(config.REMINDER_CHANNEL)
 
         for scheduled_event in guild.scheduled_events:
-            if scheduled_event.status != discord.EventStatus.scheduled:
+            if (
+                scheduled_event.status != discord.EventStatus.scheduled
+                or scheduled_event.name.startswith("🚩")
+            ):
                 continue
 
+            event_name = scheduled_event.name
+            await scheduled_event.edit(
+                name=f"🚩 {event_name}",
+                description=scheduled_event.description,
+                start_time=scheduled_event.start_time,
+                end_time=scheduled_event.end_time,
+                entity_type=scheduled_event.entity_type,
+                location=scheduled_event.location,
+            )
             remaining_time = scheduled_event.start_time - local_time
             if remaining_time > timedelta(hours=1):
                 continue
@@ -356,7 +369,7 @@ class Eruditus(discord.Client):
             if len(users) < MIN_PLAYERS:
                 if reminder_channel:
                     await reminder_channel.send(
-                        f"🔔 CTF `{scheduled_event.name}` starting "
+                        f"🔔 CTF `{event_name}` starting "
                         f"<t:{scheduled_event.start_time.timestamp():.0f}:R>.\n"
                         f"This CTF was not created automatically because less than"
                         f" {MIN_PLAYERS} players were willing to participate.\n"
@@ -365,12 +378,12 @@ class Eruditus(discord.Client):
                 continue
 
             # If a CTF is starting soon, we create it if it wasn't created yet.
-            ctf = await self.create_ctf(scheduled_event.name, live=False)
+            ctf = await self.create_ctf(event_name, live=False)
             if ctf is None:
                 ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
                     {
                         "name": re.compile(
-                            f"^{re.escape(scheduled_event.name.strip())}$",
+                            f"^{re.escape(event_name.strip())}$",
                             re.IGNORECASE,
                         )
                     }

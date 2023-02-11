@@ -53,7 +53,11 @@ async def scrape_event_info(event_id: int) -> dict:
     else:
         event_weight = parser.select_one("p:nth-child(7)")
         event_website = ""
-    event_weight = event_weight.text.split(": ")[1].strip()
+    event_weight = (
+        event_weight.text.split(": ")[1].strip()
+        if ": " in event_weight.text
+        else event_weight.text
+    )
     event_organizers = [
         organizer.text.strip() for organizer in parser.select(".span10 li a")
     ]
