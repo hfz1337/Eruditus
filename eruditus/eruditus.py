@@ -351,6 +351,10 @@ class Eruditus(discord.Client):
             ):
                 continue
 
+            remaining_time = scheduled_event.start_time - local_time
+            if remaining_time > timedelta(hours=1):
+                continue
+
             event_name = scheduled_event.name
             await scheduled_event.edit(
                 name=f"🚩 {event_name}",
@@ -360,9 +364,6 @@ class Eruditus(discord.Client):
                 entity_type=scheduled_event.entity_type,
                 location=scheduled_event.location,
             )
-            remaining_time = scheduled_event.start_time - local_time
-            if remaining_time > timedelta(hours=1):
-                continue
 
             # Ignore this event if not too many people are interested in it.
             users = [user async for user in scheduled_event.users()]
