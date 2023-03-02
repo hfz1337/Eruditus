@@ -25,14 +25,15 @@ class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):
 
         async with aiohttp.request(
             method="post",
-            url=f"{OPENAI_URL}/v1/completions",
+            url=f"{OPENAI_URL}/v1/chat/completions",
             headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
             json={
                 "model": OPENAI_GPT_MODEL,
-                "prompt": self.prompt.value,
+                "messages": [
+                    {"role": "user", "content": self.prompt.value},
+                ],
                 "temperature": self.temperature,
                 "max_tokens": 2048,
-                "echo": True,
             },
         ) as response:
             if response.status != 200:
