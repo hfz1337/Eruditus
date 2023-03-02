@@ -43,12 +43,12 @@ class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):
                 return None
 
             try:
-                response = (await response.json())["choices"][0]["text"]
+                response = (await response.json())["choices"][0]["message"]["content"]
             except Exception:
                 await interaction.followup.send("Something went wrong")
                 return None
 
-            message = f"> {response}"
+            message = f"{self.prompt.value}\n{response}"
             if len(message) > MAX_CONTENT_SIZE:
                 buffer = BytesIO(message.encode())
                 file = discord.File(buffer, filename="answer.txt")
