@@ -2,8 +2,7 @@ FROM python:3.8
 
 COPY requirements.txt .
 
-RUN pip3 install -U git+https://github.com/Rapptz/discord.py && \
-    pip3 install -r requirements.txt && \
+RUN pip3 install -r requirements.txt && \
     rm -f requirements.txt
 
 COPY eruditus /eruditus
