@@ -609,6 +609,7 @@ class CTF(app_commands.Group):
                 "announcement": announcement.id,
                 "solve_time": None,
                 "solve_announcement": None,
+                "flag": None,
             }
         )
 
@@ -1403,6 +1404,7 @@ class CTF(app_commands.Group):
                         "announcement": announcement.id,
                         "solve_time": None,
                         "solve_announcement": None,
+                        "flag": None,
                     }
                 )
                 .inserted_id

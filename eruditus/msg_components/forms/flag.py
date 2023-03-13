@@ -54,6 +54,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             # Announce that the challenge was solved.
             challenge["solved"] = True
             challenge["solve_time"] = int(datetime.now().timestamp())
+            challenge["flag"] = self.flag.value
 
             solves_channel = interaction.client.get_channel(
                 ctf["guild_channels"]["solves"]
@@ -128,6 +129,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
                         "solve_time": challenge["solve_time"],
                         "solve_announcement": challenge["solve_announcement"],
                         "players": challenge["players"],
+                        "flag": challenge["flag"],
                     }
                 },
             )
