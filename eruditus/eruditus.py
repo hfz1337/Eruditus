@@ -204,7 +204,7 @@ class Eruditus(discord.Client):
         # The bot is supposed to be part of a single guild.
         guild = self.get_guild(GUILD_ID)
 
-        event_name = after.name.lstrip("🚩 ")
+        event_name = after.name
         # If an event started (status changes from scheduled to active).
         if (
             before.status == discord.EventStatus.scheduled
@@ -347,7 +347,7 @@ class Eruditus(discord.Client):
         for scheduled_event in guild.scheduled_events:
             if (
                 scheduled_event.status != discord.EventStatus.scheduled
-                or scheduled_event.name.startswith("🚩")
+                or scheduled_event.location.startswith("🌐")
             ):
                 continue
 
@@ -357,12 +357,13 @@ class Eruditus(discord.Client):
 
             event_name = scheduled_event.name
             await scheduled_event.edit(
-                name=f"🚩 {event_name}",
+                name=event_name,
                 description=scheduled_event.description,
                 start_time=scheduled_event.start_time,
                 end_time=scheduled_event.end_time,
                 entity_type=scheduled_event.entity_type,
-                location=scheduled_event.location,
+                location=f"🌐 {scheduled_event.location}",
+                privacy_level=discord.PrivacyLevel.guild_only,
             )
 
             # Ignore this event if not too many people are interested in it.
@@ -523,6 +524,7 @@ class Eruditus(discord.Client):
                             f"{event_info['website']}",
                             maxlen=100,
                         ),
+                        "privacy_level": discord.PrivacyLevel.guild_only,
                     }
 
                     # In case the event was already scheduled, we update it, otherwise

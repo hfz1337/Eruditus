@@ -1,4 +1,4 @@
-discord==2.1.0
+discord==2.2.0
 beautifulsoup4
 python-dotenv
 pymongo
