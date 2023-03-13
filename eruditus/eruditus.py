@@ -607,9 +607,7 @@ class Eruditus(discord.Client):
                     "\n".join(
                         (
                             challenge["description"],
-                            challenge["connection_info"]
-                            if "connection_info" in challenge
-                            else "",
+                            f"`{challenge['connection_info']}`" or "",
                         )
                     )
                     or "No description."
