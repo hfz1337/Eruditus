@@ -423,9 +423,6 @@ class CTF(app_commands.Group):
             async for user in scheduled_event.users():
                 member = await interaction.guild.fetch_member(user.id)
                 await member.add_roles(role)
-                await ctf_general_channel.send(
-                    f"{member.mention} was added by {interaction.user.mention} 🔫"
-                )
         else:
             for member_id in re.findall(r"<@!?([0-9]{15,20})>", members):
                 member = await interaction.guild.fetch_member(int(member_id))
