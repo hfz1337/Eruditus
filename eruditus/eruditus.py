@@ -282,6 +282,9 @@ class Eruditus(discord.Client):
                 f"{role.mention} has started!\nGet to work now ⚔️ 🔪 😠 🔨 ⚒️"
             )
 
+            # Pull challenges without waiting for scheduled task to execute.
+            self.challenge_puller.restart()
+
         # If an event ended (status changes from active to ended/completed).
         elif (
             before.status == discord.EventStatus.active
@@ -607,7 +610,9 @@ class Eruditus(discord.Client):
                     "\n".join(
                         (
                             challenge["description"],
-                            f"`{challenge['connection_info']}`" or "",
+                            f"`{challenge['connection_info']}`"
+                            if challenge["connection_info"] is not None
+                            else "",
                         )
                     )
                     or "No description."

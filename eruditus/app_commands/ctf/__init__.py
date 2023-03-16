@@ -8,8 +8,8 @@ import discord
 from discord import HTTPException, app_commands
 from discord.app_commands import Choice
 
-from lib.util import sanitize_channel_name, truncate
-from lib.ctfd import pull_challenges, get_scoreboard, register_to_ctfd
+from lib.util import sanitize_channel_name
+from lib.ctfd import get_scoreboard, register_to_ctfd
 
 from lib.types import ArchiveMode, CTFStatusMode
 from msg_components.forms.flag import FlagSubmissionForm
@@ -1264,9 +1264,7 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
     @_in_ctf_channel()
-    async def pull(
-        self, interaction: discord.Interaction, ctfd_url: Optional[str] = None
-    ) -> None:
+    async def pull(self, interaction: discord.Interaction) -> None:
         """Pull challenges from the CTFd platform.
 
         Args:
@@ -1274,147 +1272,8 @@ class CTF(app_commands.Group):
             ctfd_url: URL of the CTFd platform (default: url from the previously
                 configured credentials).
         """
-        await interaction.response.defer()
-
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
-        url = ctfd_url or ctf["credentials"]["url"]
-        username = ctf["credentials"]["username"]
-        password = ctf["credentials"]["password"]
-
-        if url is None:
-            await interaction.followup.send("No credentials set for this CTF.")
-            return
-
-        category_channel = discord.utils.get(
-            interaction.guild.categories, id=interaction.channel.category_id
-        )
-
-        async for challenge in pull_challenges(url, username, password):
-            # Avoid having duplicate categories when people mix up upper/lower case
-            # or add unnecessary spaces at the beginning or the end.
-            challenge["category"] = challenge["category"].title().strip()
-
-            # Check if challenge was already created.
-            if MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-                {
-                    "id": challenge["id"],
-                    "name": re.compile(
-                        f"^{re.escape(challenge['name'])}$", re.IGNORECASE
-                    ),
-                    "category": re.compile(
-                        f"^{re.escape(challenge['category'])}$", re.IGNORECASE
-                    ),
-                }
-            ):
-                continue
-
-            # Make sure we didn't reach 50 channels, otherwise channel creation
-            # will throw an exception.
-            if len(category_channel.channels) == 50:
-                await interaction.followup.send(
-                    "Max channels per category exceeded, please delete some "
-                    "challenges first."
-                )
-                return
-
-            # Create a channel for the challenge and set its permissions.
-            overwrites = {
-                interaction.guild.default_role: discord.PermissionOverwrite(
-                    read_messages=False
-                )
-            }
-            channel_name = sanitize_channel_name(
-                f"{challenge['category']}-{challenge['name']}"
-            )
-            challenge_channel = await interaction.guild.create_text_channel(
-                name=f"❌-{channel_name}",
-                category=category_channel,
-                overwrites=overwrites,
-            )
-
-            # Send challenge information in its respective channel.
-            description = (
-                "\n".join(
-                    (
-                        challenge["description"],
-                        f"`{challenge['connection_info']}`" or "",
-                    )
-                )
-                or "No description."
-            )
-            tags = ", ".join(challenge["tags"]) or "No tags."
-            files = [
-                f"{ctf['credentials']['url'].strip('/')}{file}"
-                for file in challenge["files"]
-            ]
-            files = "\n- " + "\n- ".join(files) if files else "No files."
-            embed = discord.Embed(
-                title=f"{challenge['name']} - {challenge['value']} points",
-                description=truncate(
-                    f"**Category:** {challenge['category']}\n"
-                    f"**Description:** {description}\n"
-                    f"**Files:** {files}\n"
-                    f"**Tags:** {tags}",
-                    maxlen=4096,
-                ),
-                colour=discord.Colour.blue(),
-                timestamp=datetime.now(),
-            )
-            message = await challenge_channel.send(embed=embed)
-            await message.pin()
-
-            # Announce that the challenge was added.
-            announcements_channel = discord.utils.get(
-                interaction.guild.text_channels,
-                id=ctf["guild_channels"]["announcements"],
-            )
-            role = discord.utils.get(interaction.guild.roles, id=ctf["guild_role"])
-
-            embed = discord.Embed(
-                title="🔔 New challenge created!",
-                description=(
-                    f"**Challenge name:** {challenge['name']}\n"
-                    f"**Category:** {challenge['category']}\n\n"
-                    f"Use `/ctf workon {challenge['name']}` or the button to join.\n"
-                    f"{role.mention}"
-                ),
-                colour=discord.Colour.dark_gold(),
-                timestamp=datetime.now(),
-            )
-            announcement = await announcements_channel.send(
-                embed=embed, view=WorkonButton(name=challenge["name"])
-            )
-
-            # Add challenge to the database.
-            challenge_object_id = (
-                MONGO[DBNAME][CHALLENGE_COLLECTION]
-                .insert_one(
-                    {
-                        "id": challenge["id"],
-                        "name": challenge["name"],
-                        "category": challenge["category"],
-                        "channel": challenge_channel.id,
-                        "solved": False,
-                        "blooded": False,
-                        "players": [],
-                        "announcement": announcement.id,
-                        "solve_time": None,
-                        "solve_announcement": None,
-                        "flag": None,
-                    }
-                )
-                .inserted_id
-            )
-
-            # Add reference to the newly created challenge.
-            ctf["challenges"].append(challenge_object_id)
-            MONGO[DBNAME][CTF_COLLECTION].update_one(
-                {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
-            )
-
-        await interaction.followup.send("✅ Done pulling challenges")
+        interaction.client.challenge_puller.restart()
+        await interaction.response.send_message("✅ Started challenge puller.")
 
     @app_commands.command()
     @_in_ctf_channel()
