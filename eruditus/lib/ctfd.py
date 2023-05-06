@@ -180,13 +180,15 @@ async def pull_challenges(
                             "id": challenge["id"],
                             "name": challenge["name"],
                             "value": challenge["value"],
-                            "description": challenge["description"],
+                            "description": challenge["description"]
+                            if "description" in challenge
+                            else "",
                             "connection_info": challenge["connection_info"]
                             if "connection_info" in challenge
                             else None,
                             "category": challenge["category"],
                             "tags": challenge["tags"],
-                            "files": challenge["files"],
+                            "files": challenge["files"] if "files" in challenge else "",
                         }
 
 

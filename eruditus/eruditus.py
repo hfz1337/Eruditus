@@ -474,6 +474,10 @@ class Eruditus(discord.Client):
                     event_start = ctftime_date_to_datetime(event_info["start"])
                     event_end = ctftime_date_to_datetime(event_info["end"])
 
+                    # Ignore event if start/end times are incorrect.
+                    if event_end <= event_start:
+                        continue
+
                     # If the event starts in more than a week, then it's too soon to
                     # schedule it, we ignore it for now.
                     # But if it's not our first run, we make sure to not recreate
