@@ -26,3 +26,8 @@ class CTFStatusMode(Enum):
 class PromptPrivacy(Enum):
     private = 1
     public = 0
+
+
+class Permissions(Enum):
+    RDONLY = 0
+    RDWR = 2

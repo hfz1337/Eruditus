@@ -11,7 +11,7 @@ from discord.app_commands import Choice
 from lib.util import sanitize_channel_name
 from lib.ctfd import get_scoreboard, register_to_ctfd
 
-from lib.types import ArchiveMode, CTFStatusMode
+from lib.types import ArchiveMode, CTFStatusMode, Permissions
 from msg_components.forms.flag import FlagSubmissionForm
 from msg_components.buttons.workon import WorkonButton
 from config import (
@@ -165,6 +165,7 @@ class CTF(app_commands.Group):
         self,
         interaction: discord.Interaction,
         mode: Optional[ArchiveMode] = ArchiveMode.all,
+        permissions: Optional[Permissions] = Permissions.RDONLY,
         name: Optional[str] = None,
     ):
         """Archive a CTF by making its channels read-only.
@@ -173,6 +174,8 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             mode: Whether to archive all channels, or the important ones
                only (default: all).
+            permissions: Whether channels should be read only or writable
+               as well (default: read only).
             name: CTF name (default: current channel's CTF).
         """
         await interaction.response.defer()
@@ -258,8 +261,8 @@ class CTF(app_commands.Group):
                 ):
                     await ctf_channel.delete()
 
-        # Make the channels read-only by participants, except #general which must be
-        # kept readable and writable.
+        # Make channels read-only by participants, except #general which must be kept
+        # readable and writable. The former depends on the `permissions` parameter.
         members = [
             member
             async for member in interaction.guild.fetch_members(limit=None)
@@ -283,7 +286,9 @@ class CTF(app_commands.Group):
         await ctf_general_channel.edit(overwrites=overwrites)
 
         for member in members:
-            overwrites[member] = perm_rdonly
+            overwrites[member] = (
+                perm_rdonly if permissions == Permissions.RDONLY else perm_rdwr
+            )
         await category_channel.edit(name=f"🔒 {ctf['name']}", overwrites=overwrites)
 
         for ctf_channel in category_channel.channels:
