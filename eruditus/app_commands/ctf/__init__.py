@@ -713,19 +713,13 @@ class CTF(app_commands.Group):
                 )
                 return
 
-        # Delete challenge from the database.
-        MONGO[DBNAME][CHALLENGE_COLLECTION].delete_one(challenge)
-
         # Get CTF to which the challenge is associated.
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
 
-        # Delete channel associated with the challenge.
-        challenge_channel = discord.utils.get(
-            interaction.guild.text_channels, id=challenge["channel"]
-        )
-        await challenge_channel.delete()
+        # Delete challenge from the database.
+        MONGO[DBNAME][CHALLENGE_COLLECTION].delete_one(challenge)
 
         # Delete reference to that challenge from the CTF.
         ctf["challenges"].remove(challenge["_id"])
@@ -747,6 +741,12 @@ class CTF(app_commands.Group):
         await interaction.response.send_message(
             f"✅ Challenge `{challenge['name']}` has been deleted."
         )
+
+        # Delete channel associated with the challenge.
+        challenge_channel = discord.utils.get(
+            interaction.guild.text_channels, id=challenge["channel"]
+        )
+        await challenge_channel.delete()
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
