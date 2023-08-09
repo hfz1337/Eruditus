@@ -5,6 +5,10 @@ from hashlib import md5
 
 import logging
 from logging import RootLogger
+from typing import Dict, Union, Any
+
+from aiohttp import ClientResponse
+from aiohttp.web_response import Response
 
 
 def get_local_time() -> datetime:
@@ -88,3 +92,64 @@ def setup_logger(level: int) -> RootLogger:
     logger.addHandler(stream_handler)
 
     return logger
+
+
+async def validate_response(response: ClientResponse, *validate_fields: str, **validate_kw: Any) -> bool:
+    """
+    @note: @es3n1n: I am too lazy to write typehints for the `validate_kw`, you can pass it like this:
+    * validate_response(response, 'something', data=['a', 'b'], data={'a': ['b'], 'b': {'c': ['s']}})
+    * validate_response(response, data={'response': {'success': True}}
+    """
+    # Something went wrong
+    if response.status not in [200]:
+        return False
+
+    # If there's nothing to validate
+    if len(validate_fields) == 0 and len(validate_kw) == 0:
+        return True
+
+    # Validating json fields
+    response_json: Dict[str, Union[str, bool, int, Dict[str, str]]] = await response.json()
+
+    # Validators impl
+    # @todo: @es3n1n: this could be implemented way better than this
+    def validate_field(data, values):
+        # Validating json keys
+        if isinstance(values, list):
+            for field in values:
+                if field not in data:
+                    return False
+            return True
+
+        # Validating json trees
+        if isinstance(values, dict):
+            for field, value in values.items():
+                if field not in data:
+                    return False
+
+                if not validate_field(data[field], value):
+                    return False
+
+            return True
+
+        # Exact matching
+        return data == values
+
+    # Validating args
+    if len(validate_fields) > 0:
+        for field in validate_fields:
+            if field not in response_json:
+                return False
+
+        return True
+
+    # Validate kwargs
+    for key, value in validate_kw.items():
+        if key not in response_json:
+            return False
+
+        if not validate_field(response_json[key], value):
+            return False
+
+    # Yay
+    return True

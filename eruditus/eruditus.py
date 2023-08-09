@@ -40,7 +40,7 @@ from lib.ctftime import (
     scrape_event_info,
     ctftime_date_to_datetime,
 )
-from lib.ctfd import get_scoreboard, pull_challenges, register_to_ctfd
+from lib.platforms import match_platform, PlatformCTX
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
@@ -225,16 +225,27 @@ class Eruditus(discord.Client):
                     }
                 )
 
-            # Register a team account if it's a CTFd platform.
+            # Register a team account if it's a supported platform.
             url = after.location.split(" — ")[1]
             password = hexlify(os.urandom(32)).decode()
-            result = await register_to_ctfd(
-                ctfd_base_url=url,
-                username=TEAM_NAME,
-                password=password,
-                email=TEAM_EMAIL,
+
+            # Matching platform
+            ctx = PlatformCTX(
+                base_url=url,
+                args=dict(
+                    username=TEAM_NAME,
+                    password=password,
+                    email=TEAM_EMAIL
+                )
             )
-            if "success" in result:
+            platform = await match_platform(ctx)
+            if platform is None:
+                # unsupported platform gg
+                return
+
+            result = await platform.register(ctx)
+
+            if result.success:
                 # Add credentials.
                 ctf["credentials"]["url"] = url
                 ctf["credentials"]["username"] = TEAM_NAME
@@ -265,7 +276,7 @@ class Eruditus(discord.Client):
                 member = await guild.fetch_member(user.id)
                 await member.add_roles(role)
 
-            # Substitue the ⏰ in the category channel name with a 🔴 to say that
+            # Substitute the ⏰ in the category channel name with a 🔴 to say that
             # we're live.
             category_channel = discord.utils.get(
                 guild.categories, id=ctf["guild_category"]
@@ -397,13 +408,24 @@ class Eruditus(discord.Client):
             # Register a team account if it's a CTFd platform.
             url = scheduled_event.location.split(" — ")[1]
             password = hexlify(os.urandom(32)).decode()
-            result = await register_to_ctfd(
-                ctfd_base_url=url,
-                username=TEAM_NAME,
-                password=password,
-                email=TEAM_EMAIL,
+
+            # Matching platform
+            ctx = PlatformCTX(
+                base_url=url,
+                args=dict(
+                    username=TEAM_NAME,
+                    password=password,
+                    email=TEAM_EMAIL
+                )
             )
-            if "success" in result:
+            platform = await match_platform(ctx)
+            if platform is None:
+                # unsupported platform gg
+                return
+
+            result = await platform.register(ctx)
+
+            if result.success:
                 # Add credentials.
                 ctf["credentials"]["url"] = url
                 ctf["credentials"]["username"] = TEAM_NAME
@@ -562,30 +584,35 @@ class Eruditus(discord.Client):
 
         for ctf in MONGO[DBNAME][CTF_COLLECTION].find({"ended": False}):
             url = ctf["credentials"]["url"]
-            username = ctf["credentials"]["username"]
-            password = ctf["credentials"]["password"]
 
             if url is None:
-                return
+                continue
 
             category_channel = discord.utils.get(
                 guild.categories, id=ctf["guild_category"]
             )
 
-            async for challenge in pull_challenges(url, username, password):
+            # Matching platform
+            ctx = PlatformCTX.from_credentials(ctf['credentials'])
+            platform = await match_platform(ctx)
+            if platform is None:
+                # unsupported platform gg
+                continue
+
+            async for challenge in platform.pull_challenges(ctx):
                 # Avoid having duplicate categories when people mix up upper/lower case
                 # or add unnecessary spaces at the beginning or the end.
-                challenge["category"] = challenge["category"].title().strip()
+                challenge.category = challenge.category.title().strip()
 
                 # Check if challenge was already created.
                 if MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
                     {
-                        "id": challenge["id"],
+                        "id": challenge.id,
                         "name": re.compile(
-                            f"^{re.escape(challenge['name'])}$", re.IGNORECASE
+                            f"^{re.escape(challenge.name)}$", re.IGNORECASE
                         ),
                         "category": re.compile(
-                            f"^{re.escape(challenge['category'])}$", re.IGNORECASE
+                            f"^{re.escape(challenge.category)}$", re.IGNORECASE
                         ),
                     }
                 ):
@@ -601,7 +628,7 @@ class Eruditus(discord.Client):
                     guild.default_role: discord.PermissionOverwrite(read_messages=False)
                 }
                 channel_name = sanitize_channel_name(
-                    f"{challenge['category']}-{challenge['name']}"
+                    f"{challenge.category}-{challenge.name}"
                 )
                 challenge_channel = await guild.create_text_channel(
                     name=f"❌-{channel_name}",
@@ -613,24 +640,24 @@ class Eruditus(discord.Client):
                 description = (
                     "\n".join(
                         (
-                            challenge["description"],
-                            f"`{challenge['connection_info']}`"
-                            if challenge["connection_info"] is not None
+                            challenge.description,
+                            f"`{challenge.connection_info}`"
+                            if challenge.connection_info is not None
                             else "",
                         )
                     )
                     or "No description."
                 )
-                tags = ", ".join(challenge["tags"]) or "No tags."
+                tags = ", ".join(challenge.tags) or "No tags."
                 files = [
                     f"{ctf['credentials']['url'].strip('/')}{file}"
-                    for file in challenge["files"]
+                    for file in challenge.files
                 ]
                 files = "\n- " + "\n- ".join(files) if files else "No files."
                 embed = discord.Embed(
-                    title=f"{challenge['name']} - {challenge['value']} points",
+                    title=f"{challenge.name} - {challenge.value} points",
                     description=truncate(
-                        f"**Category:** {challenge['category']}\n"
+                        f"**Category:** {challenge.category}\n"
                         f"**Description:** {description}\n"
                         f"**Files:** {files}\n"
                         f"**Tags:** {tags}",
@@ -652,16 +679,16 @@ class Eruditus(discord.Client):
                 embed = discord.Embed(
                     title="🔔 New challenge created!",
                     description=(
-                        f"**Challenge name:** {challenge['name']}\n"
-                        f"**Category:** {challenge['category']}\n\n"
-                        f"Use `/ctf workon {challenge['name']}` or the button to join."
+                        f"**Challenge name:** {challenge.name}\n"
+                        f"**Category:** {challenge.category}\n\n"
+                        f"Use `/ctf workon {challenge.name}` or the button to join."
                         f"\n{role.mention}"
                     ),
                     colour=discord.Colour.dark_gold(),
                     timestamp=datetime.now(),
                 )
                 announcement = await announcements_channel.send(
-                    embed=embed, view=WorkonButton(name=challenge["name"])
+                    embed=embed, view=WorkonButton(name=challenge.name)
                 )
 
                 # Add challenge to the database.
@@ -669,9 +696,9 @@ class Eruditus(discord.Client):
                     MONGO[DBNAME][CHALLENGE_COLLECTION]
                     .insert_one(
                         {
-                            "id": challenge["id"],
-                            "name": challenge["name"],
-                            "category": challenge["category"],
+                            "id": challenge.id,
+                            "name": challenge.name,
+                            "category": challenge.category,
                             "channel": challenge_channel.id,
                             "solved": False,
                             "blooded": False,
@@ -700,22 +727,25 @@ class Eruditus(discord.Client):
         guild = self.get_guild(GUILD_ID)
 
         for ctf in MONGO[DBNAME][CTF_COLLECTION].find({"ended": False}):
-            ctfd_url = ctf["credentials"]["url"]
-            username = ctf["credentials"]["username"]
-            password = ctf["credentials"]["password"]
-
-            if ctfd_url is None:
+            if ctf["credentials"]["url"] is None:
                 continue
 
+            # Matching platform
+            ctx = PlatformCTX.from_credentials(ctf['credentials'])
+            platform = await match_platform(ctx)
+            if platform is None:
+                # unsupported platform gg
+                return
+
             try:
-                teams = await get_scoreboard(ctfd_url, username, password)
+                teams = [x async for x in platform.pull_scoreboard(ctx)]
             except aiohttp.client_exceptions.InvalidURL:
                 continue
 
             if not teams:
                 continue
 
-            name_field_width = max(len(team["name"]) for team in teams) + 10
+            name_field_width = max(len(team.name) for team in teams) + 10
             message = (
                 f"**Scoreboard as of "
                 f"<t:{datetime.now().timestamp():.0f}>**"
@@ -727,9 +757,9 @@ class Eruditus(discord.Client):
             scoreboard = ""
             for rank, team in enumerate(teams, start=1):
                 line = (
-                    f"{['-', '+'][team['name'] == TEAM_NAME]} "
-                    f"{rank:<10}{team['name']:<{name_field_width}}"
-                    f"{round(team['score'], 4)}\n"
+                    f"{['-', '+'][team.name == TEAM_NAME]} "
+                    f"{rank:<10}{team.name:<{name_field_width}}"
+                    f"{round(team.score, 4)}\n"
                 )
                 if len(message) + len(scoreboard) + len(line) - 2 > MAX_CONTENT_SIZE:
                     break
@@ -738,7 +768,7 @@ class Eruditus(discord.Client):
             if scoreboard:
                 message = message.format(scoreboard)
             else:
-                message = "No solves yet, or platform isn't CTFd."
+                message = "No solves yet, or platform isn't supported."
 
             # Update scoreboard in the scoreboard channel.
             scoreboard_channel = discord.utils.get(

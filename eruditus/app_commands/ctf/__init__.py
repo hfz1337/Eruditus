@@ -9,7 +9,7 @@ from discord import HTTPException, app_commands
 from discord.app_commands import Choice
 
 from lib.util import sanitize_channel_name
-from lib.ctfd import get_scoreboard, register_to_ctfd
+from lib.platforms import match_platform, PlatformCTX
 
 from lib.types import ArchiveMode, CTFStatusMode, Permissions
 from msg_components.forms.flag import FlagSubmissionForm
@@ -1306,16 +1306,18 @@ class CTF(app_commands.Group):
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
-        ctfd_url = ctf["credentials"]["url"]
-        username = ctf["credentials"]["username"]
-        password = ctf["credentials"]["password"]
-
-        if ctfd_url is None:
+        if ctf["credentials"]["url"] is None:
             await interaction.followup.send("No credentials set for this CTF.")
             return
 
+        ctx: PlatformCTX = PlatformCTX.from_credentials(ctf['credentials'])
+        platform = await match_platform(ctx)
+        if not platform:
+            interaction.followup.send("Invalid URL set for this CTF, or platform isn't supported.")
+            return
+
         try:
-            teams = await get_scoreboard(ctfd_url, username, password)
+            teams = [x async for x in platform.pull_scoreboard(ctx)]
         except aiohttp.client_exceptions.InvalidURL:
             interaction.followup.send("Invalid URL set for this CTF.")
             return
@@ -1326,7 +1328,7 @@ class CTF(app_commands.Group):
             )
             return
 
-        name_field_width = max(len(team["name"]) for team in teams) + 10
+        name_field_width = max(len(team.name) for team in teams) + 10
         message = (
             f"**Scoreboard as of "
             f"<t:{datetime.now().timestamp():.0f}>**"
@@ -1338,9 +1340,9 @@ class CTF(app_commands.Group):
         scoreboard = ""
         for rank, team in enumerate(teams, start=1):
             line = (
-                f"{['-', '+'][team['name'] == TEAM_NAME]} "
-                f"{rank:<10}{team['name']:<{name_field_width}}"
-                f"{round(team['score'], 4)}\n"
+                f"{['-', '+'][team.name == TEAM_NAME]} "
+                f"{rank:<10}{team.name:<{name_field_width}}"
+                f"{round(team.score or 0, 4)}\n"
             )
             if len(message) + len(scoreboard) + len(line) - 2 > MAX_CONTENT_SIZE:
                 break
@@ -1409,9 +1411,15 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        result = await register_to_ctfd(url, username, password, email)
-        if "error" in result:
-            await interaction.followup.send(result["error"])
+        ctx: PlatformCTX = PlatformCTX(base_url=url, args={'username': username, 'password': password, 'email': email})
+        platform = await match_platform(ctx)
+        if not platform:
+            interaction.followup.send("Invalid URL set for this CTF, or platform isn't supported.")
+            return
+
+        result = await platform.register(ctx)
+        if not result.success:
+            await interaction.followup.send(result.message)
             return
 
         # Add credentials.
@@ -1440,4 +1448,4 @@ class CTF(app_commands.Group):
 
         await creds_channel.purge()
         await creds_channel.send(message)
-        await interaction.followup.send(result["success"])
+        await interaction.followup.send(result.message or 'Success')
