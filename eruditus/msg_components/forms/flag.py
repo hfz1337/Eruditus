@@ -45,39 +45,40 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             {"guild_category": interaction.channel.category_id}
         )
 
-        ctx = PlatformCTX.from_credentials(ctf['credentials'])
+        ctx = PlatformCTX.from_credentials(ctf["credentials"])
         platform = await match_platform(ctx)
         if platform is None:
-            await interaction.followup.send("❌ Failed to submit the flag. / Unsupported platform")
+            await interaction.followup.send(
+                "❌ Failed to submit the flag. / " "Unsupported platform"
+            )
             return
 
-        result = await platform.submit_flag(
-            ctx, challenge['id'], self.flag.value
-        )
+        result = await platform.submit_flag(ctx, challenge["id"], self.flag.value)
         if result is None:
             await interaction.followup.send("❌ Failed to submit the flag.")
             return
 
         error_messages: Dict[SubmittedFlagState, str] = {
-            SubmittedFlagState.ALREADY_SUBMITTED: 'You already solved this challenge.',
-            SubmittedFlagState.INCORRECT: '❌ Incorrect flag.',
-            SubmittedFlagState.CTF_NOT_STARTED: '❌ CTF not started.',
-            SubmittedFlagState.CTF_PAUSED: '❌ CTF is paused.',
-            SubmittedFlagState.CTF_ENDED: '❌ CTF ended.',
-            SubmittedFlagState.INVALID_CHALLENGE: '❌ Invalid challenge.',
-            SubmittedFlagState.INVALID_USER: '❌ Invalid user.',
-            SubmittedFlagState.RATE_LIMITED: '❌ Rate limited.',
-            SubmittedFlagState.UNKNOWN: '❌ Unknown error.',
+            SubmittedFlagState.ALREADY_SUBMITTED: "You already solved this challenge.",
+            SubmittedFlagState.INCORRECT: "❌ Incorrect flag.",
+            SubmittedFlagState.CTF_NOT_STARTED: "❌ CTF not started.",
+            SubmittedFlagState.CTF_PAUSED: "❌ CTF is paused.",
+            SubmittedFlagState.CTF_ENDED: "❌ CTF ended.",
+            SubmittedFlagState.INVALID_CHALLENGE: "❌ Invalid challenge.",
+            SubmittedFlagState.INVALID_USER: "❌ Invalid user.",
+            SubmittedFlagState.RATE_LIMITED: "❌ Rate limited.",
+            SubmittedFlagState.UNKNOWN: "❌ Unknown error.",
         }
 
         if result.state in error_messages:
             error_msg = error_messages.get(result.state)
             if result.retries is not None:
-                error_msg += f' / {result.retries.left} retries left'
+                error_msg += f" / {result.retries.left} retries left"
             await interaction.followup.send(error_msg)
             return
 
-        # @note: @es3n1n: Ignore other states, they should be handled within the `error_messages` dict
+        # @note: @es3n1n: Ignore other states, they should be handled within the
+        # `error_messages` dict
         if result.state != SubmittedFlagState.CORRECT:
             return
 
@@ -86,9 +87,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         challenge["solve_time"] = int(datetime.now().timestamp())
         challenge["flag"] = self.flag.value
 
-        solves_channel = interaction.client.get_channel(
-            ctf["guild_channels"]["solves"]
-        )
+        solves_channel = interaction.client.get_channel(ctf["guild_channels"]["solves"])
 
         # Add the user who triggered this interaction to the list of players, useful
         # in case the one who triggered the interaction is an admin.

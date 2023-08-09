@@ -10,7 +10,7 @@ dotenv.load_dotenv()
 def load_revision() -> str:
     # @note: @es3n1n: Obtaining paths to the revision and .git
     root_dir: Path = Path(__file__).parent
-    dot_revision: Path = root_dir / '.revision'
+    dot_revision: Path = root_dir / ".revision"
 
     # @note: @es3n1n: If there's a .revision file then we should
     # use it
@@ -19,15 +19,15 @@ def load_revision() -> str:
 
     # @note: @es3n1n: If not we should try to use the .git folder
     # instead
-    git_dir: Path = root_dir.parent / '.git'
+    git_dir: Path = root_dir.parent / ".git"
 
     # @note: @es3n1n: If head ref is available then we should use it
-    head_ref: Path = git_dir / 'refs' / 'heads' / 'master'
+    head_ref: Path = git_dir / "refs" / "heads" / "master"
     if head_ref.exists():
         return open(head_ref).read()
 
     # @note: @es3n1n: :shrug:
-    return 'unknown'
+    return "unknown"
 
 
 CHALLENGE_COLLECTION = os.getenv("CHALLENGE_COLLECTION")

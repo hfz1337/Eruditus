@@ -3,7 +3,6 @@ from typing import Any
 from typing import Dict
 from typing import Generator
 from typing import List
-from typing import Union
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -23,32 +22,24 @@ from ..util import validate_response
 
 
 def parse_team(data: Dict[str, Any]) -> Team:
-    return Team(
-        name=data['name'],
-        score=data['score'] if 'score' in data else None
-    )
+    return Team(name=data["name"], score=data["score"] if "score" in data else None)
 
 
 def parse_challenge(data: Dict[str, Any], ctx: PlatformCTX) -> Challenge:
     files: List[ChallengeFile] = list()
-    for file in data.get('files', []):
-        files.append(
-            ChallengeFile(
-                url=f'{ctx.url_stripped}/{file}',
-                name=None
-            )
-        )
+    for file in data.get("files", []):
+        files.append(ChallengeFile(url=f"{ctx.url_stripped}/{file}", name=None))
 
     return Challenge(
-        id=str(data['id']),
-        name=data['name'],
-        value=int(data['value']),
-        description=data['description'],
-        connection_info=data['connection_info'],
-        category=data['category'],
-        tags=data['tags'],
+        id=str(data["id"]),
+        name=data["name"],
+        value=int(data["value"]),
+        description=data["description"],
+        connection_info=data["connection_info"],
+        category=data["category"],
+        tags=data["tags"],
         files=files,
-        solves=data['solves']
+        solves=data["solves"],
     )
 
 
@@ -64,7 +55,8 @@ class CTFd(PlatformABC):
             True if the platform is using CTFd, else False.
         """
         async with aiohttp.request(
-                method="get", url=f"{ctx.url_stripped}/plugins/challenges/assets/view.js"
+            method="get",
+            url=f"{ctx.url_stripped}/plugins/" f"challenges/assets/view.js",
         ) as response:
             return "CTFd" in await response.text()
 
@@ -84,7 +76,9 @@ class CTFd(PlatformABC):
         ctfd_base_url = ctx.url_stripped
 
         # Get the nonce.
-        async with aiohttp.request(method="get", url=f"{ctfd_base_url}/login") as response:
+        async with aiohttp.request(
+            method="get", url=f"{ctfd_base_url}/login"
+        ) as response:
             cookies = {cookie.key: cookie.value for cookie in response.cookies.values()}
             nonce = BeautifulSoup(await response.text(), "html.parser").find(
                 "input", {"id": "nonce"}
@@ -96,27 +90,28 @@ class CTFd(PlatformABC):
 
         # Login to CTFd.
         data = {
-            'name': ctx.args.get('username'),
-            'password': ctx.args.get('password'),
-            '_submit': 'Submit',
-            'nonce': nonce
+            "name": ctx.args.get("username"),
+            "password": ctx.args.get("password"),
+            "_submit": "Submit",
+            "nonce": nonce,
         }
 
         async with aiohttp.request(
-                method="post",
-                url=f"{ctfd_base_url}/login",
-                data=data,
-                cookies=cookies,
-                allow_redirects=False,
+            method="post",
+            url=f"{ctfd_base_url}/login",
+            data=data,
+            cookies=cookies,
+            allow_redirects=False,
         ) as response:
-            ctx.session = Session(
-                cookies={cookie.key: cookie.value for cookie in response.cookies.values()}
-            )
+            cookies = {cookie.key: cookie.value for cookie in response.cookies.values()}
 
+            ctx.session = Session(cookies=cookies)
             return ctx.session
 
     @classmethod
-    async def submit_flag(cls, ctx: PlatformCTX, challenge_id: str, flag: str) -> Optional[SubmittedFlag]:
+    async def submit_flag(
+        cls, ctx: PlatformCTX, challenge_id: str, flag: str
+    ) -> Optional[SubmittedFlag]:
         """Attempt to submit the flag into the CTFd platform and check if we got first
         blood in case it succeeds.
 
@@ -126,8 +121,8 @@ class CTFd(PlatformABC):
             flag: Flag of the challenge.
 
         Returns:
-            A SubmittedFlag object containing the status message and a boolean indicating if we got
-            first blood.
+            A SubmittedFlag object containing the status message and a boolean
+            indicating if we got first blood.
         """
         if not await ctx.login(cls.login):
             return
@@ -136,7 +131,7 @@ class CTFd(PlatformABC):
 
         # Get CSRF token.
         async with aiohttp.request(
-                method="get", url=f"{ctfd_base_url}/challenges", cookies=ctx.session.cookies
+            method="get", url=f"{ctfd_base_url}/challenges", cookies=ctx.session.cookies
         ) as response:
             csrf_nonce = re.search(
                 '(?<=csrfNonce\': ")[A-Fa-f0-9]+(?=")', await response.text()
@@ -149,59 +144,58 @@ class CTFd(PlatformABC):
         json = {"challenge_id": int(challenge_id), "submission": flag}
 
         async with aiohttp.request(
-                method="post",
-                url=f"{ctfd_base_url}/api/v1/challenges/attempt",
-                json=json,
-                cookies=ctx.session.cookies,
-                headers={"CSRF-Token": csrf_nonce},
+            method="post",
+            url=f"{ctfd_base_url}/api/v1/challenges/attempt",
+            json=json,
+            cookies=ctx.session.cookies,
+            headers={"CSRF-Token": csrf_nonce},
         ) as response:
             # Validating response
-            if not await validate_response(response, success=True, data=['status']):
+            if not await validate_response(response, success=True, data=["status"]):
                 return None
 
             # Obtaining json
-            response_json: Dict[str, Union[str, bool, int, Dict[str, str]]] = await response.json()
+            response_json: Dict[str, Any] = await response.json()
 
             # Parsing retries left from the message
             def parse_retries() -> Optional[Retries]:
                 # No message? huh?
-                if 'message' not in response_json['data']:
+                if "message" not in response_json["data"]:
                     return None
 
                 # Trying to match the message
-                # @ref: https://github.com/CTFd/CTFd/blob/master/CTFd/api/v1/challenges.py#L672
-                message: str = response_json['data']['message']
-                if 'You have' not in message or 'remaining.' not in message:
+                # @ref:
+                # https://github.com/CTFd/CTFd/blob/master/CTFd/api/v1/challenges.py#L672
+                message: str = response_json["data"]["message"]
+                if "You have" not in message or "remaining." not in message:
                     return None
 
                 # Split the message
                 # @todo: @es3n1n: add regex
-                arguments: List[str] = message.split('You have', maxsplit=1)
+                arguments: List[str] = message.split("You have", maxsplit=1)
                 if len(arguments) != 2:
                     return None
 
                 # Extracting the digit from this mess
                 # @fixme: @es3n1n: add regex
-                retries_left_str: str = arguments[1].strip().split(' ')[0].strip()
+                retries_left_str: str = arguments[1].strip().split(" ")[0].strip()
                 if not retries_left_str.isdigit():
                     return None
 
                 # Yay
-                return Retries(
-                    left=int(retries_left_str)
-                )
+                return Retries(left=int(retries_left_str))
 
             # Matching flag state
             def parse_flag_state() -> SubmittedFlagState:
                 # Obtaining the status str
-                status_str = str(response_json['data']['status']).lower()
+                status_str = str(response_json["data"]["status"]).lower()
 
                 # Lookup rules
                 rules: Dict[str, SubmittedFlagState] = {
-                    'paused'.lower(): SubmittedFlagState.CTF_PAUSED,
-                    'ratelimited'.lower(): SubmittedFlagState.RATE_LIMITED,
-                    'incorrect'.lower(): SubmittedFlagState.INCORRECT,
-                    'correct'.lower(): SubmittedFlagState.CORRECT
+                    "paused".lower(): SubmittedFlagState.CTF_PAUSED,
+                    "ratelimited".lower(): SubmittedFlagState.RATE_LIMITED,
+                    "incorrect".lower(): SubmittedFlagState.INCORRECT,
+                    "correct".lower(): SubmittedFlagState.CORRECT,
                 }
 
                 # Unknown state O_o
@@ -211,19 +205,20 @@ class CTFd(PlatformABC):
                 return rules[status_str]
 
             # Building result
-            result = SubmittedFlag(
-                state=parse_flag_state(),
-                retries=parse_retries()
-            )
+            result = SubmittedFlag(state=parse_flag_state(), retries=parse_retries())
 
             # Update `is_first_blood` if state is correct
-            await result.update_first_blood(ctx, cls.get_challenge, challenge_id, lambda x: x <= 1)
+            await result.update_first_blood(
+                ctx, cls.get_challenge, challenge_id, lambda x: x <= 1
+            )
 
             # We are done here
             return result
 
     @classmethod
-    async def pull_challenges(cls, ctx: PlatformCTX) -> Generator[Challenge, None, None]:
+    async def pull_challenges(
+        cls, ctx: PlatformCTX
+    ) -> Generator[Challenge, None, None]:
         """Pull new challenges from the CTFd platform.
 
         Args:
@@ -237,12 +232,12 @@ class CTFd(PlatformABC):
 
         # Get challenges.
         async with aiohttp.request(
-                method="get",
-                url=f"{ctx.url_stripped}/api/v1/challenges",
-                cookies=ctx.session.cookies,
-                allow_redirects=False,
+            method="get",
+            url=f"{ctx.url_stripped}/api/v1/challenges",
+            cookies=ctx.session.cookies,
+            allow_redirects=False,
         ) as response:
-            if not await validate_response(response, 'data', success=True):
+            if not await validate_response(response, "data", success=True):
                 return
 
             # Obtaining json
@@ -250,8 +245,8 @@ class CTFd(PlatformABC):
 
             # Loop through the challenges and get information about each challenge by
             # requesting the `/api/v1/challenges/{challenge_id}` endpoint.
-            for min_challenge in response_json['data']:
-                min_challenge_id: str = str(min_challenge['id'])
+            for min_challenge in response_json["data"]:
+                min_challenge_id: str = str(min_challenge["id"])
 
                 challenge = await cls.get_challenge(ctx, min_challenge_id)
                 if challenge is None:
@@ -260,7 +255,9 @@ class CTFd(PlatformABC):
                 yield challenge
 
     @classmethod
-    async def pull_scoreboard(cls, ctx: PlatformCTX, max_entries_count: int = 20) -> Generator[Team, None, None]:
+    async def pull_scoreboard(
+        cls, ctx: PlatformCTX, max_entries_count: int = 20
+    ) -> Generator[Team, None, None]:
         """Get scoreboard from the CTFd platform.
 
         Args:
@@ -275,10 +272,10 @@ class CTFd(PlatformABC):
 
         # Get scoreboard.
         async with aiohttp.request(
-                method="get",
-                url=f"{ctx.url_stripped}/api/v1/scoreboard",
-                cookies=ctx.session.cookies,
-                allow_redirects=False,
+            method="get",
+            url=f"{ctx.url_stripped}/api/v1/scoreboard",
+            cookies=ctx.session.cookies,
+            allow_redirects=False,
         ) as response:
             # Validating response
             if not await validate_response(response, success=True):
@@ -287,7 +284,7 @@ class CTFd(PlatformABC):
             # Obtaining json
             response_json: Dict[str, Any] = await response.json()
 
-            for team in response_json['data'][:max_entries_count]:
+            for team in response_json["data"][:max_entries_count]:
                 yield parse_team(team)
 
     @classmethod
@@ -298,22 +295,26 @@ class CTFd(PlatformABC):
             ctx: Context
 
         Returns:
-            A dictionary containing either a "success" or "error" key with an explanatory
-            message.
+            A dictionary containing either a "success" or "error"
+             key with an explanatory message.
         """
         # Assert registration data
-        needed_values = ['username', 'email', 'password']
+        needed_values = ["username", "email", "password"]
 
         for needed_value in needed_values:
-            if not ctx.validate_arg(needed_value, None, '', ' '):
-                return RegistrationStatus(success=False, message='Not enough values in context')
+            if not ctx.validate_arg(needed_value, None, "", " "):
+                return RegistrationStatus(
+                    success=False, message="Not enough values in context"
+                )
 
         # Get the nonce.
         async with aiohttp.request(
-                method="get", url=f"{ctx.url_stripped}/register"
+            method="get", url=f"{ctx.url_stripped}/register"
         ) as response:
             if response.status != 200:
-                return RegistrationStatus(success=False, message='Registration might be closed')
+                return RegistrationStatus(
+                    success=False, message="Registration might be closed"
+                )
 
             cookies = {cookie.key: cookie.value for cookie in response.cookies.values()}
             nonce = BeautifulSoup(await response.text(), "html.parser").find(
@@ -321,28 +322,30 @@ class CTFd(PlatformABC):
             )["value"]
 
         async with aiohttp.request(
-                method="post",
-                url=f"{ctx.url_stripped}/register",
-                data={
-                    "name": ctx.args.get('username'),
-                    "email": ctx.args.get('email'),
-                    "password": ctx.args.get('password'),
-                    "nonce": nonce,
-                    "_submit": "Submit",
-                },
-                cookies=cookies,
-                allow_redirects=False,
+            method="post",
+            url=f"{ctx.url_stripped}/register",
+            data={
+                "name": ctx.args.get("username"),
+                "email": ctx.args.get("email"),
+                "password": ctx.args.get("password"),
+                "nonce": nonce,
+                "_submit": "Submit",
+            },
+            cookies=cookies,
+            allow_redirects=False,
         ) as response:
             if response.status == 200:
                 # User/Email already taken.
                 errors = []
-                for error in BeautifulSoup(await response.text(), "html.parser").findAll(
-                        "div", {"role": "alert"}
-                ):
+                for error in BeautifulSoup(
+                    await response.text(), "html.parser"
+                ).findAll("div", {"role": "alert"}):
                     if error.span:
                         errors.append(error.span.text)
 
-                return RegistrationStatus(success=False, message="\n".join(errors or ["Registration failure"]))
+                return RegistrationStatus(
+                    success=False, message="\n".join(errors or ["Registration failure"])
+                )
 
             if response.status != 302:
                 # Other errors occurred.
@@ -351,64 +354,71 @@ class CTFd(PlatformABC):
             # Registration successful, we proceed to create a team.
             # First, get the nonce.
             async with aiohttp.request(
-                    method="get",
-                    url=f"{ctx.url_stripped}/teams/new",
-                    cookies=cookies,
+                method="get",
+                url=f"{ctx.url_stripped}/teams/new",
+                cookies=cookies,
             ) as response:
                 nonce = BeautifulSoup(await response.text(), "html.parser").find(
                     "input", {"id": "nonce"}
                 )["value"]
 
             async with aiohttp.request(
-                    method="post",
-                    url=f"{ctx.url_stripped}/teams/new",
-                    data={
-                        "name": ctx.args.get('username'),
-                        "password": ctx.args.get('password'),
-                        "_submit": "Create",
-                        "nonce": nonce,
-                    },
-                    cookies=cookies,
-                    allow_redirects=False,
+                method="post",
+                url=f"{ctx.url_stripped}/teams/new",
+                data={
+                    "name": ctx.args.get("username"),
+                    "password": ctx.args.get("password"),
+                    "_submit": "Create",
+                    "nonce": nonce,
+                },
+                cookies=cookies,
+                allow_redirects=False,
             ) as response:
                 if response.status == 200:
                     # Team name was already taken.
                     errors = []
                     for error in BeautifulSoup(
-                            await response.text(), "html.parser"
+                        await response.text(), "html.parser"
                     ).findAll("div", {"role": "alert"}):
                         if error.span:
                             errors.append(error.span.text)
 
-                    return RegistrationStatus(success=False, message="\n".join(errors or ["Team name already taken"]))
+                    return RegistrationStatus(
+                        success=False,
+                        message="\n".join(errors or ["Team name already taken"]),
+                    )
 
                 elif response.status != 302:
                     # Other errors occurred.
-                    return RegistrationStatus(success=False, message="Couldn't create a team")
+                    return RegistrationStatus(
+                        success=False, message="Couldn't create a team"
+                    )
 
                 return RegistrationStatus(success=True)
 
     @classmethod
-    async def get_challenge(cls, ctx: PlatformCTX, challenge_id: str) -> Optional[Challenge]:
-        """ Get challenge by its id
+    async def get_challenge(
+        cls, ctx: PlatformCTX, challenge_id: str
+    ) -> Optional[Challenge]:
+        """Get challenge by its id
 
-            ctx: Context
-            challenge_id: ID
+        ctx: Context
+        challenge_id: ID
 
-            Returns parsed Challenge
+        Returns parsed Challenge
         """
         if not await ctx.login(cls.login):
             return None
 
         async with aiohttp.request(
-                method="get",
-                url=f"{ctx.base_url}/api/v1/challenges/{challenge_id}",
-                cookies=ctx.session.cookies,
-                allow_redirects=False,
+            method="get",
+            url=f"{ctx.base_url}/api/v1/challenges/{challenge_id}",
+            cookies=ctx.session.cookies,
+            allow_redirects=False,
         ) as response:
             # Validating response
-            if not await validate_response(response, success=True, data=['id']):
+            if not await validate_response(response, success=True, data=["id"]):
                 return None
 
             response_json: Dict[str, Any] = await response.json()
-            return parse_challenge(response_json['data'], ctx)
+            return parse_challenge(response_json["data"], ctx)

@@ -5,10 +5,9 @@ from hashlib import md5
 
 import logging
 from logging import RootLogger
-from typing import Dict, Union, Any
+from typing import Dict, Any
 
 from aiohttp import ClientResponse
-from aiohttp.web_response import Response
 
 
 def get_local_time() -> datetime:
@@ -95,18 +94,29 @@ def setup_logger(level: int) -> RootLogger:
 
 
 # @note: @es3n1n: Check the content w/o the status checks
-async def validate_response_json(response: ClientResponse, *validate_fields: str, **validate_kw: Any) -> bool:
+async def validate_response_json(
+    response: ClientResponse, *validate_fields: str, **validate_kw: Any
+) -> bool:
     """
-        @note: @es3n1n: I am too lazy to write typehints for the `validate_kw`, you can pass it like this:
-        * validate_response(response, 'something', data=['a', 'b'], data={'a': ['b'], 'b': {'c': ['s']}})
-        * validate_response(response, data={'response': {'success': True}}
+    @note: @es3n1n: I am too lazy to write typehints for the `validate_kw`,
+    you can pass it like this:
+        * validate_response(
+            response,
+            'something',
+            data=['a', 'b'],
+            data={'a': ['b'], 'b': {'c': ['s']}}
+        )
+        * validate_response(
+            response,
+            data={'response': {'success': True}}
+        )
     """
     # If there's nothing to validate
     if len(validate_fields) == 0 and len(validate_kw) == 0:
         return True
 
     # Validating json fields
-    response_json: Dict[str, Union[str, bool, int, Dict[str, str]]] = await response.json()
+    response_json: Dict[str, Any] = await response.json()
 
     # Validators impl
     # @todo: @es3n1n: this could be implemented way better than this
@@ -152,7 +162,9 @@ async def validate_response_json(response: ClientResponse, *validate_fields: str
     return True
 
 
-async def validate_response(response: ClientResponse, *validate_fields: str, **validate_kw: Any) -> bool:
+async def validate_response(
+    response: ClientResponse, *validate_fields: str, **validate_kw: Any
+) -> bool:
     # Validating response code
     if response.status not in [200]:
         return False

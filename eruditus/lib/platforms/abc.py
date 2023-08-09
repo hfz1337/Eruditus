@@ -35,8 +35,9 @@ class ChallengeFile:
 # A challenge representation, perhaps we should store some more info though
 @dataclass
 class Challenge:
-    # Please note that we are storing id as str (bcs of UUIDs and others), so please don't forget
-    # to convert it to the right type before sending it to the platform backend
+    # Please note that we are storing id as str (bcs of UUIDs and others), so please
+    # don't forget to convert it to the right type before sending it to the platform
+    # backend
     id: str
 
     name: Optional[str] = None
@@ -79,14 +80,16 @@ class SubmittedFlag:
     is_first_blood: bool = False
 
     # Automatically update `is_first_blood`
-    async def update_first_blood(self, ctx: 'PlatformCTX', challenge_getter, challenge_id: str, checker) -> None:
+    async def update_first_blood(
+        self, ctx: "PlatformCTX", challenge_getter, challenge_id: str, checker
+    ) -> None:
         # Skip invalid flags
         if self.state != SubmittedFlagState.CORRECT:
             self.is_first_blood = False
             return
 
         # Querying challenge
-        challenge: Optional['Challenge'] = await challenge_getter(ctx, challenge_id)
+        challenge: Optional["Challenge"] = await challenge_getter(ctx, challenge_id)
         if not challenge or challenge.solves is None:
             self.is_first_blood = False
             return
@@ -138,10 +141,12 @@ class PlatformCTX:
     # @note: @es3n1n: Some set of utils
     @property
     def url_stripped(self) -> str:
-        return self.base_url.strip('/')
+        return self.base_url.strip("/")
 
     def get_args(self, *required_fields: str, **kwargs: str) -> Dict[str, str]:
-        result: Dict[str, str] = {key: value for key, value in self.args.items() if key in required_fields}
+        result: Dict[str, str] = {
+            key: value for key, value in self.args.items() if key in required_fields
+        }
 
         for k, v in kwargs.items():
             result[k] = v
@@ -166,16 +171,17 @@ class PlatformCTX:
 
     # Custom ctor
     @staticmethod
-    def from_credentials(credentials: Dict[str, str]) -> 'PlatformCTX':
+    def from_credentials(credentials: Dict[str, str]) -> "PlatformCTX":
         return PlatformCTX(
-            base_url=credentials['url'],
+            base_url=credentials["url"],
             args=credentials,
         )
 
 
 # Platform abstract interface
-# @note: @es3n1n: if some of the methods returns None instead of the result that means that there's something
-# that went horribly wrong within the communication logic, might be worth to try again
+# @note: @es3n1n: if some of the methods returns None instead of
+# the result that means that there's something that went horribly
+# wrong within the communication logic, might be worth to try again
 #
 class PlatformABC(ABC):
     @classmethod
@@ -190,17 +196,23 @@ class PlatformABC(ABC):
 
     @classmethod
     @abstractmethod
-    async def submit_flag(cls, ctx: PlatformCTX, challenge_id: str, flag: str) -> Optional[SubmittedFlag]:
+    async def submit_flag(
+        cls, ctx: PlatformCTX, challenge_id: str, flag: str
+    ) -> Optional[SubmittedFlag]:
         pass
 
     @classmethod
     @abstractmethod
-    async def pull_challenges(cls, ctx: PlatformCTX) -> Generator[Challenge, None, None]:
+    async def pull_challenges(
+        cls, ctx: PlatformCTX
+    ) -> Generator[Challenge, None, None]:
         pass
 
     @classmethod
     @abstractmethod
-    async def pull_scoreboard(cls, ctx: PlatformCTX, max_entries_count: int = 20) -> Generator[Team, None, None]:
+    async def pull_scoreboard(
+        cls, ctx: PlatformCTX, max_entries_count: int = 20
+    ) -> Generator[Team, None, None]:
         pass
 
     @classmethod
@@ -210,5 +222,7 @@ class PlatformABC(ABC):
 
     @classmethod
     @abstractmethod
-    async def get_challenge(cls, ctx: PlatformCTX, challenge_id: str) -> Optional[Challenge]:
+    async def get_challenge(
+        cls, ctx: PlatformCTX, challenge_id: str
+    ) -> Optional[Challenge]:
         pass

@@ -1310,10 +1310,12 @@ class CTF(app_commands.Group):
             await interaction.followup.send("No credentials set for this CTF.")
             return
 
-        ctx: PlatformCTX = PlatformCTX.from_credentials(ctf['credentials'])
+        ctx: PlatformCTX = PlatformCTX.from_credentials(ctf["credentials"])
         platform = await match_platform(ctx)
         if not platform:
-            interaction.followup.send("Invalid URL set for this CTF, or platform isn't supported.")
+            interaction.followup.send(
+                "Invalid URL set for this CTF, " "or platform isn't supported."
+            )
             return
 
         try:
@@ -1411,10 +1413,15 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctx: PlatformCTX = PlatformCTX(base_url=url, args={'username': username, 'password': password, 'email': email})
+        ctx: PlatformCTX = PlatformCTX(
+            base_url=url,
+            args={"username": username, "password": password, "email": email},
+        )
         platform = await match_platform(ctx)
         if not platform:
-            interaction.followup.send("Invalid URL set for this CTF, or platform isn't supported.")
+            interaction.followup.send(
+                "Invalid URL set for this " "CTF, or platform isn't " "supported."
+            )
             return
 
         result = await platform.register(ctx)
@@ -1452,4 +1459,4 @@ class CTF(app_commands.Group):
 
         await creds_channel.purge()
         await creds_channel.send(message)
-        await interaction.followup.send(result.message or 'Success')
+        await interaction.followup.send(result.message or "Success")

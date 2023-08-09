@@ -233,11 +233,7 @@ class Eruditus(discord.Client):
             # Matching platform
             ctx = PlatformCTX(
                 base_url=url,
-                args=dict(
-                    username=TEAM_NAME,
-                    password=password,
-                    email=TEAM_EMAIL
-                )
+                args=dict(username=TEAM_NAME, password=password, email=TEAM_EMAIL),
             )
             platform = await match_platform(ctx)
             if platform is None:
@@ -267,8 +263,8 @@ class Eruditus(discord.Client):
                     f"CTF platform: {url}\n"
                     f"Username: {TEAM_NAME}\n"
                     f"Password: {password}\n"
-                    f'Token: {result.token}\n'
-                    f'Invite: {result.invite}\n'
+                    f"Token: {result.token}\n"
+                    f"Invite: {result.invite}\n"
                     "```"
                 )
 
@@ -417,11 +413,7 @@ class Eruditus(discord.Client):
             # Matching platform
             ctx = PlatformCTX(
                 base_url=url,
-                args=dict(
-                    username=TEAM_NAME,
-                    password=password,
-                    email=TEAM_EMAIL
-                )
+                args=dict(username=TEAM_NAME, password=password, email=TEAM_EMAIL),
             )
             platform = await match_platform(ctx)
             if platform is None:
@@ -602,7 +594,7 @@ class Eruditus(discord.Client):
             )
 
             # Matching platform
-            ctx = PlatformCTX.from_credentials(ctf['credentials'])
+            ctx = PlatformCTX.from_credentials(ctf["credentials"])
             platform = await match_platform(ctx)
             if platform is None:
                 # unsupported platform gg
@@ -663,11 +655,15 @@ class Eruditus(discord.Client):
                 for file in challenge.files:
                     file_str: str = file.url
                     if file.name is not None:
-                        file_str += f' | Name: {file.name}'
+                        file_str += f" | Name: {file.name}"
 
                     files.append(file_str)
 
-                files_str = "\n- " + "\n- ".join(files) if len(files) > 0 else "No files."
+                files_str = "No files."
+                if len(files) > 0:
+                    files_str = "\n- ".join(files)
+                files_str = "\n- " + files_str
+
                 embed = discord.Embed(
                     title=f"{challenge.name} - {challenge.value} points",
                     description=truncate(
@@ -745,7 +741,7 @@ class Eruditus(discord.Client):
                 continue
 
             # Matching platform
-            ctx = PlatformCTX.from_credentials(ctf['credentials'])
+            ctx = PlatformCTX.from_credentials(ctf["credentials"])
             platform = await match_platform(ctx)
             if platform is None:
                 # unsupported platform gg
