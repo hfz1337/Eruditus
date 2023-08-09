@@ -4,10 +4,14 @@ from typing import Type
 
 from .abc import PlatformABC
 from .abc import PlatformCTX
+
 from .ctfd import CTFd
+from .rctf import RCTF
+
 
 platforms: List[Type[PlatformABC]] = [
-    CTFd
+    CTFd,
+    RCTF,
 ]
 
 

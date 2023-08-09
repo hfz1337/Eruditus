@@ -1429,6 +1429,8 @@ class CTF(app_commands.Group):
         ctf["credentials"]["url"] = url
         ctf["credentials"]["username"] = username
         ctf["credentials"]["password"] = password
+        ctf["credentials"]["token"] = result.token
+        ctf["credentials"]["invite"] = result.invite
 
         MONGO[DBNAME][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]},
@@ -1443,6 +1445,8 @@ class CTF(app_commands.Group):
             "```yaml\n"
             f"Username: {username}\n"
             f"Password: {password}\n"
+            f"Token: {result.token}\n"
+            f"Invite: {result.invite}\n"
             "```"
         )
 

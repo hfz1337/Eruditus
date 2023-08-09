@@ -3,6 +3,7 @@ import logging
 import io
 import os
 import re
+from typing import List
 
 from typing import Union
 
@@ -250,6 +251,8 @@ class Eruditus(discord.Client):
                 ctf["credentials"]["url"] = url
                 ctf["credentials"]["username"] = TEAM_NAME
                 ctf["credentials"]["password"] = password
+                ctf["credentials"]["token"] = result.token
+                ctf["credentials"]["invite"] = result.invite
 
                 MONGO[DBNAME][CTF_COLLECTION].update_one(
                     {"_id": ctf["_id"]},
@@ -264,6 +267,8 @@ class Eruditus(discord.Client):
                     f"CTF platform: {url}\n"
                     f"Username: {TEAM_NAME}\n"
                     f"Password: {password}\n"
+                    f'Token: {result.token}\n'
+                    f'Invite: {result.invite}\n'
                     "```"
                 )
 
@@ -430,6 +435,8 @@ class Eruditus(discord.Client):
                 ctf["credentials"]["url"] = url
                 ctf["credentials"]["username"] = TEAM_NAME
                 ctf["credentials"]["password"] = password
+                ctf["credentials"]["token"] = result.token
+                ctf["credentials"]["invite"] = result.invite
 
                 MONGO[DBNAME][CTF_COLLECTION].update_one(
                     {"_id": ctf["_id"]},
@@ -444,6 +451,8 @@ class Eruditus(discord.Client):
                     f"CTF platform: {url}\n"
                     f"Username: {TEAM_NAME}\n"
                     f"Password: {password}\n"
+                    f"Token: {result.token}\n"
+                    f"Invite: {result.invite}\n"
                     "```"
                 )
 
@@ -648,18 +657,23 @@ class Eruditus(discord.Client):
                     )
                     or "No description."
                 )
-                tags = ", ".join(challenge.tags) or "No tags."
-                files = [
-                    f"{ctf['credentials']['url'].strip('/')}{file}"
-                    for file in challenge.files
-                ]
-                files = "\n- " + "\n- ".join(files) if files else "No files."
+                tags = ", ".join(challenge.tags or []) or "No tags."
+
+                files: List[str] = list()
+                for file in challenge.files:
+                    file_str: str = file.url
+                    if file.name is not None:
+                        file_str += f' | Name: {file.name}'
+
+                    files.append(file_str)
+
+                files_str = "\n- " + "\n- ".join(files) if len(files) > 0 else "No files."
                 embed = discord.Embed(
                     title=f"{challenge.name} - {challenge.value} points",
                     description=truncate(
                         f"**Category:** {challenge.category}\n"
                         f"**Description:** {description}\n"
-                        f"**Files:** {files}\n"
+                        f"**Files:** {files_str}\n"
                         f"**Tags:** {tags}",
                         maxlen=4096,
                     ),

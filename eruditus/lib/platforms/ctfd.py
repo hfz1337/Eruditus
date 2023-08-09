@@ -9,6 +9,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 
 from .abc import Challenge
+from .abc import ChallengeFile
 from .abc import Optional
 from .abc import PlatformABC
 from .abc import PlatformCTX
@@ -19,6 +20,36 @@ from .abc import SubmittedFlag
 from .abc import SubmittedFlagState
 from .abc import Team
 from ..util import validate_response
+
+
+def parse_team(data: Dict[str, Any]) -> Team:
+    return Team(
+        name=data['name'],
+        score=data['score'] if 'score' in data else None
+    )
+
+
+def parse_challenge(data: Dict[str, Any], ctx: PlatformCTX) -> Challenge:
+    files: List[ChallengeFile] = list()
+    for file in data.get('files', []):
+        files.append(
+            ChallengeFile(
+                url=f'{ctx.url_stripped}/{file}',
+                name=None
+            )
+        )
+
+    return Challenge(
+        id=str(data['id']),
+        name=data['name'],
+        value=int(data['value']),
+        description=data['description'],
+        connection_info=data['connection_info'],
+        category=data['category'],
+        tags=data['tags'],
+        files=files,
+        solves=data['solves']
+    )
 
 
 class CTFd(PlatformABC):
@@ -186,17 +217,7 @@ class CTFd(PlatformABC):
             )
 
             # Update `is_first_blood` if state is correct
-            async def update_first_blood() -> None:
-                if result.state != SubmittedFlagState.CORRECT:
-                    return
-
-                challenge: Optional[Challenge] = await cls.get_challenge(ctx, challenge_id)
-                if challenge is None:
-                    return
-
-                result.update_first_blood(challenge.solves)
-
-            await update_first_blood()
+            await result.update_first_blood(ctx, cls.get_challenge, challenge_id, lambda x: x <= 1)
 
             # We are done here
             return result
@@ -267,10 +288,7 @@ class CTFd(PlatformABC):
             response_json: Dict[str, Any] = await response.json()
 
             for team in response_json['data'][:max_entries_count]:
-                yield Team(
-                    name=team['name'],
-                    score=team['score'] if 'score' in team else None
-                )
+                yield parse_team(team)
 
     @classmethod
     async def register(cls, ctx: PlatformCTX) -> RegistrationStatus:
@@ -374,11 +392,11 @@ class CTFd(PlatformABC):
     async def get_challenge(cls, ctx: PlatformCTX, challenge_id: str) -> Optional[Challenge]:
         """ Get challenge by its id
 
-                        ctx: Context
-                        challenge_id: ID
+            ctx: Context
+            challenge_id: ID
 
-                    Returns parsed Challenge
-                """
+            Returns parsed Challenge
+        """
         if not await ctx.login(cls.login):
             return None
 
@@ -393,14 +411,4 @@ class CTFd(PlatformABC):
                 return None
 
             response_json: Dict[str, Any] = await response.json()
-            return Challenge(
-                id=str(response_json['data']['id']),
-                name=response_json['data']['name'],
-                value=int(response_json['data']['value']),
-                description=response_json['data']['description'],
-                connection_info=response_json['data']['connection_info'],
-                category=response_json['data']['category'],
-                tags=response_json['data']['tags'],
-                files=response_json['data']['files'] if 'files' in response_json['data'] else None,
-                solves=response_json['data']['solves']
-            )
+            return parse_challenge(response_json['data'], ctx)

@@ -94,16 +94,13 @@ def setup_logger(level: int) -> RootLogger:
     return logger
 
 
-async def validate_response(response: ClientResponse, *validate_fields: str, **validate_kw: Any) -> bool:
+# @note: @es3n1n: Check the content w/o the status checks
+async def validate_response_json(response: ClientResponse, *validate_fields: str, **validate_kw: Any) -> bool:
     """
-    @note: @es3n1n: I am too lazy to write typehints for the `validate_kw`, you can pass it like this:
-    * validate_response(response, 'something', data=['a', 'b'], data={'a': ['b'], 'b': {'c': ['s']}})
-    * validate_response(response, data={'response': {'success': True}}
+        @note: @es3n1n: I am too lazy to write typehints for the `validate_kw`, you can pass it like this:
+        * validate_response(response, 'something', data=['a', 'b'], data={'a': ['b'], 'b': {'c': ['s']}})
+        * validate_response(response, data={'response': {'success': True}}
     """
-    # Something went wrong
-    if response.status not in [200]:
-        return False
-
     # If there's nothing to validate
     if len(validate_fields) == 0 and len(validate_kw) == 0:
         return True
@@ -153,3 +150,12 @@ async def validate_response(response: ClientResponse, *validate_fields: str, **v
 
     # Yay
     return True
+
+
+async def validate_response(response: ClientResponse, *validate_fields: str, **validate_kw: Any) -> bool:
+    # Validating response code
+    if response.status not in [200]:
+        return False
+
+    # Validating content
+    return await validate_response_json(response, *validate_fields, **validate_kw)

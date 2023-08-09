@@ -8,6 +8,7 @@ from enum import unique
 from typing import Any
 from typing import Dict
 from typing import Generator
+from typing import List
 from typing import Optional
 
 
@@ -17,11 +18,18 @@ from typing import Optional
 # A session representation, contains stuff like cookies
 @dataclass
 class Session:
+    token: Optional[str] = None
     cookies: Dict[str, str] = field(default_factory=dict)
 
-    @staticmethod
-    def validate() -> bool:
-        return True
+    def validate(self) -> bool:
+        return len(self.cookies) > 0 or self.token is not None
+
+
+# Challenge attachment repr
+@dataclass
+class ChallengeFile:
+    url: str
+    name: Optional[str] = None
 
 
 # A challenge representation, perhaps we should store some more info though
@@ -37,7 +45,7 @@ class Challenge:
     connection_info: Optional[str] = None
     category: Optional[str] = None
     tags: Optional[str] = None
-    files: Optional[str] = None
+    files: Optional[List[ChallengeFile]] = None
     solves: Optional[int] = None
 
 
@@ -47,7 +55,11 @@ class SubmittedFlagState(IntEnum):
     ALREADY_SUBMITTED = auto()
     INCORRECT = auto()
     CORRECT = auto()
+    CTF_NOT_STARTED = auto()
     CTF_PAUSED = auto()
+    CTF_ENDED = auto()
+    INVALID_CHALLENGE = auto()
+    INVALID_USER = auto()
     RATE_LIMITED = auto()
     UNKNOWN = auto()
 
@@ -67,16 +79,20 @@ class SubmittedFlag:
     is_first_blood: bool = False
 
     # Automatically update `is_first_blood`
-    def update_first_blood(self, solves: Optional[int]) -> None:
+    async def update_first_blood(self, ctx: 'PlatformCTX', challenge_getter, challenge_id: str, checker) -> None:
+        # Skip invalid flags
         if self.state != SubmittedFlagState.CORRECT:
             self.is_first_blood = False
             return
 
-        if solves is None:
+        # Querying challenge
+        challenge: Optional['Challenge'] = await challenge_getter(ctx, challenge_id)
+        if not challenge or challenge.solves is None:
             self.is_first_blood = False
             return
 
-        self.is_first_blood = solves <= 1
+        # Updating is_first_blood
+        self.is_first_blood = checker(challenge.solves)
 
 
 # Team representation
@@ -84,6 +100,8 @@ class SubmittedFlag:
 class Team:
     name: str
     score: Optional[int] = None
+    invite_token: Optional[str] = None  # (used only for rCTF)
+    solves: Optional[List[Challenge]] = None  # (used only for rCTF)
 
 
 # Registration status repr
@@ -91,6 +109,8 @@ class Team:
 class RegistrationStatus:
     success: bool
     message: Optional[str] = None
+    token: Optional[str] = None  # (used only for rCTF)
+    invite: Optional[str] = None  # (used only for rCTF)
 
 
 # A basic context representation
@@ -135,11 +155,14 @@ class PlatformCTX:
 
         return self.args not in invalid_values
 
+    def is_authorized(self) -> bool:
+        return self.session is not None and self.session.validate()
+
     async def login(self, cb) -> bool:
-        if self.session is None:
+        if not self.is_authorized():
             self.session = await cb(self)
 
-        return self.session is not None and self.session.validate()
+        return self.is_authorized()
 
     # Custom ctor
     @staticmethod
