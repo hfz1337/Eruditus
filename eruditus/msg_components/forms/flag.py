@@ -61,7 +61,11 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         error_messages: Dict[SubmittedFlagState, str] = {
             SubmittedFlagState.ALREADY_SUBMITTED: 'You already solved this challenge.',
             SubmittedFlagState.INCORRECT: '❌ Incorrect flag.',
+            SubmittedFlagState.CTF_NOT_STARTED: '❌ CTF not started.',
             SubmittedFlagState.CTF_PAUSED: '❌ CTF is paused.',
+            SubmittedFlagState.CTF_ENDED: '❌ CTF ended.',
+            SubmittedFlagState.INVALID_CHALLENGE: '❌ Invalid challenge.',
+            SubmittedFlagState.INVALID_USER: '❌ Invalid user.',
             SubmittedFlagState.RATE_LIMITED: '❌ Rate limited.',
             SubmittedFlagState.UNKNOWN: '❌ Unknown error.',
         }
