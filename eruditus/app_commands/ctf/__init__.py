@@ -2,6 +2,7 @@ import re
 
 from typing import Optional, List
 from datetime import datetime
+from aiohttp.client_exceptions import ClientError
 import aiohttp
 
 import discord
@@ -10,9 +11,15 @@ from discord.app_commands import Choice
 
 from lib.util import sanitize_channel_name
 from lib.platforms import match_platform, PlatformCTX
+from lib.platforms import Platform
 
 from lib.types import ArchiveMode, CTFStatusMode, Permissions
 from msg_components.forms.flag import FlagSubmissionForm
+from msg_components.forms.credentials import (
+    CTFdCredentialsForm,
+    RCTFCredentialsForm,
+    DefaultCredentialsForm,
+)
 from msg_components.buttons.workon import WorkonButton
 from config import (
     CHALLENGE_COLLECTION,
@@ -1195,45 +1202,30 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
     @_in_ctf_channel()
-    async def addcreds(
-        self, interaction: discord.Interaction, username: str, password: str, url: str
-    ) -> None:
+    async def addcreds(self, interaction: discord.Interaction, url: str) -> None:
         """Add credentials for the current CTF.
 
         Args:
             interaction: The interaction that triggered this command.
-            username: The username to login with.
-            password: The password to login with.
             url: URL of the CTF platform.
         """
-        await interaction.response.defer()
+        ctx = PlatformCTX.from_credentials({"url": url})
+        try:
+            platform = await match_platform(ctx)
+        except ClientError:
+            await interaction.response.send_message(
+                "Could not communicate with the CTF platform, please try again.",
+                ephemeral=True,
+            )
+            return
 
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
-        ctf["credentials"]["url"] = url
-        ctf["credentials"]["username"] = username
-        ctf["credentials"]["password"] = password
-
-        MONGO[DBNAME][CTF_COLLECTION].update_one(
-            {"_id": ctf["_id"]},
-            {"$set": {"credentials": ctf["credentials"]}},
-        )
-
-        creds_channel = discord.utils.get(
-            interaction.guild.text_channels, id=ctf["guild_channels"]["credentials"]
-        )
-        message = (
-            f"CTF platform: {url}\n"
-            "```yaml\n"
-            f"Username: {username}\n"
-            f"Password: {password}\n"
-            "```"
-        )
-
-        await creds_channel.purge()
-        await creds_channel.send(message, suppress_embeds=True)
-        await interaction.followup.send("✅ Credentials added.")
+        match Platform(platform):
+            case Platform.CTFd:
+                await interaction.response.send_modal(CTFdCredentialsForm(url=url))
+            case Platform.RCTF:
+                await interaction.response.send_modal(RCTFCredentialsForm(url=url))
+            case _:
+                await interaction.response.send_modal(DefaultCredentialsForm(url=url))
 
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
@@ -1314,7 +1306,7 @@ class CTF(app_commands.Group):
         platform = await match_platform(ctx)
         if not platform:
             interaction.followup.send(
-                "Invalid URL set for this CTF, " "or platform isn't supported."
+                "Invalid URL set for this CTF, or platform isn't supported."
             )
             return
 

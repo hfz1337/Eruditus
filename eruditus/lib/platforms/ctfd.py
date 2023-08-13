@@ -31,15 +31,15 @@ def parse_challenge(data: Dict[str, Any], ctx: PlatformCTX) -> Challenge:
         files.append(ChallengeFile(url=f"{ctx.url_stripped}/{file}", name=None))
 
     return Challenge(
-        id=str(data["id"]),
-        name=data["name"],
-        value=int(data["value"]),
-        description=data["description"],
-        connection_info=data["connection_info"],
-        category=data["category"],
-        tags=data["tags"],
+        id=str(data.get("id")),
+        name=data.get("name"),
+        value=int(data.get("value")),
+        description=data.get("description"),
+        connection_info=data.get("connection_info"),
+        category=data.get("category"),
+        tags=data.get("tags"),
         files=files,
-        solves=data["solves"],
+        solves=data.get("solves"),
     )
 
 
@@ -56,7 +56,7 @@ class CTFd(PlatformABC):
         """
         async with aiohttp.request(
             method="get",
-            url=f"{ctx.url_stripped}/plugins/" f"challenges/assets/view.js",
+            url=f"{ctx.url_stripped}/plugins/challenges/assets/view.js",
         ) as response:
             return "CTFd" in await response.text()
 
