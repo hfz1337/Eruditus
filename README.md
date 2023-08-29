@@ -103,6 +103,7 @@ Please consider reading our [Contribution Guidelines](.github/CONTRIBUTING.md) b
 making a contribution.
 
 ## Contributors
+- [@es3n1n](https://github.com/es3n1n)
 - [@ouxs-19](https://github.com/ouxs-19)
 - [@abdelmaoo](https://github.com/abdelmaoo)
 

@@ -1262,12 +1262,10 @@ class CTF(app_commands.Group):
     @app_commands.command()
     @_in_ctf_channel()
     async def pull(self, interaction: discord.Interaction) -> None:
-        """Pull challenges from the CTFd platform.
+        """Pull challenges from the platform.
 
         Args:
             interaction: The interaction that triggered this command.
-            ctfd_url: URL of the CTFd platform (default: url from the previously
-                configured credentials).
         """
         interaction.client.challenge_puller.restart()
         await interaction.response.send_message("✅ Started challenge puller.")
@@ -1277,7 +1275,7 @@ class CTF(app_commands.Group):
     async def submit(
         self, interaction: discord.Interaction, members: Optional[str] = None
     ) -> None:
-        """Submit a flag to the CTFd platform.
+        """Submit a flag to the platform.
 
         Args:
             interaction: The interaction that triggered this command.
@@ -1345,7 +1343,7 @@ class CTF(app_commands.Group):
         if scoreboard:
             message = message.format(scoreboard)
         else:
-            message = "No solves yet, or platform isn't CTFd."
+            message = "No solves yet, or platform isn't supported."
 
         # Update scoreboard in the scoreboard channel.
         scoreboard_channel = discord.utils.get(
@@ -1394,11 +1392,11 @@ class CTF(app_commands.Group):
         password: str,
         email: str,
     ) -> None:
-        """Register team account in the CTFd platform.
+        """Register team account in the platform.
 
         Args:
             interaction: The interaction that triggered this command.
-            url: CTFd base url.
+            url: Platform base url.
             username: Username to register with (also the team name).
             password: Password to register with (also the team password).
             email: Email to register with.

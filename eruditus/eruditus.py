@@ -406,7 +406,7 @@ class Eruditus(discord.Client):
                     }
                 )
 
-            # Register a team account if it's a CTFd platform.
+            # Register a team account if the platform is supported.
             url = scheduled_event.location.split(" — ")[1]
             password = hexlify(os.urandom(32)).decode()
 

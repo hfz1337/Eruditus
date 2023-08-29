@@ -4,6 +4,10 @@ import discord
 from config import MONGO, DBNAME, CTF_COLLECTION
 
 
+# @todo: @es3n1n: Ideally we should generate a modal form by supplying the args that we
+#  need w/o hard-coding them
+
+
 class CTFdCredentialsForm(discord.ui.Modal, title="Add CTFd credentials"):
     username = discord.ui.TextInput(
         label="Username",
