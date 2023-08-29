@@ -1,7 +1,9 @@
 from abc import ABC
 from abc import abstractmethod
+from asyncio import sleep
 from dataclasses import dataclass
 from dataclasses import field
+from datetime import datetime
 from enum import IntEnum
 from enum import auto
 from enum import unique
@@ -25,6 +27,13 @@ class Session:
         return len(self.cookies) > 0 or self.token is not None
 
 
+# Challenge solver representation
+@dataclass
+class ChallengeSolver:
+    team: "Team"
+    solved_at: datetime
+
+
 # Challenge attachment repr
 @dataclass
 class ChallengeFile:
@@ -33,6 +42,8 @@ class ChallengeFile:
 
 
 # A challenge representation, perhaps we should store some more info though
+# Please also note that some of these fields could be empty/unset depending
+# on the platform
 @dataclass
 class Challenge:
     # Please note that we are storing id as str (bcs of UUIDs and others), so please
@@ -40,14 +51,18 @@ class Challenge:
     # backend
     id: str
 
-    name: Optional[str] = None
-    value: Optional[int] = None
-    description: Optional[str] = None
-    connection_info: Optional[str] = None
-    category: Optional[str] = None
     tags: Optional[str] = None
+    category: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+    value: Optional[int] = None
+
     files: Optional[List[ChallengeFile]] = None
+    connection_info: Optional[str] = None
+
     solves: Optional[int] = None
+    solved_by: Optional[List[ChallengeSolver]] = None
 
 
 # Submitted flag state representation
@@ -81,26 +96,63 @@ class SubmittedFlag:
 
     # Automatically update `is_first_blood`
     async def update_first_blood(
-        self, ctx: "PlatformCTX", challenge_getter, challenge_id: str, checker
+        self,
+        ctx: "PlatformCTX",
+        challenge_getter,
+        challenge_id: str,
+        checker,
+        me: Optional["Team"] = None,
     ) -> None:
         # Skip invalid flags
         if self.state != SubmittedFlagState.CORRECT:
             self.is_first_blood = False
             return
 
-        # Querying challenge
-        challenge: Optional["Challenge"] = await challenge_getter(ctx, challenge_id)
-        if not challenge or challenge.solves is None:
+        # Querying challenge, also trying to get the solvers of this challenge
+        challenge: Optional[Challenge] = await challenge_getter(
+            ctx,
+            challenge_id,
+            me is not None,  # we only need `solved_by` field if we know our team info
+        )
+
+        # Challenge not found, huh?
+        if not challenge or (challenge.solves is None and challenge.solved_by is None):
             self.is_first_blood = False
             return
 
         # Updating is_first_blood
         self.is_first_blood = checker(challenge.solves)
 
+        # If there's no solver list
+        if challenge.solved_by is None:
+            return
+
+        # Patiently waiting if solvers list is empty (waiting for da cache)
+        for _ in range(5):
+            if len(challenge.solved_by) > 0:
+                break
+
+            challenge = await challenge_getter(ctx, challenge_id, True)
+            await sleep(1)
+
+        # If it's still empty for some reason :shrug:
+        if challenge.solved_by is None or len(challenge.solved_by) == 0:
+            return
+
+        # Making sure that it's sorted (just in case)
+        challenge.solved_by.sort(key=lambda it: it.solved_at)
+
+        # Check if we're the first team that solved this challenge
+        self.is_first_blood = (
+            challenge.solved_by[0].team.id == me.id
+            or challenge.solved_by[0].team.name == me.name
+        )
+
 
 # Team representation
 @dataclass
 class Team:
+    id: str
     name: str
     score: Optional[int] = None
     invite_token: Optional[str] = None  # (used only for rCTF)
@@ -223,6 +275,6 @@ class PlatformABC(ABC):
     @classmethod
     @abstractmethod
     async def get_challenge(
-        cls, ctx: PlatformCTX, challenge_id: str
+        cls, ctx: PlatformCTX, challenge_id: str, pull_solvers: bool = False
     ) -> Optional[Challenge]:
         pass

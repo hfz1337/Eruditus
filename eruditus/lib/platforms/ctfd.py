@@ -22,7 +22,9 @@ from ..util import validate_response
 
 
 def parse_team(data: Dict[str, Any]) -> Team:
-    return Team(name=data["name"], score=data["score"] if "score" in data else None)
+    return Team(
+        id=str(data["account_id"]), name=data["name"], score=data.get("score", None)
+    )
 
 
 def parse_challenge(data: Dict[str, Any], ctx: PlatformCTX) -> Challenge:
@@ -209,7 +211,7 @@ class CTFd(PlatformABC):
 
             # Update `is_first_blood` if state is correct
             await result.update_first_blood(
-                ctx, cls.get_challenge, challenge_id, lambda x: x <= 1
+                ctx, cls.get_challenge, challenge_id, lambda solves: solves <= 1
             )
 
             # We are done here
@@ -398,7 +400,7 @@ class CTFd(PlatformABC):
 
     @classmethod
     async def get_challenge(
-        cls, ctx: PlatformCTX, challenge_id: str
+        cls, ctx: PlatformCTX, challenge_id: str, pull_solvers: bool = False
     ) -> Optional[Challenge]:
         """Get challenge by its id
 

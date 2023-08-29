@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 from typing import Dict
 from typing import Generator
@@ -5,8 +6,9 @@ from typing import List
 
 import aiohttp
 
-from .abc import Challenge
+from .abc import ChallengeSolver
 from .abc import ChallengeFile
+from .abc import Challenge
 from .abc import Optional
 from .abc import PlatformABC
 from .abc import PlatformCTX
@@ -34,6 +36,7 @@ def parse_team(data: Dict[str, Any]) -> Team:
         )
 
     return Team(
+        id=data["id"],
         name=data["name"],
         score=data.get("score", None),
         invite_token=data.get("teamToken", None),
@@ -49,11 +52,20 @@ def parse_challenge(data: Dict[str, Any]) -> Challenge:
     return Challenge(
         id=str(data["id"]),
         name=data["name"],
-        value=int(data["points"]),
+        value=int(data.get("points", "0")),
         description=data["description"],
         category=data["category"],
         files=files,
         solves=data["solves"],
+    )
+
+
+def parse_challenge_solver(data: Dict[str, Any]) -> ChallengeSolver:
+    return ChallengeSolver(
+        solved_at=datetime.fromtimestamp(data.get("createdAt", 0) // 100),
+        team=Team(
+            id=data.get("userId", "unknown"), name=data.get("userName", "unknown")
+        ),
     )
 
 
@@ -150,7 +162,11 @@ class RCTF(PlatformABC):
 
             # Update `is_first_blood` if state is correct
             await result.update_first_blood(
-                ctx, cls.get_challenge, challenge_id, lambda x: x <= 1
+                ctx,
+                cls.get_challenge,
+                challenge_id,
+                lambda solves: solves <= 1,
+                await cls.get_me(ctx),
             )
 
             # We are done here
@@ -299,11 +315,46 @@ class RCTF(PlatformABC):
             return result
 
     @classmethod
+    async def pull_challenge_solvers(
+        cls, ctx: PlatformCTX, challenge_id: str, limit: int = 10
+    ) -> Generator[ChallengeSolver, None, None]:
+        async with aiohttp.request(
+            method="get",
+            headers=generate_headers(ctx),
+            url=f"{ctx.url_stripped}/api/v1/challs/{challenge_id}/solves"
+            f"?limit={limit}&offset=0",
+        ) as response:
+            # Validating request
+            if not await validate_response(
+                response, "data", kind="goodChallengeSolves"
+            ):
+                return
+
+            # Obtaining json response
+            response_json: Dict[str, Any] = await response.json()
+
+            # Iterating over challenge solvers and deserializing em
+            for solver in response_json["data"].get("solves", []):
+                yield parse_challenge_solver(solver)
+
+    @classmethod
     async def get_challenge(
-        cls, ctx: PlatformCTX, challenge_id: str
+        cls, ctx: PlatformCTX, challenge_id: str, pull_solvers: bool = False
     ) -> Optional[Challenge]:
         # @note: @es3n1n: There's no single challenge getter in rCTF
         # :shrug:
+
+        # A util that would pull solvers if we need them
+        async def proceed(result: Challenge) -> Challenge:
+            if not pull_solvers:
+                return result
+
+            # Pulling solvers if needed
+            result.solved_by = [
+                x async for x in cls.pull_challenge_solvers(ctx, challenge_id)
+            ]
+            result.solved_by.sort(key=lambda it: it.solved_at)
+            return result
 
         # Iterating over unsolved challenges
         async for challenge in cls.pull_challenges(ctx):
@@ -312,7 +363,7 @@ class RCTF(PlatformABC):
                 continue
 
             # Yay! Matched
-            return challenge
+            return await proceed(challenge)
 
         # Obtaining team object
         cur_team: Team = await cls.get_me(ctx)
@@ -326,7 +377,7 @@ class RCTF(PlatformABC):
                 continue
 
             # Yay! Matched
-            return challenge
+            return await proceed(challenge)
 
         # No results
         return None
