@@ -49,7 +49,7 @@ class CTFd(PlatformABC):
         """Check whether a website is using the CTFd framework.
 
         Args:
-            ctx: Context
+            ctx: Platform context.
 
         Returns:
             True if the platform is using CTFd, else False.
@@ -402,10 +402,12 @@ class CTFd(PlatformABC):
     ) -> Optional[Challenge]:
         """Get challenge by its id
 
-        ctx: Context
-        challenge_id: ID
+        Args:
+            ctx: Platform context.
+            challenge_id: Numerical challenge ID.
 
-        Returns parsed Challenge
+        Returns:
+            Parsed challenge.
         """
         if not await ctx.login(cls.login):
             return None

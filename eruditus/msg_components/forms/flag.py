@@ -49,7 +49,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         platform = await match_platform(ctx)
         if platform is None:
             await interaction.followup.send(
-                "❌ Failed to submit the flag. / " "Unsupported platform"
+                "❌ Failed to submit the flag (unsupported platform)."
             )
             return
 

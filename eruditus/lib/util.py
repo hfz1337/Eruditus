@@ -165,9 +165,7 @@ async def validate_response_json(
 async def validate_response(
     response: ClientResponse, *validate_fields: str, **validate_kw: Any
 ) -> bool:
-    # Validating response code
+    """Validate response status code and JSON content."""
     if response.status != 200:
         return False
-
-    # Validating content
     return await validate_response_json(response, *validate_fields, **validate_kw)

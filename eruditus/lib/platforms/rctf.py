@@ -61,7 +61,7 @@ def generate_headers(ctx: PlatformCTX) -> Dict[str, str]:
     if not ctx.session or not ctx.session.validate():
         return {}
 
-    return {"Authorization": f'Bearer {ctx.args["token"]}'}
+    return {"Authorization": f'Bearer {ctx.args["authToken"]}'}
 
 
 class RCTF(PlatformABC):
@@ -87,7 +87,7 @@ class RCTF(PlatformABC):
             method="post",
             url=f"{ctx.url_stripped}/api/v1/auth/login",
             json={
-                "teamToken": ctx.args.get("invite"),
+                "teamToken": ctx.args.get("teamToken"),
             },
             allow_redirects=False,
         ) as response:
@@ -103,7 +103,9 @@ class RCTF(PlatformABC):
                 return None
 
             # Saving token
-            return Session(token=response_json["data"]["authToken"])
+            auth_token = response_json["data"]["authToken"]
+            ctx.args["authToken"] = auth_token
+            return Session(token=auth_token)
 
     @classmethod
     async def submit_flag(
@@ -240,7 +242,7 @@ class RCTF(PlatformABC):
             if not await validate_response(response, "kind", "data"):
                 return RegistrationStatus(
                     success=False,
-                    message="Got an invalid response from rCTF" " register endpoint",
+                    message="Got an invalid response from rCTF register endpoint",
                 )
 
             # Obtaining json response
@@ -272,7 +274,7 @@ class RCTF(PlatformABC):
 
             # Building session
             ctx.session = Session(token=result.token)
-            ctx.args["token"] = result.token
+            ctx.args["authToken"] = result.token
 
             # We are gucci if there's token in the result
             result.success = result.token not in ["", " ", None]

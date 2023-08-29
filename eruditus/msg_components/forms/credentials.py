@@ -69,20 +69,20 @@ class RCTFCredentialsForm(discord.ui.Modal, title="Add rCTF invite link"):
     async def on_submit(self, interaction: discord.Interaction) -> None:
         parsed_url = urlparse(self.invite.value)
         params = parse_qs(parsed_url.query)
-        if not (token := params.get("token")):
+        if not (team_token := params.get("token")):
             await interaction.response.send_message(
                 "Token was not found in the URL, please submit a valid invite link.",
                 ephemeral=True,
             )
             return
-        token = token[0]
+        team_token = team_token[0]
 
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
         ctf["credentials"]["url"] = self.url
         ctf["credentials"]["invite"] = self.invite.value
-        ctf["credentials"]["token"] = token
+        ctf["credentials"]["teamToken"] = team_token
 
         MONGO[DBNAME][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]},
