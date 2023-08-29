@@ -148,7 +148,7 @@ class RCTF(PlatformABC):
 
             # Update `is_first_blood` if state is correct
             await result.update_first_blood(
-                ctx, cls.get_challenge, challenge_id, lambda x: x <= 0
+                ctx, cls.get_challenge, challenge_id, lambda x: x <= 1
             )
 
             # We are done here
