@@ -166,7 +166,7 @@ async def validate_response(
     response: ClientResponse, *validate_fields: str, **validate_kw: Any
 ) -> bool:
     # Validating response code
-    if response.status not in [200]:
+    if response.status != 200:
         return False
 
     # Validating content
