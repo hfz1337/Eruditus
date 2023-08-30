@@ -19,6 +19,7 @@ class Encoding(app_commands.Group):
         """Base64 encoding/decoding.
 
         Args:
+            interaction: Discord interaction.
             mode: Operation mode.
             data: The data to encode or decode.
         """
@@ -47,6 +48,7 @@ class Encoding(app_commands.Group):
         """Base32 encoding/decoding.
 
         Args:
+            interaction: Discord interaction.
             mode: Operation mode.
             data: The data to encode or decode.
         """
@@ -75,6 +77,7 @@ class Encoding(app_commands.Group):
         """Binary encoding/decoding.
 
         Args:
+            interaction: Discord interaction.
             mode: Operation mode.
             data: The data to encode or decode.
         """
@@ -105,6 +108,7 @@ class Encoding(app_commands.Group):
         """Hex encoding/decoding.
 
         Args:
+            interaction: Discord interaction.
             mode: Operation mode.
             data: The data to encode or decode.
         """
@@ -132,6 +136,7 @@ class Encoding(app_commands.Group):
         """URL encoding/decoding.
 
         Args:
+            interaction: Discord interaction.
             mode: Operation mode.
             data: The data to encode or decode.
         """

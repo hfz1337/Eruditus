@@ -44,7 +44,7 @@ class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):
 
             try:
                 response = (await response.json())["choices"][0]["message"]["content"]
-            except Exception:
+            except Exception:  # noqa
                 await interaction.followup.send("Something went wrong")
                 return None
 

@@ -12,10 +12,10 @@ class ChatGPT(app_commands.Command):
         super().__init__(
             name="chatgpt",
             description="Ask ChatGPT a question.",
-            callback=self.callback,
+            callback=self.cmd_callback,  # type: ignore
         )
 
-    async def callback(
+    async def cmd_callback(
         self,
         interaction: discord.Interaction,
         privacy: Optional[PromptPrivacy] = PromptPrivacy.public,
@@ -30,5 +30,5 @@ class ChatGPT(app_commands.Command):
                 well-defined answer (e.g., 0).
         """
         await interaction.response.send_modal(
-            ChatGPTForm(private=privacy.value, temperature=temperature)
+            ChatGPTForm(private=privacy.value, temperature=temperature)  # type: ignore
         )

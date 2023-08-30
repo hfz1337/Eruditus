@@ -89,7 +89,7 @@ class CTFTime(app_commands.Group):
         async with aiohttp.request(
             method="get",
             url=f"{CTFTIME_URL}/api/v1/events/",
-            params={"limit": min(limit, 10)},
+            params={"limit": str(min(limit, 10))},
             headers={"User-Agent": USER_AGENT},
         ) as response:
             if response.status == 200:
@@ -195,7 +195,7 @@ class CTFTime(app_commands.Group):
         async with aiohttp.request(
             method="get",
             url=f"{CTFTIME_URL}/api/v1/events/",
-            params={"limit": 20},
+            params={"limit": "20"},
             headers={"User-Agent": USER_AGENT},
         ) as response:
             if response.status == 200:
@@ -246,12 +246,10 @@ class CTFTime(app_commands.Group):
                         scheduled_event = guild.get_scheduled_event(
                             scheduled_events[event_info["name"]]
                         )
-                        scheduled_event = await scheduled_event.edit(**parameters)
+                        await scheduled_event.edit(**parameters)
 
                     else:
-                        scheduled_event = await guild.create_scheduled_event(
-                            **parameters
-                        )
+                        await guild.create_scheduled_event(**parameters)
 
         await interaction.followup.send("✅ Done pulling events")
 

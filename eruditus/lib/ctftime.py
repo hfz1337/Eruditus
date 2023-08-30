@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Generator
+from typing import Generator, Optional
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -23,7 +23,7 @@ def ctftime_date_to_datetime(ctftime_date: str) -> datetime:
     ).replace(tzinfo=timezone.utc)
 
 
-async def scrape_event_info(event_id: int) -> dict:
+async def scrape_event_info(event_id: int) -> Optional[dict]:
     """Scrape event information off the CTFtime website.
 
     Args:

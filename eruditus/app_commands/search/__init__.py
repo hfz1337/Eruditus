@@ -12,10 +12,10 @@ class Search(app_commands.Command):
         super().__init__(
             name="search",
             description="Search for a topic in the CTF write-ups index.",
-            callback=self.callback,
+            callback=self.cmd_callback,  # type: ignore
         )
 
-    async def callback(
+    async def cmd_callback(
         self, interaction: discord.Interaction, query: str, limit: Optional[int] = 3
     ) -> None:
         """Search for a topic in the CTF write-ups index.

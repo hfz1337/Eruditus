@@ -476,7 +476,7 @@ class Eruditus(discord.Client):
         async with aiohttp.request(
             method="get",
             url=f"{CTFTIME_URL}/api/v1/events/",
-            params={"limit": 20},
+            params={"limit": "20"},
             headers={"User-Agent": USER_AGENT},
         ) as response:
             if response.status == 200:
@@ -558,12 +558,10 @@ class Eruditus(discord.Client):
                         if local_time + timedelta(days=2) >= event_start:
                             parameters["start_time"] = scheduled_event.start_time
                             parameters["end_time"] = scheduled_event.end_time
-                        scheduled_event = await scheduled_event.edit(**parameters)
+                        await scheduled_event.edit(**parameters)
 
                     else:
-                        scheduled_event = await guild.create_scheduled_event(
-                            **parameters
-                        )
+                        await guild.create_scheduled_event(**parameters)
 
     @tasks.loop(minutes=2, reconnect=True)
     async def challenge_puller(self) -> None:
@@ -740,7 +738,7 @@ class Eruditus(discord.Client):
 
             try:
                 teams = [x async for x in platform.pull_scoreboard(ctx)]
-            except aiohttp.client_exceptions.InvalidURL:
+            except aiohttp.InvalidURL:
                 continue
 
             if not teams:
@@ -782,22 +780,22 @@ class Eruditus(discord.Client):
                 await scoreboard_channel.send(message)
 
     @create_upcoming_events.error
-    async def create_upcoming_events_err_handler(self, error: Exception) -> None:
+    async def create_upcoming_events_err_handler(self, _: Exception) -> None:
         traceback.print_exc()
         self.create_upcoming_events.restart()
 
     @ctf_reminder.error
-    async def ctf_reminder_err_handler(self, error: Exception) -> None:
+    async def ctf_reminder_err_handler(self, _: Exception) -> None:
         traceback.print_exc()
         self.ctf_reminder.restart()
 
     @scoreboard_updater.error
-    async def scoreboard_updater_err_handler(self, error: Exception) -> None:
+    async def scoreboard_updater_err_handler(self, _: Exception) -> None:
         traceback.print_exc()
         self.scoreboard_updater.restart()
 
     @challenge_puller.error
-    async def challenge_puller_err_handler(self, error: Exception) -> None:
+    async def challenge_puller_err_handler(self, _: Exception) -> None:
         traceback.print_exc()
         self.challenge_puller.restart()
 

@@ -9,10 +9,10 @@ class Help(app_commands.Command):
         super().__init__(
             name="help",
             description="Show help about the bot usage.",
-            callback=self.callback,
+            callback=self.cmd_callback,  # type: ignore
         )
 
-    async def callback(self, interaction: discord.Interaction) -> None:
+    async def cmd_callback(self, interaction: discord.Interaction) -> None:
         """Show help about the bot usage."""
         embed = (
             discord.Embed(

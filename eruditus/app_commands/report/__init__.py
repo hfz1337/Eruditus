@@ -9,10 +9,10 @@ class Report(app_commands.Command):
         super().__init__(
             name="report",
             description="Report a bug to the developer.",
-            callback=self.callback,
+            callback=self.cmd_callback,  # type: ignore
         )
 
-    async def callback(self, interaction: discord.Interaction) -> None:
+    async def cmd_callback(self, interaction: discord.Interaction) -> None:
         """Report a bug to the developer.
 
         Args:

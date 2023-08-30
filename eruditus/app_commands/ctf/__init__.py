@@ -53,13 +53,13 @@ class CTF(app_commands.Group):
         return app_commands.check(predicate)
 
     async def _ctf_autocompletion_func(
-        self, interaction: discord.Interaction, current: str
+        self, _: discord.Interaction, current: str
     ) -> List[Choice[str]]:
         """Autocomplete CTF name.
         This function is inefficient, might improve it later.
 
         Args:
-            interaction: The interaction that triggered this command.
+            _: The interaction that triggered this command.
             current: The CTF name typed so far.
 
         Returns:
@@ -1156,7 +1156,7 @@ class CTF(app_commands.Group):
                         challenge["solve_time"]
                     ).strftime(DATE_FORMAT)
                     embed.add_field(
-                        name=(f"{icon} {challenge['name']} ({challenge['category']})"),
+                        name=f"{icon} {challenge['name']} ({challenge['category']})",
                         value=(
                             "```diff\n"
                             f"+ Solver{['', 's'][len(challenge['players'])>1]}:"

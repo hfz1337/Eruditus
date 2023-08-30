@@ -8,13 +8,13 @@ class TakeNote(app_commands.ContextMenu):
     def __init__(self) -> None:
         super().__init__(
             name="📝 Take note",
-            callback=self.callback,
+            callback=self.context_callback,
         )
 
-    async def callback(
+    async def context_callback(
         self, interaction: discord.Interaction, message: discord.Message
     ) -> None:
-        """Copy a message into the current CTF's notes channel.
+        """Copy a message into the current CTF's note channel.
 
         Args:
             interaction: The interaction that triggered this command.

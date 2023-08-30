@@ -16,7 +16,7 @@ class WorkonButton(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.green)
     async def workon(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ) -> None:
         challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": self.name})
         if interaction.user.name in challenge["players"]:
@@ -39,7 +39,7 @@ class WorkonButton(discord.ui.View):
         )
 
         await interaction.response.send_message(
-            (f"✅ Added to the `{challenge['name']}` challenge."),
+            f"✅ Added to the `{challenge['name']}` challenge.",
             view=UnworkonButton(name=self.name),
             ephemeral=True,
         )
@@ -58,7 +58,7 @@ class UnworkonButton(discord.ui.View):
         label="Stop working on this challenge.", style=discord.ButtonStyle.red
     )
     async def unworkon(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ) -> None:
         challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": self.name})
         if challenge is None:
