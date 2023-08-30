@@ -61,7 +61,7 @@ class RCTF(PlatformABC):
         ) as response:
             # Validating and deserializing response
             data = await deserialize_response(response, model=AuthResponse)
-            if not data or not data.is_good():
+            if not data or data.is_not_good():
                 return None
 
             # Saving the token
@@ -132,7 +132,7 @@ class RCTF(PlatformABC):
         ) as response:
             # Validating and deserializing response
             data = await deserialize_response(response, model=ChallengesReponse)
-            if not data or not data.is_good():
+            if not data or data.is_not_good():
                 return
 
             # Iterating over challenges and parsing them
@@ -155,7 +155,7 @@ class RCTF(PlatformABC):
         ) as response:
             # Validating and deserializing response
             data = await deserialize_response(response, model=LeaderboardResponse)
-            if not data or not data.is_good():
+            if not data or data.is_not_good():
                 return
 
             # Iterating over challenges and parsing them
@@ -175,7 +175,7 @@ class RCTF(PlatformABC):
         ) as response:
             # Validating and deserializing response
             data = await deserialize_response(response, model=UserResponse)
-            if not data or not data.is_good():
+            if not data or data.is_not_good():
                 return
 
             # Parsing as a team
@@ -202,7 +202,7 @@ class RCTF(PlatformABC):
                 )
 
             # If something went wrong
-            if not data.is_good():
+            if data.is_not_good():
                 return RegistrationStatus(success=False, message=data.message)
 
             # Building result object
@@ -247,7 +247,7 @@ class RCTF(PlatformABC):
         ) as response:
             # Validating and deserializing response
             data = await deserialize_response(response, model=SolvesResponse)
-            if not data or not data.is_good():
+            if not data or data.is_not_good():
                 return
 
             # Iterating over challenge solvers and deserializing em

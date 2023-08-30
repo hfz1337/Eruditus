@@ -12,6 +12,9 @@ class BaseRCTFResponse(BaseModel):
     def is_good(self) -> bool:
         return self.kind.startswith("good")
 
+    def is_not_good(self) -> bool:
+        return not self.is_good()
+
     def is_bad(self) -> bool:
         return self.kind.startswith("bad")
 

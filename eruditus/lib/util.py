@@ -137,5 +137,4 @@ async def deserialize_response(response: ClientResponse, model: Type[T]) -> Opti
     try:
         return TypeAdapter(model).validate_python(response_json)
     except ValidationError:
-        # print(e)
         return None
