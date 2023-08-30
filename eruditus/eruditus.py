@@ -56,6 +56,7 @@ class Eruditus(discord.Client):
         intents.message_content = True
         super().__init__(intents=intents)
         self.tree = discord.app_commands.CommandTree(self)
+        self.challenge_puller_is_running = False
 
     async def create_ctf(self, name: str, live: bool = True) -> Union[dict, None]:
         """Create a CTF along with its channels and role.
@@ -570,6 +571,8 @@ class Eruditus(discord.Client):
     @tasks.loop(minutes=2, reconnect=True)
     async def challenge_puller(self) -> None:
         """Periodically pull challenges for all running CTFs."""
+        self.challenge_puller_is_running = True
+
         # Wait until the bot's internal cache is ready.
         await self.wait_until_ready()
 
@@ -586,11 +589,11 @@ class Eruditus(discord.Client):
                 guild.categories, id=ctf["guild_category"]
             )
 
-            # Matching platform
+            # Match the platform
             ctx = PlatformCTX.from_credentials(ctf["credentials"])
             platform = await match_platform(ctx)
             if platform is None:
-                # unsupported platform gg
+                # Unsupported platform
                 continue
 
             async for challenge in platform.pull_challenges(ctx):
@@ -615,7 +618,7 @@ class Eruditus(discord.Client):
                 # Make sure we didn't reach 50 channels, otherwise channel creation
                 # will throw an exception.
                 if len(category_channel.channels) == 50:
-                    return
+                    continue
 
                 # Create a channel for the challenge and set its permissions.
                 overwrites = {
@@ -719,6 +722,7 @@ class Eruditus(discord.Client):
                 MONGO[DBNAME][CTF_COLLECTION].update_one(
                     {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
                 )
+        self.challenge_puller_is_running = False
 
     @tasks.loop(minutes=1, reconnect=True)
     async def scoreboard_updater(self) -> None:

@@ -1316,6 +1316,12 @@ class CTF(app_commands.Group):
         Args:
             interaction: The interaction that triggered this command.
         """
+        if interaction.client.challenge_puller_is_running:
+            await interaction.response.send_message(
+                "Challenge puller is already running.",
+                ephemeral=True,
+            )
+            return
         interaction.client.challenge_puller.restart()
         await interaction.response.send_message("✅ Started challenge puller.")
 
