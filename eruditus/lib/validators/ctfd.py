@@ -1,13 +1,16 @@
-from typing import Optional
+from datetime import datetime
+from typing import Any, Optional
 
 from pydantic import BaseModel, field_validator
+
+from ..platforms.abc import Challenge, ChallengeFile, ChallengeSolver, Team
 
 
 class BaseValidResponse(BaseModel):
     success: bool
 
-    @field_validator("success")
     @classmethod
+    @field_validator("success")
     def success_must_be_true(cls, value: bool) -> bool:
         if value:
             return value
@@ -15,7 +18,7 @@ class BaseValidResponse(BaseModel):
 
 
 class SolvesResponse(BaseValidResponse):
-    """Reponse schema returned by `/api/v1/challenges/:id/solves`."""
+    """Response schema returned by `/api/v1/challenges/:id/solves`."""
 
     class Solver(BaseModel):
         account_id: int
@@ -23,84 +26,134 @@ class SolvesResponse(BaseValidResponse):
         date: str
         account_url: str
 
+        def convert(self) -> ChallengeSolver:
+            return ChallengeSolver(
+                team=Team(id=str(self.account_id), name=self.name),
+                solved_at=datetime.fromisoformat(self.date.rstrip("Z")),
+            )
+
     data: list[Solver]
 
 
-class ChallengeResponse(BaseValidResponse):
-    """Reponse schema returned by `/api/v1/challenges/:id`."""
+class CTFDChallenge(BaseModel):
+    """CTFd challenge representation that could be returned from `/challenges/*`."""
 
-    class Challenge(BaseModel):
+    # Required fields
+    id: int
+    type: str
+    name: str
+    value: int
+    solves: int
+    solved_by_me: bool
+    category: str
+    tags: list[dict[str, str] | str]
+
+    # Optional fields
+    is_first_solver: Optional[bool] = None
+    template: Optional[str] = None
+    script: Optional[str] = None
+    initial: Optional[int] = None
+    decay: Optional[int] = None
+    minimum: Optional[int] = None
+    description: Optional[str] = None
+    connection_info: Optional[str] = None
+    state: Optional[str] = None
+    max_attempts: Optional[int] = None
+    typedata: Optional[dict] = None
+    attempts: Optional[int] = None
+    files: Optional[list[str]] = None
+    hints: Optional[list[str]] = None
+    view: Optional[str] = None
+
+    def convert(self, url_stripped: str) -> Challenge:
+        return Challenge(
+            id=str(self.id),
+            tags=[x["value"] if isinstance(x, dict) else str(x) for x in self.tags]
+            if self.tags is not None
+            else None,
+            category=self.category,
+            name=self.name,
+            description=self.description,
+            value=self.value,
+            files=[ChallengeFile(url=f"{url_stripped}/{x}") for x in self.files]
+            if self.files is not None
+            else None,
+            connection_info=self.connection_info,
+            solves=self.solves,
+        )
+
+
+class CTFDTeam(BaseModel):
+    class Member(BaseModel):
         id: int
-        name: str
-        value: int
-        initial: Optional[int] = None
-        decay: Optional[int] = None
-        minimum: Optional[int] = None
-        description: str
-        connection_info: Optional[str] = None
-        category: str
-        state: str
-        max_attempts: int
-        type: str
-        typedata: dict = None
-        solves: int
-        solved_by_me: bool
-        is_first_solver: bool
-        attempts: int
-        files: list[str] = None
-        tags: list[str]
-        hints: list[str]
-        view: str
-
-    data: Challenge
-
-
-class ChallengesResponse(BaseValidResponse):
-    """Reponse schema returned by `/api/v1/challenges`."""
-
-    class Challenge(BaseModel):
-        id: int
-        type: str
-        name: str
-        value: int
-        solves: int
-        solved_by_me: bool
-        is_first_solver: bool
-        category: str
-        tags: list[dict[str, str]]
-        template: str
-        script: str
-
-    data: list[Challenge]
-
-
-class ScoreboardResponse(BaseValidResponse):
-    """Reponse schema returned by `/api/v1/scoreboard`."""
-
-    class Team(BaseModel):
-        class Member(BaseModel):
-            id: int
-            oauth_id: Optional[str] = None
-            name: str
-            score: int
-
-        pos: int
-        account_id: int
-        account_url: str
-        account_type: str
         oauth_id: Optional[str] = None
         name: str
         score: int
-        members: list[Member]
 
-    data: list[Team]
+    pos: int
+    account_id: int
+    account_url: str
+    account_type: str
+    oauth_id: Optional[str] = None
+    name: str
+    score: int
+    members: list[Member]
+
+    def convert(self) -> Team:
+        return Team(id=str(self.account_id), name=self.name, score=self.score)
+
+
+class ChallengeResponse(BaseValidResponse):
+    """Response schema returned by `/api/v1/challenges/:id`."""
+
+    data: CTFDChallenge
+
+
+class ChallengesResponse(BaseValidResponse):
+    """Response schema returned by `/api/v1/challenges`."""
+
+    data: list[CTFDChallenge]
+
+
+class ScoreboardResponse(BaseValidResponse):
+    """Response schema returned by `/api/v1/scoreboard`."""
+
+    data: list[CTFDTeam]
 
 
 class SubmissionResponse(BaseValidResponse):
-    """Reponse schema returned by `/api/v1/challenges/attempt`."""
+    """Response schema returned by `/api/v1/challenges/attempt`."""
 
     class Data(BaseModel):
         status: str
         message: str
+
+    data: Data
+
+
+class UserResponse(BaseValidResponse):
+    """Response schema returned by `/api/v1/teams/me`."""
+
+    class Data(BaseModel):
+        website: Optional[str]
+        id: int
+        members: list[int]
+        oauth_id: Optional[str]
+        email: Optional[str]
+        country: Optional[str]
+        captain_id: int
+        fields: list[dict]
+        affiliation: Optional[str]
+        bracket: Optional[Any]
+        name: str
+        place: Optional[str]
+        score: int
+
+        def convert(self) -> Team:
+            return Team(
+                id=str(self.id),
+                name=self.name,
+                score=self.score,
+            )
 
     data: Data

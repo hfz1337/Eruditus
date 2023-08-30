@@ -2,7 +2,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum, auto, unique
-from typing import Any, Callable, Dict, Generator, List, Optional
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional
+
+from pydantic import field_validator
 
 
 @dataclass
@@ -80,6 +82,11 @@ class Challenge:
         solves: The number of solves on this challenge.
         solved_by: List of solvers who solved this challenge.
 
+    TODO:
+        Add max_attempts/attempts
+        Add hints
+        Add connection_info
+
     Notes:
         Some fields can remain unset depending on the platform.
         Not all platforms use a numerical ID for the challenges, for example, rCTF uses
@@ -97,6 +104,18 @@ class Challenge:
     connection_info: Optional[str] = None
     solves: Optional[int] = None
     solved_by: Optional[List[ChallengeSolver]] = None
+
+    @classmethod
+    @field_validator("solved_by", mode="before")
+    def validate_solved_by(
+        cls, value: Optional[List[ChallengeSolver]]
+    ) -> Optional[List[ChallengeSolver]]:
+        if value is None:
+            return value
+
+        # Sorting the solvers by their solve time
+        value.sort(key=lambda x: x.solved_at)
+        return value
 
 
 @unique
@@ -132,7 +151,7 @@ class Retries:
         unlimited.
     """
 
-    left: int
+    left: Optional[int] = None
     out_of: Optional[int] = None
 
 
@@ -156,16 +175,19 @@ class SubmittedFlag:
     async def update_first_blood(
         self,
         ctx: "PlatformCTX",
-        solvers_getter: Callable,
+        solvers_getter: Callable[..., AsyncIterator[ChallengeSolver]],
+        challenge_getter: Callable[..., Awaitable[Optional[Challenge]]],
         challenge_id: str,
-        me: Optional["Team"],
+        me: Optional["Team"] = None,
     ) -> None:
         """Update the `is_first_blood` attribute.
 
         Arguments:
             ctx: The platform context.
-            solvers_getter: A platform specific function for retrieving the solver for
+            solvers_getter: A platform-specific function for retrieving the solver for
                 a specific challenge.
+            challenge_getter: A platform-specific function for retrieving the challenge
+                by its ID.
             challenge_id: The ID of the challenge for which we want to check if we got
                 first blood.
             me: A representation of our team.
@@ -173,15 +195,22 @@ class SubmittedFlag:
         if self.state != SubmittedFlagState.CORRECT:
             return
 
+        # If there's no team object, then we should try to detect first blood via
+        # pulling solves count of the challenge
+        if me is None:
+            challenge: Optional[Challenge] = await challenge_getter(ctx, challenge_id)
+            self.is_first_blood = challenge is not None and challenge.solves <= 1
+            return
+
         # Querying solvers of this challenge.
-        solvers_generator: Optional[
-            Generator[ChallengeSolver, None, None]
-        ] = await solvers_getter(ctx=ctx, challenge_id=challenge_id, limit=1)
+        solvers_generator: Optional[AsyncIterator[ChallengeSolver]] = solvers_getter(
+            ctx=ctx, challenge_id=challenge_id, limit=1
+        )
         if solvers_generator is None:
             # Something went wrong.
             return
 
-        first_solver: Optional[ChallengeSolver] = next(solvers_generator, None)
+        first_solver: Optional[ChallengeSolver] = await anext(solvers_generator, None)
         if first_solver is None:
             # XXX (hfz) Something went wrong, unless there's caching at play and the
             # platform is still returning an empty list. It doesn't apply to CTFd or
@@ -214,7 +243,10 @@ class Team:
     invite_token: Optional[str] = None
     solves: Optional[List[Challenge]] = None
 
-    def __eq__(self, other: "Team") -> bool:
+    def __eq__(self, other: Optional["Team"]) -> bool:
+        if other is None:
+            return False
+
         return self.id == other.id or self.name == other.name
 
 
@@ -335,7 +367,7 @@ class PlatformCTX:
         return self.session is not None and self.session.validate()
 
     async def login(self, login_routine: Callable) -> bool:
-        """Attempt to login to the CTF platform using the platform-specific login
+        """Attempt to log in to the CTF platform using the platform-specific login
         routine if the current session is unauthorized.
 
         Args:
@@ -357,7 +389,7 @@ class PlatformABC(ABC):
         @es3n1n
 
     Notes:
-        If some of the methods return None instead of the result, it means that
+        If some methods return None instead of the result, it means that
         something went horribly wrong within the communication logic, it might be worth
         to try again.
     """
@@ -381,16 +413,14 @@ class PlatformABC(ABC):
 
     @classmethod
     @abstractmethod
-    async def pull_challenges(
-        cls, ctx: PlatformCTX
-    ) -> Generator[Challenge, None, None]:
+    async def pull_challenges(cls, ctx: PlatformCTX) -> AsyncIterator[Challenge]:
         pass
 
     @classmethod
     @abstractmethod
     async def pull_scoreboard(
         cls, ctx: PlatformCTX, max_entries_count: int = 20
-    ) -> Generator[Team, None, None]:
+    ) -> AsyncIterator[Team]:
         pass
 
     @classmethod
@@ -401,6 +431,18 @@ class PlatformABC(ABC):
     @classmethod
     @abstractmethod
     async def get_challenge(
-        cls, ctx: PlatformCTX, challenge_id: str, pull_solvers: bool = False
+        cls, ctx: PlatformCTX, challenge_id: str
     ) -> Optional[Challenge]:
+        pass
+
+    @classmethod
+    @abstractmethod
+    async def pull_challenge_solvers(
+        cls, ctx: PlatformCTX, challenge_id: str, limit: int = 10
+    ) -> AsyncIterator[ChallengeSolver]:
+        pass
+
+    @classmethod
+    @abstractmethod
+    async def get_me(cls, ctx: PlatformCTX) -> Optional[Team]:
         pass

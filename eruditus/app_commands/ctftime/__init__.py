@@ -227,7 +227,7 @@ class CTFTime(app_commands.Group):
                     )
                     parameters = {
                         "name": event_info["name"],
-                        "description": truncate(text=event_description, maxlen=1000),
+                        "description": truncate(text=event_description, max_len=1000),
                         "start_time": event_start,
                         "end_time": event_end,
                         "entity_type": discord.EntityType.external,
@@ -236,7 +236,7 @@ class CTFTime(app_commands.Group):
                             f"{CTFTIME_URL}/event/{event_info['id']}"
                             " — "
                             f"{event_info['website']}",
-                            maxlen=100,
+                            max_len=100,
                         ),
                     }
 

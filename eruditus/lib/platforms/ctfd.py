@@ -1,20 +1,20 @@
 import re
-from typing import Any, Dict, Generator, List
+from typing import AsyncIterator, Dict
 
 import aiohttp
 from bs4 import BeautifulSoup
 
-from ..util import validate_response
+from ..util import deserialize_response
 from ..validators.ctfd import (
     ChallengeResponse,
     ChallengesResponse,
     ScoreboardResponse,
     SolvesResponse,
     SubmissionResponse,
+    UserResponse,
 )
 from .abc import (
     Challenge,
-    ChallengeFile,
     ChallengeSolver,
     Optional,
     PlatformABC,
@@ -26,30 +26,6 @@ from .abc import (
     SubmittedFlagState,
     Team,
 )
-
-
-def parse_team(data: Dict[str, Any]) -> Team:
-    return Team(
-        id=str(data["account_id"]), name=data["name"], score=data.get("score", None)
-    )
-
-
-def parse_challenge(data: Dict[str, Any], ctx: PlatformCTX) -> Challenge:
-    files: List[ChallengeFile] = list()
-    for file in data.get("files", []):
-        files.append(ChallengeFile(url=f"{ctx.url_stripped}/{file}", name=None))
-
-    return Challenge(
-        id=str(data["id"]),
-        name=data["name"],
-        value=int(data["value"]),
-        description=data["description"],
-        connection_info=data.get("connection_info"),
-        category=data["category"],
-        tags=data["tags"],
-        files=files,
-        solves=data["solves"],
-    )
 
 
 class CTFd(PlatformABC):
@@ -159,20 +135,17 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             headers={"CSRF-Token": csrf_nonce},
         ) as response:
-            if not await validate_response(response, validator=SubmissionResponse):
-                return None
-
-            response_json: Dict[str, Any] = await response.json()
+            # Validating and deserializing response
+            data = await deserialize_response(response, model=SubmissionResponse)
+            if not data:
+                return
 
             # Parse the number of retries left (for challenges with limited attempts).
             matched = re.match(
                 r"Incorrect. You have (?P<tries>\d+) tries remaining.",
-                response_json["data"]["message"],
+                data.data.message,
             )
-            if matched is None:
-                tries_left = None
-            else:
-                tries_left = int(matched.group("tries"))
+            tries_left = int(matched.group("tries")) if matched is not None else None
 
             # Parse the flag state.
             rules: Dict[str, SubmittedFlagState] = {
@@ -181,21 +154,23 @@ class CTFd(PlatformABC):
                 "incorrect": SubmittedFlagState.INCORRECT,
                 "correct": SubmittedFlagState.CORRECT,
             }
-            state = rules.get(
-                response_json["data"]["status"].lower(), SubmittedFlagState.UNKNOWN
-            )
+            state = rules.get(data.data.status.lower(), SubmittedFlagState.UNKNOWN)
 
             # Build the result.
-            result = SubmittedFlag(state=state, retries=Retries(left=int(tries_left)))
+            result = SubmittedFlag(state=state, retries=Retries(left=tries_left))
 
             # Update `is_first_blood` if state is correct.
-            await result.update_first_blood(ctx, cls.get_challenge, challenge_id)
+            await result.update_first_blood(
+                ctx,
+                cls.pull_challenge_solvers,
+                cls.get_challenge,
+                challenge_id,
+                await cls.get_me(ctx),
+            )
             return result
 
     @classmethod
-    async def pull_challenges(
-        cls, ctx: PlatformCTX
-    ) -> Generator[Challenge, None, None]:
+    async def pull_challenges(cls, ctx: PlatformCTX) -> AsyncIterator[Challenge]:
         """Pull new challenges from the CTFd platform.
 
         Args:
@@ -214,16 +189,15 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
-            if not await validate_response(response, validator=ChallengesResponse):
+            # Validating and deserializing response
+            data = await deserialize_response(response, model=ChallengesResponse)
+            if not data:
                 return
-
-            # Obtaining json
-            response_json: Dict[str, Any] = await response.json()
 
             # Loop through the challenges and get information about each challenge by
             # requesting the `/api/v1/challenges/{challenge_id}` endpoint.
-            for min_challenge in response_json["data"]:
-                min_challenge_id: str = str(min_challenge["id"])
+            for min_challenge in data.data:
+                min_challenge_id: str = str(min_challenge.id)
 
                 challenge = await cls.get_challenge(ctx, min_challenge_id)
                 if challenge is None:
@@ -234,7 +208,7 @@ class CTFd(PlatformABC):
     @classmethod
     async def pull_scoreboard(
         cls, ctx: PlatformCTX, max_entries_count: int = 20
-    ) -> Generator[Team, None, None]:
+    ) -> AsyncIterator[Team]:
         """Get scoreboard from the CTFd platform.
 
         Args:
@@ -253,13 +227,13 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
-            if not await validate_response(response, validator=ScoreboardResponse):
+            # Validating and deserializing response
+            data = await deserialize_response(response, model=ScoreboardResponse)
+            if not data:
                 return
 
-            response_json: Dict[str, Any] = await response.json()
-
-            for team in response_json["data"][:max_entries_count]:
-                yield parse_team(team)
+            for team in data.data[:max_entries_count]:
+                yield team.convert()
 
     @classmethod
     async def register(cls, ctx: PlatformCTX) -> RegistrationStatus:
@@ -331,8 +305,8 @@ class CTFd(PlatformABC):
                 method="get",
                 url=f"{ctx.url_stripped}/teams/new",
                 cookies=cookies,
-            ) as response:
-                nonce = BeautifulSoup(await response.text(), "html.parser").find(
+            ) as teams_resp:
+                nonce = BeautifulSoup(await teams_resp.text(), "html.parser").find(
                     "input", {"id": "nonce"}
                 )["value"]
 
@@ -347,12 +321,12 @@ class CTFd(PlatformABC):
                 },
                 cookies=cookies,
                 allow_redirects=False,
-            ) as response:
-                if response.status == 200:
+            ) as teams_resp:
+                if teams_resp.status == 200:
                     # Team name was already taken.
                     errors = []
                     for error in BeautifulSoup(
-                        await response.text(), "html.parser"
+                        await teams_resp.text(), "html.parser"
                     ).findAll("div", {"role": "alert"}):
                         if error.span:
                             errors.append(error.span.text)
@@ -362,7 +336,7 @@ class CTFd(PlatformABC):
                         message="\n".join(errors or ["Team name already taken"]),
                     )
 
-                elif response.status != 302:
+                elif teams_resp.status != 302:
                     # Other errors occurred.
                     return RegistrationStatus(
                         success=False, message="Couldn't create a team"
@@ -373,7 +347,7 @@ class CTFd(PlatformABC):
     @classmethod
     async def pull_challenge_solvers(
         cls, ctx: PlatformCTX, challenge_id: str, limit: int = 10
-    ) -> Generator[ChallengeSolver, None, None]:
+    ) -> AsyncIterator[ChallengeSolver]:
         if not await ctx.login(cls.login):
             return
 
@@ -383,18 +357,17 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
-            if not await validate_response(response, validator=SolvesResponse):
+            # Validating and deserializing response
+            data = await deserialize_response(response, model=SolvesResponse)
+            if not data:
                 return
 
-            response_json: Dict[str, Any] = await response.json()
-            solvers = response_json["data"]
-
-            for solver in solvers[: limit if limit != 0 else len(solvers)]:
-                yield solver
+            for solver in data.data[: limit if limit != 0 else len(data.data)]:
+                yield solver.convert()
 
     @classmethod
     async def get_challenge(
-        cls, ctx: PlatformCTX, challenge_id: str, pull_solvers: bool = False
+        cls, ctx: PlatformCTX, challenge_id: str
     ) -> Optional[Challenge]:
         """Get challenge by its id
 
@@ -414,8 +387,35 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
-            if not await validate_response(response, validator=ChallengeResponse):
-                return None
+            # Validating and deserializing response
+            data = await deserialize_response(response, model=ChallengeResponse)
+            if not data:
+                return
 
-            response_json: Dict[str, Any] = await response.json()
-            return parse_challenge(response_json["data"], ctx)
+            return data.data.convert(ctx.url_stripped)
+
+    @classmethod
+    async def get_me(cls, ctx: PlatformCTX) -> Optional[Team]:
+        """Get our team info
+
+        Args:
+            ctx: Platform context.
+
+        Returns:
+            Parsed team info.
+        """
+        if not await ctx.login(cls.login):
+            return None
+
+        async with aiohttp.request(
+            method="get",
+            url=f"{ctx.base_url}/api/v1/teams/me",
+            cookies=ctx.session.cookies,
+            allow_redirects=False,
+        ) as response:
+            # Validating and deserializing response
+            data = await deserialize_response(response, model=UserResponse)
+            if not data:
+                return
+
+            return data.data.convert()

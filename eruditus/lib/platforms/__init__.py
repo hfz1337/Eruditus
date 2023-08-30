@@ -1,7 +1,7 @@
 from enum import Enum, EnumMeta
 from typing import Optional
 
-from .abc import PlatformCTX
+from .abc import PlatformABC, PlatformCTX
 from .ctfd import CTFd
 from .rctf import RCTF
 
@@ -17,7 +17,7 @@ class Platform(Enum, metaclass=PlatformMeta):
     RCTF = RCTF
 
 
-async def match_platform(ctx: PlatformCTX) -> Optional[Platform]:
+async def match_platform(ctx: PlatformCTX) -> Optional[PlatformABC]:
     for platform in Platform:
         if await platform.match_platform(ctx):
             return platform
