@@ -147,7 +147,7 @@ class DefaultCredentialsForm(discord.ui.Modal, title="Add CTF credentials"):
         ctf["credentials"]["username"] = self.username.value
         ctf["credentials"]["password"] = self.password.value
         ctf["credentials"]["invite"] = self.invite.value
-        ctf["credentials"]["token"] = self.token.value
+        ctf["credentials"]["teamToken"] = self.token.value
 
         MONGO[DBNAME][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]},

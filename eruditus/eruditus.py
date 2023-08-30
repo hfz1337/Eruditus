@@ -239,7 +239,7 @@ class Eruditus(discord.Client):
                 ctf["credentials"]["username"] = TEAM_NAME
                 ctf["credentials"]["password"] = password
                 ctf["credentials"]["token"] = result.token
-                ctf["credentials"]["invite"] = result.invite
+                ctf["credentials"]["teamToken"] = result.invite
 
                 MONGO[DBNAME][CTF_COLLECTION].update_one(
                     {"_id": ctf["_id"]},
@@ -419,7 +419,7 @@ class Eruditus(discord.Client):
                 ctf["credentials"]["username"] = TEAM_NAME
                 ctf["credentials"]["password"] = password
                 ctf["credentials"]["token"] = result.token
-                ctf["credentials"]["invite"] = result.invite
+                ctf["credentials"]["teamToken"] = result.invite
 
                 MONGO[DBNAME][CTF_COLLECTION].update_one(
                     {"_id": ctf["_id"]},

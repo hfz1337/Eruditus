@@ -1240,6 +1240,7 @@ class CTF(app_commands.Group):
         url = ctf["credentials"]["url"]
         username = ctf["credentials"]["username"]
         password = ctf["credentials"]["password"]
+        team_token = ctf["credentials"].get("teamToken", None)
 
         if url is None:
             await interaction.response.send_message(
@@ -1251,6 +1252,7 @@ class CTF(app_commands.Group):
                 "```yaml\n"
                 f"Username: {username}\n"
                 f"Password: {password}\n"
+                f"Team invite: {team_token}\n"
                 "```"
             )
 
@@ -1425,7 +1427,7 @@ class CTF(app_commands.Group):
         ctf["credentials"]["username"] = username
         ctf["credentials"]["password"] = password
         ctf["credentials"]["token"] = result.token
-        ctf["credentials"]["invite"] = result.invite
+        ctf["credentials"]["teamToken"] = result.invite
 
         MONGO[DBNAME][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]},
