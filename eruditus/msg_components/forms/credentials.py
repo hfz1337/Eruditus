@@ -62,17 +62,16 @@ class CredentialsForm(discord.ui.Modal, title="Add CTF credentials"):
                 ctf["credentials"]["password"] = self.password.value
                 ctf["credentials"]["invite"] = self.invite.value
                 ctf["credentials"]["teamToken"] = self.token.value
-                # fmt: off
-                message = (
-                    f"CTF platfrom: {self.url}\n"
-                    f"Invite link: {self.invite.value}\n" if self.invite.value else ""
-                    "```yaml\n"
-                    f"Username: {self.username.value}\n"
-                    f"Password: {self.password.value}\n" if self.password.value else ""
-                    f"Token: {self.token.value}\n" if self.token.value else ""
-                    "```"
-                )
-                # fmt: on
+                lines = [
+                    f"CTF platfrom: {self.url}",
+                    f"Invite link: {self.invite.value}" if self.invite.value else None,
+                    "```yaml",
+                    f"Username: {self.username.value}",
+                    f"Password: {self.password.value}" if self.password.value else None,
+                    f"Token: {self.token.value}" if self.token.value else None,
+                    "```",
+                ]
+                message = "\n".join(line for line in lines if line is not None)
 
         ctf["credentials"]["message"] = message
         MONGO[DBNAME][CTF_COLLECTION].update_one(
