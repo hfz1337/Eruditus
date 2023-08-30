@@ -649,11 +649,12 @@ class Eruditus(discord.Client):
 
                 files: List[str] = list()
                 for file in challenge.files:
-                    file_str: str = file.url
                     if file.name is not None:
-                        file_str += f" | Name: {file.name}"
+                        hyperlink = f"[{file.name}]({file.url})"
+                    else:
+                        hyperlink = file.url
 
-                    files.append(file_str)
+                    files.append(hyperlink)
 
                 files_str = "No files."
                 if len(files) > 0:
