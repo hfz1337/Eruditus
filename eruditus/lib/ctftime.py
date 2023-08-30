@@ -3,6 +3,7 @@ from typing import Generator
 
 import aiohttp
 from bs4 import BeautifulSoup
+
 from config import CTFTIME_URL, USER_AGENT
 from lib.util import truncate
 

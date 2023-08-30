@@ -5,6 +5,7 @@ from binascii import hexlify, unhexlify
 
 import discord
 from discord import app_commands
+
 from lib.types import EncodingOperationMode
 
 

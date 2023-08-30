@@ -8,8 +8,10 @@ from datetime import datetime, timedelta
 from typing import List, Union
 
 import aiohttp
-import config
 import discord
+from discord.ext import tasks
+
+import config
 from app_commands.bookmark import Bookmark
 from app_commands.chatgpt import ChatGPT
 from app_commands.cipher import Cipher
@@ -35,7 +37,6 @@ from config import (
     TEAM_NAME,
     USER_AGENT,
 )
-from discord.ext import tasks
 from lib.ctftime import ctftime_date_to_datetime, scrape_event_info
 from lib.platforms import PlatformCTX, match_platform
 from lib.util import (

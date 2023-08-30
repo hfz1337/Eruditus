@@ -2,6 +2,7 @@ from io import BytesIO
 
 import aiohttp
 import discord
+
 from config import MAX_CONTENT_SIZE, OPENAI_API_KEY, OPENAI_GPT_MODEL, OPENAI_URL
 
 

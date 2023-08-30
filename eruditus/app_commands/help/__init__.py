@@ -1,6 +1,7 @@
 import discord
-from config import COMMIT_HASH, GUILD_ID
 from discord import app_commands
+
+from config import COMMIT_HASH, GUILD_ID
 
 
 class Help(app_commands.Command):

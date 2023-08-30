@@ -3,8 +3,9 @@ from datetime import datetime
 from typing import Dict
 
 import discord
-from config import CHALLENGE_COLLECTION, CTF_COLLECTION, DBNAME, MONGO
 from discord import HTTPException
+
+from config import CHALLENGE_COLLECTION, CTF_COLLECTION, DBNAME, MONGO
 from lib.platforms import PlatformCTX, match_platform
 from lib.platforms.abc import SubmittedFlagState
 from msg_components.buttons.workon import WorkonButton

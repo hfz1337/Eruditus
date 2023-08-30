@@ -5,6 +5,9 @@ from typing import List, Optional
 import aiohttp
 import discord
 from aiohttp.client_exceptions import ClientError
+from discord import HTTPException, app_commands
+from discord.app_commands import Choice
+
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
@@ -14,8 +17,6 @@ from config import (
     MONGO,
     TEAM_NAME,
 )
-from discord import HTTPException, app_commands
-from discord.app_commands import Choice
 from lib.platforms import Platform, PlatformCTX, match_platform
 from lib.types import ArchiveMode, CTFStatusMode, Permissions
 from lib.util import sanitize_channel_name

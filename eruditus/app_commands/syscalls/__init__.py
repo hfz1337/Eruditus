@@ -5,6 +5,7 @@ from typing import List, Union
 import discord
 from discord import app_commands
 from discord.app_commands import Choice
+
 from lib.types import CPUArchitecture
 
 

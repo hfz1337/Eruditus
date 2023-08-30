@@ -2,6 +2,7 @@ from typing import Optional
 
 import discord
 from discord import app_commands
+
 from lib.types import PromptPrivacy
 from msg_components.forms.chatgpt import ChatGPTForm
 

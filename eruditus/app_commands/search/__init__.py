@@ -2,8 +2,9 @@ from typing import Optional
 
 import aiohttp
 import discord
-from config import WRITEUP_INDEX_API
 from discord import app_commands
+
+from config import WRITEUP_INDEX_API
 
 
 class Search(app_commands.Command):

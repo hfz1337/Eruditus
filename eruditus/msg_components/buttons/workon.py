@@ -1,4 +1,5 @@
 import discord
+
 from config import CHALLENGE_COLLECTION, DBNAME, MONGO
 
 

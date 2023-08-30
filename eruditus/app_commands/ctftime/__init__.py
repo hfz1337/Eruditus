@@ -3,11 +3,12 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import aiohttp
-import config
 import discord
 import dotenv
-from config import CTFTIME_URL, GUILD_ID, USER_AGENT
 from discord import app_commands
+
+import config
+from config import CTFTIME_URL, GUILD_ID, USER_AGENT
 from lib.ctftime import (
     ctftime_date_to_datetime,
     scrape_current_events,
