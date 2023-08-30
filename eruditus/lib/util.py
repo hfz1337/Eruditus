@@ -110,6 +110,23 @@ def in_range(value: int, minimal: int, maximum: int) -> bool:
     return minimal <= value <= maximum
 
 
+def is_empty_string(value: Optional[str]) -> bool:
+    """Check whether a string is empty.
+
+    Args:
+        value: The string that is going to be checked.
+
+    Returns:
+        True if the string is empty or None, False otherwise.
+
+    Raises:
+        TypeError: if `value` is of type other than `None` or `str`.
+    """
+    if value is not None and not isinstance(value, str):
+        raise TypeError("Value must be either None or a string")
+    return value is None or value.strip() == ""
+
+
 async def deserialize_response(response: ClientResponse, model: Type[T]) -> Optional[T]:
     """Validate response status code and JSON content.
 

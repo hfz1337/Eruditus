@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum, auto, unique
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional
+from typing import AsyncIterator, Awaitable, Callable, Dict, List, Optional
 
 from pydantic import field_validator
 
@@ -291,8 +291,6 @@ class PlatformCTX:
     Methods:
         get_args: Get arguments from the set of custom arguments, optionally extending
             them with additional items.
-        validate_args: Validate an argument by checking its values against a set of
-            invalid values.
         is_authorized: Check if our session is valid for querying private sections of
             the platform.
         login: Login to the CTF platform and store the login session.
@@ -342,21 +340,6 @@ class PlatformCTX:
             result[k] = v
 
         return result
-
-    def validate_arg(self, key: str, *invalid_values: Any) -> bool:
-        """Validate an argument by checking its values against a set of invalid values.
-
-        Args:
-            key: The argument name.
-            invalid_values: A set of invalid values to check against.
-
-        Returns:
-            True if the argument is valid, False otherwise.
-        """
-        if key not in self.args:
-            return False
-
-        return self.args not in invalid_values
 
     def is_authorized(self) -> bool:
         """Check whether our session is authorized.
@@ -421,8 +404,6 @@ class PlatformABC(ABC):
     async def pull_scoreboard(
         cls, ctx: PlatformCTX, max_entries_count: int = 20
     ) -> AsyncIterator[Team]:
-        # @note: @es3n1n:
-        # https://stackoverflow.com/a/68911014
         yield Team(id="", name="")
 
     @classmethod
@@ -442,8 +423,6 @@ class PlatformABC(ABC):
     async def pull_challenge_solvers(
         cls, ctx: PlatformCTX, challenge_id: str, limit: int = 10
     ) -> AsyncIterator[ChallengeSolver]:
-        # @note: @es3n1n:
-        # https://stackoverflow.com/a/68911014
         yield ChallengeSolver(team=Team(id="", name=""), solved_at=datetime.utcnow())
 
     @classmethod

@@ -4,7 +4,7 @@ from typing import AsyncIterator, Dict
 import aiohttp
 from bs4 import BeautifulSoup
 
-from ..util import deserialize_response
+from ..util import deserialize_response, is_empty_string
 from ..validators.ctfd import (
     ChallengeResponse,
     ChallengesResponse,
@@ -251,13 +251,13 @@ class CTFd(PlatformABC):
              key with an explanatory message.
         """
         # Assert registration data
-        needed_values = ["username", "email", "password"]
-
-        for needed_value in needed_values:
-            if not ctx.validate_arg(needed_value, None, "", " "):
-                return RegistrationStatus(
-                    success=False, message="Not enough values in context"
-                )
+        if any(
+            is_empty_string(ctx.args.get(value))
+            for value in ("username", "email", "password")
+        ):
+            return RegistrationStatus(
+                success=False, message="Not enough values in context"
+            )
 
         # Get the nonce.
         async with aiohttp.request(
@@ -373,7 +373,7 @@ class CTFd(PlatformABC):
     async def get_challenge(
         cls, ctx: PlatformCTX, challenge_id: str
     ) -> Optional[Challenge]:
-        """Get challenge by its id
+        """Get a challenge by its ID.
 
         Args:
             ctx: Platform context.
@@ -400,7 +400,7 @@ class CTFd(PlatformABC):
 
     @classmethod
     async def get_me(cls, ctx: PlatformCTX) -> Optional[Team]:
-        """Get our team info
+        """Get our team info.
 
         Args:
             ctx: Platform context.
