@@ -1442,10 +1442,12 @@ class CTF(app_commands.Group):
             "```yaml\n"
             f"Username: {username}\n"
             f"Password: {password}\n"
-            f"Token: {result.token}\n"
-            f"Invite: {result.invite}\n"
-            "```"
         )
+
+        if result.invite is not None:
+            message += f"Invite: {result.invite}\n"
+
+        message += "```"
 
         await creds_channel.purge()
         await creds_channel.send(message)

@@ -250,14 +250,16 @@ class Eruditus(discord.Client):
                     guild.text_channels, id=ctf["guild_channels"]["credentials"]
                 )
                 message = (
-                    "```yaml\n"
                     f"CTF platform: {url}\n"
+                    "```yaml\n"
                     f"Username: {TEAM_NAME}\n"
                     f"Password: {password}\n"
-                    f"Token: {result.token}\n"
-                    f"Invite: {result.invite}\n"
-                    "```"
                 )
+
+                if result.invite is not None:
+                    message += f"Invite: {result.invite}\n"
+
+                message += "```"
 
                 await creds_channel.purge()
                 await creds_channel.send(message)
@@ -430,14 +432,16 @@ class Eruditus(discord.Client):
                     guild.text_channels, id=ctf["guild_channels"]["credentials"]
                 )
                 message = (
-                    "```yaml\n"
                     f"CTF platform: {url}\n"
+                    "```yaml\n"
                     f"Username: {TEAM_NAME}\n"
                     f"Password: {password}\n"
-                    f"Token: {result.token}\n"
-                    f"Invite: {result.invite}\n"
-                    "```"
                 )
+
+                if result.invite is not None:
+                    message += f"Invite: {result.invite}\n"
+
+                message += "```"
 
                 await creds_channel.purge()
                 await creds_channel.send(message)
