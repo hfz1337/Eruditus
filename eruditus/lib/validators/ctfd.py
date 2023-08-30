@@ -38,6 +38,11 @@ class SolvesResponse(BaseValidResponse):
 class CTFDChallenge(BaseModel):
     """CTFd challenge representation that could be returned from `/challenges/*`."""
 
+    class Hint(BaseModel):
+        id: int
+        cost: int
+        content: str
+
     # Required fields
     id: int
     type: str
@@ -62,7 +67,7 @@ class CTFDChallenge(BaseModel):
     typedata: Optional[dict] = None
     attempts: Optional[int] = None
     files: Optional[list[str]] = None
-    hints: Optional[list[str]] = None
+    hints: Optional[list[Hint]] = None
     view: Optional[str] = None
 
     def convert(self, url_stripped: str) -> Challenge:
