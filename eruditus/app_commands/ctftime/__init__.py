@@ -1,23 +1,19 @@
-from datetime import datetime, timedelta
-import aiohttp
 import io
-
-from discord import app_commands
-import discord
-
-import dotenv
-
-from lib.ctftime import (
-    scrape_current_events,
-    scrape_event_info,
-    ctftime_date_to_datetime,
-)
-from lib.util import get_local_time, truncate
-
+from datetime import datetime, timedelta
 from typing import Optional
 
-from config import CTFTIME_URL, USER_AGENT, GUILD_ID
+import aiohttp
 import config
+import discord
+import dotenv
+from config import CTFTIME_URL, GUILD_ID, USER_AGENT
+from discord import app_commands
+from lib.ctftime import (
+    ctftime_date_to_datetime,
+    scrape_current_events,
+    scrape_event_info,
+)
+from lib.util import get_local_time, truncate
 
 
 class CTFTime(app_commands.Group):

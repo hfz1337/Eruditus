@@ -1,32 +1,34 @@
 import os
-import dotenv
-
 from pathlib import Path
+
+import dotenv
 from pymongo import MongoClient
 
 dotenv.load_dotenv()
 
 
 def load_revision() -> str:
-    # @note: @es3n1n: Obtaining paths to the revision and .git
+    """Get the current revision.
+
+    Author:
+        es3n1n (refactoring and handling of multiple cases)
+
+    Notes:
+        We start by looking up the `.revision` file, if it's present, we use it.
+        Otherwise, we try using the `.git` folder by reading `refs/heads/master`.
+    """
     root_dir: Path = Path(__file__).parent
     dot_revision: Path = root_dir / ".revision"
 
-    # @note: @es3n1n: If there's a .revision file then we should
-    # use it
     if dot_revision.exists():
         return open(dot_revision).read()
 
-    # @note: @es3n1n: If not we should try to use the .git folder
-    # instead
     git_dir: Path = root_dir.parent / ".git"
 
-    # @note: @es3n1n: If head ref is available then we should use it
     head_ref: Path = git_dir / "refs" / "heads" / "master"
     if head_ref.exists():
         return open(head_ref).read()
 
-    # @note: @es3n1n: :shrug:
     return "unknown"
 
 

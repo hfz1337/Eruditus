@@ -1,13 +1,10 @@
-from base64 import b64encode, b64decode, b32encode, b32decode
-
-from binascii import hexlify, unhexlify
 import binascii
+import urllib
+from base64 import b32decode, b32encode, b64decode, b64encode
+from binascii import hexlify, unhexlify
 
 import discord
 from discord import app_commands
-
-import urllib
-
 from lib.types import EncodingOperationMode
 
 

@@ -1,11 +1,9 @@
 from typing import Optional
 
 import aiohttp
-
 import discord
-from discord import app_commands
-
 from config import WRITEUP_INDEX_API
+from discord import app_commands
 
 
 class Search(app_commands.Command):

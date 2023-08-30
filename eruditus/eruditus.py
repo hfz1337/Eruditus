@@ -1,47 +1,27 @@
-import traceback
-import logging
 import io
+import logging
 import os
 import re
-from typing import List
-
-from typing import Union
-
-import discord
-from discord.ext import tasks
-
+import traceback
+from binascii import hexlify
 from datetime import datetime, timedelta
+from typing import List, Union
 
 import aiohttp
-
-from binascii import hexlify
-from msg_components.buttons.workon import WorkonButton
-
-from app_commands.help import Help
-from app_commands.syscalls import Syscalls
-from app_commands.encoding import Encoding
-from app_commands.ctftime import CTFTime
+import config
+import discord
+from app_commands.bookmark import Bookmark
+from app_commands.chatgpt import ChatGPT
 from app_commands.cipher import Cipher
+from app_commands.ctf import CTF
+from app_commands.ctftime import CTFTime
+from app_commands.encoding import Encoding
+from app_commands.help import Help
 from app_commands.report import Report
 from app_commands.request import Request
 from app_commands.search import Search
-from app_commands.ctf import CTF
-from app_commands.chatgpt import ChatGPT
-from app_commands.bookmark import Bookmark
+from app_commands.syscalls import Syscalls
 from app_commands.takenote import TakeNote
-
-from lib.util import (
-    sanitize_channel_name,
-    setup_logger,
-    truncate,
-    get_local_time,
-    derive_colour,
-)
-from lib.ctftime import (
-    scrape_event_info,
-    ctftime_date_to_datetime,
-)
-from lib.platforms import match_platform, PlatformCTX
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
@@ -51,11 +31,21 @@ from config import (
     MAX_CONTENT_SIZE,
     MIN_PLAYERS,
     MONGO,
-    USER_AGENT,
-    TEAM_NAME,
     TEAM_EMAIL,
+    TEAM_NAME,
+    USER_AGENT,
 )
-import config
+from discord.ext import tasks
+from lib.ctftime import ctftime_date_to_datetime, scrape_event_info
+from lib.platforms import PlatformCTX, match_platform
+from lib.util import (
+    derive_colour,
+    get_local_time,
+    sanitize_channel_name,
+    setup_logger,
+    truncate,
+)
+from msg_components.buttons.workon import WorkonButton
 
 
 class Eruditus(discord.Client):

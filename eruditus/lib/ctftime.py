@@ -3,10 +3,8 @@ from typing import Generator
 
 import aiohttp
 from bs4 import BeautifulSoup
-
-from lib.util import truncate
-
 from config import CTFTIME_URL, USER_AGENT
+from lib.util import truncate
 
 
 def ctftime_date_to_datetime(ctftime_date: str) -> datetime:

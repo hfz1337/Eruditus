@@ -1,9 +1,7 @@
+from enum import Enum, EnumMeta
 from typing import Optional
 
-from enum import Enum, EnumMeta
-
 from .abc import PlatformCTX
-
 from .ctfd import CTFd
 from .rctf import RCTF
 

@@ -1,7 +1,6 @@
 import discord
-from discord import app_commands
-
 from config import BOOKMARK_CHANNEL
+from discord import app_commands
 
 
 class Bookmark(app_commands.ContextMenu):

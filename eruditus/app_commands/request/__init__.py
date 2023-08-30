@@ -1,6 +1,5 @@
 import discord
 from discord import app_commands
-
 from msg_components.forms.contact import FeatureRequestForm
 
 

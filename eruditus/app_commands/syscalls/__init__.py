@@ -1,12 +1,10 @@
 import os
 from collections import OrderedDict
+from typing import List, Union
 
 import discord
 from discord import app_commands
 from discord.app_commands import Choice
-
-from typing import Union, List
-
 from lib.types import CPUArchitecture
 
 

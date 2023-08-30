@@ -1,8 +1,7 @@
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
 import discord
-from config import MONGO, DBNAME, CTF_COLLECTION
-
+from config import CTF_COLLECTION, DBNAME, MONGO
 
 # @todo: @es3n1n: Ideally we should generate a modal form by supplying the args that we
 #  need w/o hard-coding them

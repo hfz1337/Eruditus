@@ -1,9 +1,8 @@
-import aiohttp
 from io import BytesIO
 
+import aiohttp
 import discord
-
-from config import OPENAI_URL, OPENAI_API_KEY, MAX_CONTENT_SIZE, OPENAI_GPT_MODEL
+from config import MAX_CONTENT_SIZE, OPENAI_API_KEY, OPENAI_GPT_MODEL, OPENAI_URL
 
 
 class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):

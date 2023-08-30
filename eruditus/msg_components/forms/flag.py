@@ -1,21 +1,13 @@
 import re
+from datetime import datetime
 from typing import Dict
 
 import discord
+from config import CHALLENGE_COLLECTION, CTF_COLLECTION, DBNAME, MONGO
 from discord import HTTPException
-
-from datetime import datetime
-
-from lib.platforms import match_platform
-from lib.platforms import PlatformCTX
+from lib.platforms import PlatformCTX, match_platform
 from lib.platforms.abc import SubmittedFlagState
 from msg_components.buttons.workon import WorkonButton
-from config import (
-    CHALLENGE_COLLECTION,
-    CTF_COLLECTION,
-    DBNAME,
-    MONGO,
-)
 
 
 class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):

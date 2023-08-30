@@ -1,26 +1,10 @@
 import re
-
-from typing import Optional, List
 from datetime import datetime
-from aiohttp.client_exceptions import ClientError
+from typing import List, Optional
+
 import aiohttp
-
 import discord
-from discord import HTTPException, app_commands
-from discord.app_commands import Choice
-
-from lib.util import sanitize_channel_name
-from lib.platforms import match_platform, PlatformCTX
-from lib.platforms import Platform
-
-from lib.types import ArchiveMode, CTFStatusMode, Permissions
-from msg_components.forms.flag import FlagSubmissionForm
-from msg_components.forms.credentials import (
-    CTFdCredentialsForm,
-    RCTFCredentialsForm,
-    DefaultCredentialsForm,
-)
-from msg_components.buttons.workon import WorkonButton
+from aiohttp.client_exceptions import ClientError
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
@@ -30,6 +14,18 @@ from config import (
     MONGO,
     TEAM_NAME,
 )
+from discord import HTTPException, app_commands
+from discord.app_commands import Choice
+from lib.platforms import Platform, PlatformCTX, match_platform
+from lib.types import ArchiveMode, CTFStatusMode, Permissions
+from lib.util import sanitize_channel_name
+from msg_components.buttons.workon import WorkonButton
+from msg_components.forms.credentials import (
+    CTFdCredentialsForm,
+    DefaultCredentialsForm,
+    RCTFCredentialsForm,
+)
+from msg_components.forms.flag import FlagSubmissionForm
 
 
 class CTF(app_commands.Group):

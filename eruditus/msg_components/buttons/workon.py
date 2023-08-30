@@ -1,6 +1,5 @@
 import discord
-
-from config import MONGO, DBNAME, CHALLENGE_COLLECTION
+from config import CHALLENGE_COLLECTION, DBNAME, MONGO
 
 
 class WorkonButton(discord.ui.View):
