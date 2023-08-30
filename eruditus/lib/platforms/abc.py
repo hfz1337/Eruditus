@@ -151,7 +151,7 @@ class Retries:
         unlimited.
     """
 
-    left: Optional[int] = None
+    left: int
     out_of: Optional[int] = None
 
 

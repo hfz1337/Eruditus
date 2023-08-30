@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import aiohttp
 import discord
@@ -35,7 +35,8 @@ class CTF(app_commands.Group):
     def __init__(self) -> None:
         super().__init__(name="ctf")
 
-    def _in_ctf_channel() -> bool:
+    @staticmethod
+    def _in_ctf_channel() -> Callable[..., bool]:
         """Wrapper function to check if a command was issued from a CTF channel."""
 
         async def predicate(interaction: discord.Interaction) -> bool:

@@ -90,8 +90,8 @@ async def scrape_event_info(event_id: int) -> dict:
                 method="get",
                 url=f"{CTFTIME_URL}/api/v1/events/{event_id}/",
                 headers={"User-Agent": USER_AGENT},
-            ) as response:
-                event_logo = (await response.json())["logo"]
+            ) as event_resp:
+                event_logo = (await event_resp.json())["logo"]
         else:
             event_logo = f"{CTFTIME_URL}/{event_logo}"
 

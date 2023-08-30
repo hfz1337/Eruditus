@@ -153,11 +153,15 @@ class CTFd(PlatformABC):
                 "ratelimited": SubmittedFlagState.RATE_LIMITED,
                 "incorrect": SubmittedFlagState.INCORRECT,
                 "correct": SubmittedFlagState.CORRECT,
+                "already_solved": SubmittedFlagState.ALREADY_SUBMITTED,
             }
             state = rules.get(data.data.status.lower(), SubmittedFlagState.UNKNOWN)
 
             # Build the result.
-            result = SubmittedFlag(state=state, retries=Retries(left=tries_left))
+            result = SubmittedFlag(
+                state=state,
+                retries=Retries(left=tries_left) if tries_left is not None else None,
+            )
 
             # Update `is_first_blood` if state is correct.
             await result.update_first_blood(
