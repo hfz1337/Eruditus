@@ -63,7 +63,7 @@ class ChallengeFile:
 
 @dataclass
 class Challenge:
-    """A class represeting a CTF challenge.
+    """A class representing a CTF challenge.
 
     Author:
         @es3n1n
@@ -71,7 +71,7 @@ class Challenge:
     Attributes:
         id: The challenge ID (could be either numerical or in another form such as a
             UUID).
-        tags: The
+        tags: The challenge tags.
         category: The challenge category.
         name: The challenge name.
         description: The challenge description.
@@ -224,7 +224,7 @@ class SubmittedFlag:
 
 @dataclass
 class Team:
-    """A class representing a CTF team information as returned by the CTF platform.
+    """A class representing CTF team information as returned by the CTF platform.
 
     Author:
         @es3n1n
@@ -283,7 +283,7 @@ class PlatformCTX:
         args: A custom set of arguments, such as `email`, `login`, `password`, `token`,
             and so on. None of these are required by default and everything should be
             checked within the platform itself.
-        session: The session object for accessing private sections of platform.
+        session: The session object for accessing private sections of a platform.
 
     Properties:
         url_stripped: Return the base URL without a trailing slash.
