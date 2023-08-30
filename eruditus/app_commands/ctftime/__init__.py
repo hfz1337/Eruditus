@@ -238,6 +238,7 @@ class CTFTime(app_commands.Group):
                             f"{event_info['website']}",
                             max_len=100,
                         ),
+                        "privacy_level": discord.PrivacyLevel.guild_only,
                     }
 
                     # In case the event was already scheduled, we update it, otherwise
@@ -251,7 +252,7 @@ class CTFTime(app_commands.Group):
                     else:
                         await guild.create_scheduled_event(**parameters)
 
-        await interaction.followup.send("✅ Done pulling events")
+        await interaction.followup.send("✅ Done pulling events", ephemeral=True)
 
     @app_commands.checks.has_permissions(manage_channels=True)
     @app_commands.command()
