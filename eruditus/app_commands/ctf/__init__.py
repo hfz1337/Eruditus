@@ -1375,7 +1375,9 @@ class CTF(app_commands.Group):
             if scheduled_event.name == ctf["name"]:
                 break
         else:
-            await interaction.followup.send("🏁 This CTF has ended.")
+            await interaction.followup.send(
+                "🏁 This CTF has ended or we don't know its end time."
+            )
             return
 
         await interaction.followup.send(
