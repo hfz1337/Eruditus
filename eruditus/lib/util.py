@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime, timezone
 from hashlib import md5
@@ -154,4 +155,9 @@ async def deserialize_response(response: ClientResponse, model: Type[T]) -> Opti
     try:
         return TypeAdapter(model).validate_python(response_json)
     except ValidationError:
+        Logger.warn(
+            "Could not validate response data using the %s model:\n%s",
+            model.__name__,
+            json.dumps(response_json, indent=2),
+        )
         return None
