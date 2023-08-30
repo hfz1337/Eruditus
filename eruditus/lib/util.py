@@ -154,10 +154,11 @@ async def deserialize_response(response: ClientResponse, model: Type[T]) -> Opti
 
     try:
         return TypeAdapter(model).validate_python(response_json)
-    except ValidationError:
-        Logger.warn(
-            "Could not validate response data using the %s model:\n%s",
+    except ValidationError as e:
+        logging.getLogger("validator").warning(
+            "Could not validate response data using the %s model:\n%s\nErrors - %s",
             model.__name__,
             json.dumps(response_json, indent=2),
+            str(e),
         )
         return None
