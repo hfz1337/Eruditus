@@ -421,7 +421,9 @@ class PlatformABC(ABC):
     async def pull_scoreboard(
         cls, ctx: PlatformCTX, max_entries_count: int = 20
     ) -> AsyncIterator[Team]:
-        pass
+        # @note: @es3n1n:
+        # https://stackoverflow.com/a/68911014
+        yield Team(id="", name="")
 
     @classmethod
     @abstractmethod
@@ -440,7 +442,9 @@ class PlatformABC(ABC):
     async def pull_challenge_solvers(
         cls, ctx: PlatformCTX, challenge_id: str, limit: int = 10
     ) -> AsyncIterator[ChallengeSolver]:
-        pass
+        # @note: @es3n1n:
+        # https://stackoverflow.com/a/68911014
+        yield ChallengeSolver(team=Team(id="", name=""), solved_at=datetime.utcnow())
 
     @classmethod
     @abstractmethod
