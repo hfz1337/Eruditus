@@ -1493,7 +1493,7 @@ class CTF(app_commands.Group):
                     },
                 )
             case Platform.UNKNOWN:
-                interaction.followup.send(
+                await interaction.followup.send(
                     "Invalid URL set for this CTF, or platform isn't supported."
                 )
                 return
