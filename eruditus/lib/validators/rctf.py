@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, field_validator
 
-from ..platforms.abc import Challenge, ChallengeFile, ChallengeSolver, Team
+from lib.platforms.abc import Challenge, ChallengeFile, ChallengeSolver, Team
 
 
 class BaseRCTFResponse(BaseModel):

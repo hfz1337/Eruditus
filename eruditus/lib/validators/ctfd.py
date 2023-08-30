@@ -3,7 +3,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, field_validator
 
-from ..platforms.abc import Challenge, ChallengeFile, ChallengeSolver, Team
+from lib.platforms.abc import Challenge, ChallengeFile, ChallengeSolver, Team
+from lib.util import extract_filename_from_url
 
 
 class BaseValidResponse(BaseModel):
@@ -80,7 +81,12 @@ class CTFDChallenge(BaseModel):
             name=self.name,
             description=self.description,
             value=self.value,
-            files=[ChallengeFile(url=f"{url_stripped}/{x}") for x in self.files]
+            files=[
+                ChallengeFile(
+                    url=f"{url_stripped}/{x}", name=extract_filename_from_url(x)
+                )
+                for x in self.files
+            ]
             if self.files is not None
             else None,
             connection_info=self.connection_info,

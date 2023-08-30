@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+import urllib.parse
 from datetime import datetime, timezone
 from hashlib import md5
 from logging import Logger
@@ -126,6 +128,18 @@ def is_empty_string(value: Optional[str]) -> bool:
     if value is not None and not isinstance(value, str):
         raise TypeError("Value must be either None or a string")
     return value is None or value.strip() == ""
+
+
+def extract_filename_from_url(url: str) -> str:
+    """Extract a filename from a URL.
+
+    Args:
+        The URL to extract the filename from.
+
+    Returns:
+        The filename.
+    """
+    return os.path.basename(urllib.parse.urlparse(url).path)
 
 
 async def deserialize_response(response: ClientResponse, model: Type[T]) -> Optional[T]:

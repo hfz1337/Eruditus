@@ -1,9 +1,9 @@
 from enum import Enum, EnumMeta
 from typing import Optional
 
-from .abc import PlatformABC, PlatformCTX
-from .ctfd import CTFd
-from .rctf import RCTF
+from lib.platforms.abc import PlatformABC, PlatformCTX
+from lib.platforms.ctfd import CTFd
+from lib.platforms.rctf import RCTF
 
 
 class PlatformMeta(EnumMeta):

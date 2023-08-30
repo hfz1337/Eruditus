@@ -2,16 +2,7 @@ from typing import AsyncIterator, Dict
 
 import aiohttp
 
-from ..util import deserialize_response, is_empty_string
-from ..validators.rctf import (
-    AuthResponse,
-    ChallengesReponse,
-    LeaderboardResponse,
-    SolvesResponse,
-    SubmissionResponse,
-    UserResponse,
-)
-from .abc import (
+from lib.platforms.abc import (
     Challenge,
     ChallengeSolver,
     Optional,
@@ -22,6 +13,15 @@ from .abc import (
     SubmittedFlag,
     SubmittedFlagState,
     Team,
+)
+from lib.util import deserialize_response, is_empty_string
+from lib.validators.rctf import (
+    AuthResponse,
+    ChallengesReponse,
+    LeaderboardResponse,
+    SolvesResponse,
+    SubmissionResponse,
+    UserResponse,
 )
 
 

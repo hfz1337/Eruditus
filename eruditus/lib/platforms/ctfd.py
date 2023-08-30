@@ -4,16 +4,7 @@ from typing import AsyncIterator, Dict
 import aiohttp
 from bs4 import BeautifulSoup
 
-from ..util import deserialize_response, is_empty_string
-from ..validators.ctfd import (
-    ChallengeResponse,
-    ChallengesResponse,
-    ScoreboardResponse,
-    SolvesResponse,
-    SubmissionResponse,
-    UserResponse,
-)
-from .abc import (
+from lib.platforms.abc import (
     Challenge,
     ChallengeSolver,
     Optional,
@@ -25,6 +16,15 @@ from .abc import (
     SubmittedFlag,
     SubmittedFlagState,
     Team,
+)
+from lib.util import deserialize_response, is_empty_string
+from lib.validators.ctfd import (
+    ChallengeResponse,
+    ChallengesResponse,
+    ScoreboardResponse,
+    SolvesResponse,
+    SubmissionResponse,
+    UserResponse,
 )
 
 
@@ -50,7 +50,7 @@ class CTFd(PlatformABC):
         """Login to the CTFd platform.
 
         Args:
-            ctx: Context
+            ctx: Platform context.
 
         Returns:
             A session object
@@ -178,7 +178,7 @@ class CTFd(PlatformABC):
         """Pull new challenges from the CTFd platform.
 
         Args:
-            ctx: Context
+            ctx: Platform context.
 
         Yields:
             A dictionary representing information about the challenge.
@@ -216,7 +216,7 @@ class CTFd(PlatformABC):
         """Get scoreboard from the CTFd platform.
 
         Args:
-            ctx: Context data
+            ctx: Platform context.
             max_entries_count: Max entries count
 
         Returns:
