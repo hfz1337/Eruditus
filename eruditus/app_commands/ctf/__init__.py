@@ -21,11 +21,7 @@ from lib.platforms import Platform, PlatformCTX, match_platform
 from lib.types import ArchiveMode, CTFStatusMode, Permissions
 from lib.util import sanitize_channel_name
 from msg_components.buttons.workon import WorkonButton
-from msg_components.forms.credentials import (
-    CTFdCredentialsForm,
-    DefaultCredentialsForm,
-    RCTFCredentialsForm,
-)
+from msg_components.forms.credentials import CredentialsForm
 from msg_components.forms.flag import FlagSubmissionForm
 
 
@@ -1205,7 +1201,7 @@ class CTF(app_commands.Group):
 
         Args:
             interaction: The interaction that triggered this command.
-            url: URL of the CTF platform.
+            url: Base URL of the CTF platform.
         """
         ctx = PlatformCTX.from_credentials({"url": url})
         try:
@@ -1219,11 +1215,71 @@ class CTF(app_commands.Group):
 
         match Platform(platform):
             case Platform.CTFd:
-                await interaction.response.send_modal(CTFdCredentialsForm(url=url))
+                form = CredentialsForm(
+                    url=url,
+                    platform=Platform.CTFd,
+                    username={
+                        "label": "Username",
+                        "style": discord.TextStyle.short,
+                        "placeholder": "Enter your username...",
+                        "required": True,
+                        "max_length": 128,
+                    },
+                    password={
+                        "label": "Password",
+                        "style": discord.TextStyle.short,
+                        "placeholder": "Enter your password...",
+                        "required": True,
+                        "max_length": 128,
+                    },
+                )
             case Platform.RCTF:
-                await interaction.response.send_modal(RCTFCredentialsForm(url=url))
+                form = CredentialsForm(
+                    url=url,
+                    platform=Platform.RCTF,
+                    invite={
+                        "label": "rCTF invite link",
+                        "style": discord.TextStyle.short,
+                        "placeholder": "https://rctf.example.com/login?token=<token>",
+                        "required": True,
+                        "max_length": 128,
+                    },
+                )
             case _:
-                await interaction.response.send_modal(DefaultCredentialsForm(url=url))
+                form = CredentialsForm(
+                    url=url,
+                    platform=None,
+                    username={
+                        "label": "Username",
+                        "style": discord.TextStyle.short,
+                        "placeholder": "Enter your username...",
+                        "required": True,
+                        "max_length": 128,
+                    },
+                    password={
+                        "label": "Password",
+                        "style": discord.TextStyle.short,
+                        "placeholder": "Enter your password...",
+                        "required": False,
+                        "max_length": 128,
+                    },
+                    invite={
+                        "label": "Invite link",
+                        "style": discord.TextStyle.short,
+                        "placeholder": "Enter your team invite URL...",
+                        "required": False,
+                        "max_length": 128,
+                    },
+                    token={
+                        "label": "Token",
+                        "style": discord.TextStyle.short,
+                        "placeholder": "Enter your team token...",
+                        "required": False,
+                        "max_length": 128,
+                    },
+                )
+
+        await interaction.response.send_modal(form)
 
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
@@ -1237,26 +1293,12 @@ class CTF(app_commands.Group):
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
-        url = ctf["credentials"]["url"]
-        username = ctf["credentials"]["username"]
-        password = ctf["credentials"]["password"]
-        team_token = ctf["credentials"].get("teamToken", None)
-
-        if url is None:
+        if (message := ctf["credentials"].get("message")) is None:
             await interaction.response.send_message(
                 "No credentials set for this CTF.", ephemeral=True
             )
-        else:
-            message = (
-                f"CTF platform: {url}\n"
-                "```yaml\n"
-                f"Username: {username}\n"
-                f"Password: {password}\n"
-                f"Team invite: {team_token}\n"
-                "```"
-            )
-
-            await interaction.response.send_message(message)
+            return
+        await interaction.response.send_message(message)
 
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()

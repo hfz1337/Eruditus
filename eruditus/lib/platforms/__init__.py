@@ -9,12 +9,14 @@ from .rctf import RCTF
 class PlatformMeta(EnumMeta):
     def __iter__(cls):
         for platform in super().__iter__():
-            yield platform.value
+            if platform.value:
+                yield platform.value
 
 
 class Platform(Enum, metaclass=PlatformMeta):
     CTFd = CTFd
     RCTF = RCTF
+    UNKNOWN = None
 
 
 async def match_platform(ctx: PlatformCTX) -> Optional[PlatformABC]:
