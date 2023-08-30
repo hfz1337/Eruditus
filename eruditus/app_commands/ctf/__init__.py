@@ -1207,6 +1207,12 @@ class CTF(app_commands.Group):
         ctx = PlatformCTX(base_url=url)
         try:
             platform = await match_platform(ctx)
+        except aiohttp.client_exceptions.InvalidURL:
+            await interaction.response.send_message(
+                "The provided URL was invalid.",
+                ephemeral=True,
+            )
+            return
         except ClientError:
             await interaction.response.send_message(
                 "Could not communicate with the CTF platform, please try again.",
@@ -1346,7 +1352,7 @@ class CTF(app_commands.Group):
         ctx: PlatformCTX = PlatformCTX.from_credentials(ctf["credentials"])
         platform = await match_platform(ctx)
         if not platform:
-            interaction.followup.send(
+            await interaction.followup.send(
                 "Invalid URL set for this CTF, or platform isn't supported."
             )
             return
@@ -1354,7 +1360,16 @@ class CTF(app_commands.Group):
         try:
             teams = [x async for x in platform.pull_scoreboard(ctx)]
         except aiohttp.client_exceptions.InvalidURL:
-            interaction.followup.send("Invalid URL set for this CTF.")
+            await interaction.followup.send(
+                "Invalid URL set for this CTF.",
+                ephemeral=True,
+            )
+            return
+        except ClientError:
+            await interaction.followup.send(
+                "Could not communicate with the CTF platform, please try again.",
+                ephemeral=True,
+            )
             return
 
         if not teams:
@@ -1444,7 +1459,20 @@ class CTF(app_commands.Group):
             email: Email to register with.
         """
         ctx: PlatformCTX = PlatformCTX(base_url=url)
-        platform = await match_platform(ctx)
+        try:
+            platform = await match_platform(ctx)
+        except aiohttp.client_exceptions.InvalidURL:
+            await interaction.response.send_message(
+                "The provided URL was invalid.",
+                ephemeral=True,
+            )
+            return
+        except ClientError:
+            await interaction.response.send_message(
+                "Could not communicate with the CTF platform, please try again.",
+                ephemeral=True,
+            )
+            return
 
         match Platform(platform):
             case Platform.CTFd:

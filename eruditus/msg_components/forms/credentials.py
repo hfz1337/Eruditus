@@ -48,6 +48,7 @@ class CredentialsForm(discord.ui.Modal, title="Add CTF credentials"):
 
             case Platform.CTFd:
                 credentials = {
+                    "url": self.url,
                     "username": self.username.value,
                     "password": self.password.value,
                     "_message": (
@@ -69,6 +70,7 @@ class CredentialsForm(discord.ui.Modal, title="Add CTF credentials"):
                     "```",
                 ]
                 credentials = {
+                    "url": self.url,
                     "username": self.username.value,
                     "password": self.password.value,
                     "invite": self.invite.value,
