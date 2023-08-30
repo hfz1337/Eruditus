@@ -1,25 +1,25 @@
-from abc import ABC
-from abc import abstractmethod
-from asyncio import sleep
-from dataclasses import dataclass
-from dataclasses import field
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from datetime import datetime
-from enum import IntEnum
-from enum import auto
-from enum import unique
-from typing import Any
-from typing import Dict
-from typing import Generator
-from typing import List
-from typing import Optional
+from enum import IntEnum, auto, unique
+from typing import Any, Callable, Dict, Generator, List, Optional
 
 
-# @todo: @es3n1n: move the dataclasses outside of this file
-
-
-# A session representation, contains stuff like cookies
 @dataclass
 class Session:
+    """A session representation.
+
+    Author:
+        @es3n1n
+
+    Attributes:
+        token: The authorization token.
+        cookies: The session cookies.
+
+    Methods:
+        validate: Check the validity of this session.
+    """
+
     token: Optional[str] = None
     cookies: Dict[str, str] = field(default_factory=dict)
 
@@ -27,47 +27,86 @@ class Session:
         return len(self.cookies) > 0 or self.token is not None
 
 
-# Challenge solver representation
 @dataclass
 class ChallengeSolver:
+    """A class for representing a challenge solver.
+
+    Author:
+        @es3n1n
+
+    Attributes:
+        team: The team that solved a challenge.
+        solved_at: The solve time.
+    """
+
     team: "Team"
     solved_at: datetime
 
 
-# Challenge attachment repr
 @dataclass
 class ChallengeFile:
+    """A class representing a challenge file attachment.
+
+    Author:
+        @es3n1n
+
+    Attributes:
+        url: The file attachment's URL.
+        name: The file name.
+    """
+
     url: str
     name: Optional[str] = None
 
 
-# A challenge representation, perhaps we should store some more info though
-# Please also note that some of these fields could be empty/unset depending
-# on the platform
 @dataclass
 class Challenge:
-    # Please note that we are storing id as str (bcs of UUIDs and others), so please
-    # don't forget to convert it to the right type before sending it to the platform
-    # backend
-    id: str
+    """A class represeting a CTF challenge.
 
-    tags: Optional[str] = None
+    Author:
+        @es3n1n
+
+    Attributes:
+        id: The challenge ID (could be either numerical or in another form such as a
+            UUID).
+        tags: The
+        category: The challenge category.
+        name: The challenge name.
+        description: The challenge description.
+        value: The challenge value (i.e., number of awarded points) at the time of
+            its creation (this may change if the scoring is dynamic).
+        files: A list of file attachments associated to this challenge.
+        connection_info: The challenge connection info.
+        solves: The number of solves on this challenge.
+        solved_by: List of solvers who solved this challenge.
+
+    Notes:
+        Some fields can remain unset depending on the platform.
+        Not all platforms use a numerical ID for the challenges, for example, rCTF uses
+        a UUID while CTFd prefers numerical identifiers. It is thus important to convert
+        the ID to an integer before using it with CTFd for example.
+    """
+
+    id: str
+    tags: Optional[List[str]] = None
     category: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
-
     value: Optional[int] = None
-
     files: Optional[List[ChallengeFile]] = None
     connection_info: Optional[str] = None
-
     solves: Optional[int] = None
     solved_by: Optional[List[ChallengeSolver]] = None
 
 
-# Submitted flag state representation
 @unique
 class SubmittedFlagState(IntEnum):
+    """An enum representing submitted flag states.
+
+    Author:
+        @es3n1n
+    """
+
     ALREADY_SUBMITTED = auto()
     INCORRECT = auto()
     CORRECT = auto()
@@ -80,122 +119,189 @@ class SubmittedFlagState(IntEnum):
     UNKNOWN = auto()
 
 
-# Retries representation
 @dataclass
 class Retries:
+    """A class representing submission retries.
+
+    Author:
+        @es3n1n
+
+    Attributes:
+        left: The number of retries left.
+        out_of: The maximum number of retries, or None if the number of retries is
+        unlimited.
+    """
+
     left: int
     out_of: Optional[int] = None
 
 
-# Submitted flag representation
 @dataclass
 class SubmittedFlag:
+    """A class representing a flag submission.
+
+    Author:
+        @es3n1n
+
+    Attributes:
+        state: The submitted flag state.
+        retries: Submission retries.
+        is_first_blood: Whether this was the first successful submission.
+    """
+
     state: SubmittedFlagState
     retries: Optional[Retries] = None
     is_first_blood: bool = False
 
-    # Automatically update `is_first_blood`
     async def update_first_blood(
         self,
         ctx: "PlatformCTX",
-        challenge_getter,
+        solvers_getter: Callable,
         challenge_id: str,
-        checker,
-        me: Optional["Team"] = None,
+        me: Optional["Team"],
     ) -> None:
-        # Skip invalid flags
+        """Update the `is_first_blood` attribute.
+
+        Arguments:
+            ctx: The platform context.
+            solvers_getter: A platform specific function for retrieving the solver for
+                a specific challenge.
+            challenge_id: The ID of the challenge for which we want to check if we got
+                first blood.
+            me: A representation of our team.
+        """
         if self.state != SubmittedFlagState.CORRECT:
-            self.is_first_blood = False
             return
 
-        # Querying challenge, also trying to get the solvers of this challenge
-        challenge: Optional[Challenge] = await challenge_getter(
-            ctx,
-            challenge_id,
-            me is not None,  # we only need `solved_by` field if we know our team info
-        )
-
-        # Challenge not found, huh?
-        if not challenge or (challenge.solves is None and challenge.solved_by is None):
-            self.is_first_blood = False
+        # Querying solvers of this challenge.
+        solvers_generator: Optional[
+            Generator[ChallengeSolver, None, None]
+        ] = await solvers_getter(ctx=ctx, challenge_id=challenge_id, limit=1)
+        if solvers_generator is None:
+            # Something went wrong.
             return
 
-        # Updating is_first_blood
-        self.is_first_blood = checker(challenge.solves)
-
-        # If there's no solver list
-        if challenge.solved_by is None:
+        first_solver: Optional[ChallengeSolver] = next(solvers_generator, None)
+        if first_solver is None:
+            # XXX (hfz) Something went wrong, unless there's caching at play and the
+            # platform is still returning an empty list. It doesn't apply to CTFd or
+            # rCTF, this might need a reimplementation if we encounter a platform with
+            # such behavior, until then, keeping the code simple is preferred.
+            # Note that this assumes the returned solvers are sorted by solve time.
             return
 
-        # Patiently waiting if solvers list is empty (waiting for da cache)
-        for _ in range(5):
-            if len(challenge.solved_by) > 0:
-                break
-
-            challenge = await challenge_getter(ctx, challenge_id, True)
-            await sleep(1)
-
-        # If it's still empty for some reason :shrug:
-        if challenge.solved_by is None or len(challenge.solved_by) == 0:
-            return
-
-        # Making sure that it's sorted (just in case)
-        challenge.solved_by.sort(key=lambda it: it.solved_at)
-
-        # Check if we're the first team that solved this challenge
-        self.is_first_blood = (
-            challenge.solved_by[0].team.id == me.id
-            or challenge.solved_by[0].team.name == me.name
-        )
+        self.is_first_blood = first_solver.team == me
 
 
-# Team representation
 @dataclass
 class Team:
+    """A class representing a CTF team information as returned by the CTF platform.
+
+    Author:
+        @es3n1n
+
+    Attributes:
+        id: The team ID.
+        name: The team name.
+        score: The current team score.
+        invite_token: The team invite token (only used for rCTF.)
+        solves: A list of challenges that this team solved (only used for rCTF).
+    """
+
     id: str
     name: str
     score: Optional[int] = None
-    invite_token: Optional[str] = None  # (used only for rCTF)
-    solves: Optional[List[Challenge]] = None  # (used only for rCTF)
+    invite_token: Optional[str] = None
+    solves: Optional[List[Challenge]] = None
+
+    def __eq__(self, other: "Team") -> bool:
+        return self.id == other.id or self.name == other.name
 
 
-# Registration status repr
 @dataclass
 class RegistrationStatus:
+    """A class representing a team registration status.
+
+    Author:
+        @es3n1n
+
+    Attributes:
+        success: Whether the registration was successful.
+        message: The response message returned by the CTF platform.
+        token: The authorization token returned by the CTF platform (only used for
+            rCTF).
+        invite: The team invite URL (only used for rCTF).
+    """
+
     success: bool
     message: Optional[str] = None
-    token: Optional[str] = None  # (used only for rCTF)
-    invite: Optional[str] = None  # (used only for rCTF)
+    token: Optional[str] = None
+    invite: Optional[str] = None
 
 
-# A basic context representation
 @dataclass
 class PlatformCTX:
-    # @note: @es3n1n: These are required fields
+    """A class representing a platform context.
+
+    Author:
+        @es3n1n
+
+    Attributes:
+        base_url: The platform base URL.
+        args: A custom set of arguments, such as `email`, `login`, `password`, `token`,
+            and so on. None of these are required by default and everything should be
+            checked within the platform itself.
+        session: The session object for accessing private sections of platform.
+
+    Properties:
+        url_stripped: Return the base URL without a trailing slash.
+
+    Methods:
+        get_args: Get arguments from the set of custom arguments, optionally extending
+            them with additional items.
+        validate_args: Validate an argument by checking its values against a set of
+            invalid values.
+        is_authorized: Check if our session is valid for querying private sections of
+            the platform.
+        login: Login to the CTF platform and store the login session.
+
+    Notes:
+        Ideally we should have automatic validation for the attributes (e.g., Pydantic).
+    """
+
     base_url: str
-
-    # @note: @es3n1n: A custom set of arguments, such as:
-    # * email
-    # * login
-    # * password
-    # * token
-    # * etc
-    # None of these are required by default and everything should be
-    # checked within the platform itself
-    #
-    # @todo: @es3n1n: ideally we should have some stuff that would validate it
-    # automatically (pydantic?)
     args: Dict[str, str] = field(default_factory=dict)
-
-    # @note: @es3n1n: Session that would be updated within the function
     session: Optional[Session] = None
 
-    # @note: @es3n1n: Some set of utils
     @property
     def url_stripped(self) -> str:
         return self.base_url.strip("/")
 
+    @staticmethod
+    def from_credentials(credentials: Dict[str, str]) -> "PlatformCTX":
+        """Custom constructor that initializes a class instance from a set of
+        credentials.
+
+        Args:
+            credentials: A dictionary of credentials. It must contain at least at the
+            URL of the CTF platform.
+        """
+        return PlatformCTX(
+            base_url=credentials["url"],
+            args=credentials,
+        )
+
     def get_args(self, *required_fields: str, **kwargs: str) -> Dict[str, str]:
+        """Get arguments from the set of custom arguments (i.e., self.args), optionally
+        extending them with additional items.
+
+        Args:
+            required_fields: A set of required field names.
+            kwargs: Additional (key, value) pairs to include in the result.
+
+        Returns:
+            A dictionary of arguments (e.g., email, password, etc.).
+        """
         result: Dict[str, str] = {
             key: value for key, value in self.args.items() if key in required_fields
         }
@@ -205,37 +311,57 @@ class PlatformCTX:
 
         return result
 
-    # Returns true if valid
     def validate_arg(self, key: str, *invalid_values: Any) -> bool:
+        """Validate an argument by checking its values against a set of invalid values.
+
+        Args:
+            key: The argument name.
+            invalid_values: A set of invalid values to check against.
+
+        Returns:
+            True if the argument is valid, False otherwise.
+        """
         if key not in self.args:
             return False
 
         return self.args not in invalid_values
 
     def is_authorized(self) -> bool:
+        """Check whether our session is authorized.
+
+        Returns:
+            True if our session is authorized, False otherwise.
+        """
         return self.session is not None and self.session.validate()
 
-    async def login(self, cb) -> bool:
+    async def login(self, login_routine: Callable) -> bool:
+        """Attempt to login to the CTF platform using the platform-specific login
+        routine if the current session is unauthorized.
+
+        Args:
+            login_routine: The function that handles the login routine.
+
+        Returns:
+            A boolean representing whether we've been authorized.
+        """
         if not self.is_authorized():
-            self.session = await cb(self)
+            self.session = await login_routine(self)
 
         return self.is_authorized()
 
-    # Custom ctor
-    @staticmethod
-    def from_credentials(credentials: Dict[str, str]) -> "PlatformCTX":
-        return PlatformCTX(
-            base_url=credentials["url"],
-            args=credentials,
-        )
 
-
-# Platform abstract interface
-# @note: @es3n1n: if some of the methods returns None instead of
-# the result that means that there's something that went horribly
-# wrong within the communication logic, might be worth to try again
-#
 class PlatformABC(ABC):
+    """An abstract base class representing a CTF platform.
+
+    Author:
+        @es3n1n
+
+    Notes:
+        If some of the methods return None instead of the result, it means that
+        something went horribly wrong within the communication logic, it might be worth
+        to try again.
+    """
+
     @classmethod
     @abstractmethod
     async def match_platform(cls, ctx: PlatformCTX) -> bool:

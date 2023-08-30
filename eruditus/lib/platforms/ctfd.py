@@ -1,24 +1,31 @@
 import re
-from typing import Any
-from typing import Dict
-from typing import Generator
-from typing import List
+from typing import Any, Dict, Generator, List
 
 import aiohttp
 from bs4 import BeautifulSoup
 
-from .abc import Challenge
-from .abc import ChallengeFile
-from .abc import Optional
-from .abc import PlatformABC
-from .abc import PlatformCTX
-from .abc import RegistrationStatus
-from .abc import Retries
-from .abc import Session
-from .abc import SubmittedFlag
-from .abc import SubmittedFlagState
-from .abc import Team
 from ..util import validate_response
+from ..validators.ctfd import (
+    ChallengeResponse,
+    ChallengesResponse,
+    ScoreboardResponse,
+    SolvesResponse,
+    SubmissionResponse,
+)
+from .abc import (
+    Challenge,
+    ChallengeFile,
+    ChallengeSolver,
+    Optional,
+    PlatformABC,
+    PlatformCTX,
+    RegistrationStatus,
+    Retries,
+    Session,
+    SubmittedFlag,
+    SubmittedFlagState,
+    Team,
+)
 
 
 def parse_team(data: Dict[str, Any]) -> Team:
@@ -33,15 +40,15 @@ def parse_challenge(data: Dict[str, Any], ctx: PlatformCTX) -> Challenge:
         files.append(ChallengeFile(url=f"{ctx.url_stripped}/{file}", name=None))
 
     return Challenge(
-        id=str(data.get("id")),
-        name=data.get("name"),
-        value=int(data.get("value")),
-        description=data.get("description"),
+        id=str(data["id"]),
+        name=data["name"],
+        value=int(data["value"]),
+        description=data["description"],
         connection_info=data.get("connection_info"),
-        category=data.get("category"),
-        tags=data.get("tags"),
+        category=data["category"],
+        tags=data["tags"],
         files=files,
-        solves=data.get("solves"),
+        solves=data["solves"],
     )
 
 
@@ -118,9 +125,9 @@ class CTFd(PlatformABC):
         blood in case it succeeds.
 
         Args:
-            ctx: Context
-            challenge_id: Challenge id
-            flag: Flag of the challenge.
+            ctx: Platform context.
+            challenge_id: Challenge ID.
+            flag: Flag to submit.
 
         Returns:
             A SubmittedFlag object containing the status message and a boolean
@@ -152,69 +159,37 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             headers={"CSRF-Token": csrf_nonce},
         ) as response:
-            # Validating response
-            if not await validate_response(response, success=True, data=["status"]):
+            if not await validate_response(response, validator=SubmissionResponse):
                 return None
 
-            # Obtaining json
             response_json: Dict[str, Any] = await response.json()
 
-            # Parsing retries left from the message
-            def parse_retries() -> Optional[Retries]:
-                # No message? huh?
-                if "message" not in response_json["data"]:
-                    return None
+            # Parse the number of retries left (for challenges with limited attempts).
+            matched = re.match(
+                r"Incorrect. You have (?P<tries>\d+) tries remaining.",
+                response_json["data"]["message"],
+            )
+            if matched is None:
+                tries_left = None
+            else:
+                tries_left = int(matched.group("tries"))
 
-                # Trying to match the message
-                # @ref:
-                # https://github.com/CTFd/CTFd/blob/master/CTFd/api/v1/challenges.py#L672
-                message: str = response_json["data"]["message"]
-                if "You have" not in message or "remaining." not in message:
-                    return None
-
-                # Split the message
-                # @todo: @es3n1n: add regex
-                arguments: List[str] = message.split("You have", maxsplit=1)
-                if len(arguments) != 2:
-                    return None
-
-                # Extracting the digit from this mess
-                # @fixme: @es3n1n: add regex
-                retries_left_str: str = arguments[1].strip().split(" ")[0].strip()
-                if not retries_left_str.isdigit():
-                    return None
-
-                # Yay
-                return Retries(left=int(retries_left_str))
-
-            # Matching flag state
-            def parse_flag_state() -> SubmittedFlagState:
-                # Obtaining the status str
-                status_str = str(response_json["data"]["status"]).lower()
-
-                # Lookup rules
-                rules: Dict[str, SubmittedFlagState] = {
-                    "paused".lower(): SubmittedFlagState.CTF_PAUSED,
-                    "ratelimited".lower(): SubmittedFlagState.RATE_LIMITED,
-                    "incorrect".lower(): SubmittedFlagState.INCORRECT,
-                    "correct".lower(): SubmittedFlagState.CORRECT,
-                }
-
-                # Unknown state O_o
-                if status_str not in rules:
-                    return SubmittedFlagState.UNKNOWN
-
-                return rules[status_str]
-
-            # Building result
-            result = SubmittedFlag(state=parse_flag_state(), retries=parse_retries())
-
-            # Update `is_first_blood` if state is correct
-            await result.update_first_blood(
-                ctx, cls.get_challenge, challenge_id, lambda solves: solves <= 1
+            # Parse the flag state.
+            rules: Dict[str, SubmittedFlagState] = {
+                "paused": SubmittedFlagState.CTF_PAUSED,
+                "ratelimited": SubmittedFlagState.RATE_LIMITED,
+                "incorrect": SubmittedFlagState.INCORRECT,
+                "correct": SubmittedFlagState.CORRECT,
+            }
+            state = rules.get(
+                response_json["data"]["status"].lower(), SubmittedFlagState.UNKNOWN
             )
 
-            # We are done here
+            # Build the result.
+            result = SubmittedFlag(state=state, retries=Retries(left=int(tries_left)))
+
+            # Update `is_first_blood` if state is correct.
+            await result.update_first_blood(ctx, cls.get_challenge, challenge_id)
             return result
 
     @classmethod
@@ -239,7 +214,7 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
-            if not await validate_response(response, "data", success=True):
+            if not await validate_response(response, validator=ChallengesResponse):
                 return
 
             # Obtaining json
@@ -272,18 +247,15 @@ class CTFd(PlatformABC):
         if not await ctx.login(cls.login):
             return
 
-        # Get scoreboard.
         async with aiohttp.request(
             method="get",
             url=f"{ctx.url_stripped}/api/v1/scoreboard",
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
-            # Validating response
-            if not await validate_response(response, success=True):
+            if not await validate_response(response, validator=ScoreboardResponse):
                 return
 
-            # Obtaining json
             response_json: Dict[str, Any] = await response.json()
 
             for team in response_json["data"][:max_entries_count]:
@@ -399,6 +371,28 @@ class CTFd(PlatformABC):
                 return RegistrationStatus(success=True)
 
     @classmethod
+    async def pull_challenge_solvers(
+        cls, ctx: PlatformCTX, challenge_id: str, limit: int = 10
+    ) -> Generator[ChallengeSolver, None, None]:
+        if not await ctx.login(cls.login):
+            return
+
+        async with aiohttp.request(
+            method="get",
+            url=f"{ctx.base_url}/api/v1/challenges/{challenge_id}/solves",
+            cookies=ctx.session.cookies,
+            allow_redirects=False,
+        ) as response:
+            if not await validate_response(response, validator=SolvesResponse):
+                return
+
+            response_json: Dict[str, Any] = await response.json()
+            solvers = response_json["data"]
+
+            for solver in solvers[: limit if limit != 0 else len(solvers)]:
+                yield solver
+
+    @classmethod
     async def get_challenge(
         cls, ctx: PlatformCTX, challenge_id: str, pull_solvers: bool = False
     ) -> Optional[Challenge]:
@@ -420,8 +414,7 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
-            # Validating response
-            if not await validate_response(response, success=True, data=["id"]):
+            if not await validate_response(response, validator=ChallengeResponse):
                 return None
 
             response_json: Dict[str, Any] = await response.json()

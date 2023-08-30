@@ -1,24 +1,31 @@
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import Generator
-from typing import List
+from typing import Any, Dict, Generator, List
 
 import aiohttp
+from pydantic import ValidationError
 
-from .abc import ChallengeSolver
-from .abc import ChallengeFile
-from .abc import Challenge
-from .abc import Optional
-from .abc import PlatformABC
-from .abc import PlatformCTX
-from .abc import RegistrationStatus
-from .abc import Session
-from .abc import SubmittedFlag
-from .abc import SubmittedFlagState
-from .abc import Team
 from ..util import validate_response
-from ..util import validate_response_json
+from ..validators.rctf import (
+    AuthResponse,
+    ChallengesReponse,
+    LeaderboardResponse,
+    SolvesResponse,
+    SubmissionResponse,
+    UserResponse,
+)
+from .abc import (
+    Challenge,
+    ChallengeFile,
+    ChallengeSolver,
+    Optional,
+    PlatformABC,
+    PlatformCTX,
+    RegistrationStatus,
+    Session,
+    SubmittedFlag,
+    SubmittedFlagState,
+    Team,
+)
 
 
 def parse_team(data: Dict[str, Any]) -> Team:
@@ -104,7 +111,7 @@ class RCTF(PlatformABC):
             allow_redirects=False,
         ) as response:
             # Validating response
-            if not await validate_response(response, "kind", "data"):
+            if not await validate_response(response, validator=AuthResponse):
                 return None
 
             # Obtaining json response
@@ -134,12 +141,12 @@ class RCTF(PlatformABC):
             json={"flag": flag},
             headers=generate_headers(ctx),
         ) as response:
-            # Validating request
-            if not await validate_response_json(response, "data", "kind"):
-                return None
-
-            # Obtaining json response
             response_json: Dict[str, Any] = await response.json()
+
+            try:
+                _ = SubmissionResponse(**response_json)
+            except ValidationError:
+                return None
 
             # Initializing result
             result: SubmittedFlag = SubmittedFlag(state=SubmittedFlagState.UNKNOWN)
@@ -165,7 +172,6 @@ class RCTF(PlatformABC):
                 ctx,
                 cls.get_challenge,
                 challenge_id,
-                lambda solves: solves <= 1,
                 await cls.get_me(ctx),
             )
 
@@ -186,7 +192,7 @@ class RCTF(PlatformABC):
             headers=generate_headers(ctx),
         ) as response:
             # Validating request
-            if not await validate_response(response, "data", kind="goodChallenges"):
+            if not await validate_response(response, validator=ChallengesReponse):
                 return
 
             # Obtaining json response
@@ -206,12 +212,11 @@ class RCTF(PlatformABC):
 
         async with aiohttp.request(
             method="get",
-            url=f"{ctx.url_stripped}/api/v1/leaderboard/now"
-            f"?limit={max_entries_count}&offset=0",
+            url=f"{ctx.url_stripped}/api/v1/leaderboard/now",
+            params={"limit": max_entries_count, "offset": 0},
             headers=generate_headers(ctx),
         ) as response:
-            # Validating request
-            if not await validate_response(response, "data", kind="goodLeaderboard"):
+            if not await validate_response(response, validator=LeaderboardResponse):
                 return
 
             # Obtaining json response
@@ -233,7 +238,7 @@ class RCTF(PlatformABC):
             headers=generate_headers(ctx),
         ) as response:
             # Validating request
-            if not await validate_response(response, "data", kind="goodUserData"):
+            if not await validate_response(response, validator=UserResponse):
                 return None
 
             # Obtaining json response
@@ -255,7 +260,7 @@ class RCTF(PlatformABC):
             allow_redirects=False,
         ) as response:
             # Validating response
-            if not await validate_response(response, "kind", "data"):
+            if not await validate_response(response, validator=AuthResponse):
                 return RegistrationStatus(
                     success=False,
                     message="Got an invalid response from rCTF register endpoint",
@@ -320,14 +325,12 @@ class RCTF(PlatformABC):
     ) -> Generator[ChallengeSolver, None, None]:
         async with aiohttp.request(
             method="get",
+            url=f"{ctx.url_stripped}/api/v1/challs/{challenge_id}/solves",
+            params={"limit": limit, "offset": 0},
             headers=generate_headers(ctx),
-            url=f"{ctx.url_stripped}/api/v1/challs/{challenge_id}/solves"
-            f"?limit={limit}&offset=0",
         ) as response:
             # Validating request
-            if not await validate_response(
-                response, "data", kind="goodChallengeSolves"
-            ):
+            if not await validate_response(response, validator=SolvesResponse):
                 return
 
             # Obtaining json response
@@ -341,8 +344,20 @@ class RCTF(PlatformABC):
     async def get_challenge(
         cls, ctx: PlatformCTX, challenge_id: str, pull_solvers: bool = False
     ) -> Optional[Challenge]:
-        # @note: @es3n1n: There's no single challenge getter in rCTF
-        # :shrug:
+        """Retrieve a challenge from the rCTF platform.
+
+        Args:
+            ctx: Platform context.
+            pull_solvers: Whether to pull teams who solved the challenge.
+
+        Returns:
+            Parsed challenge.
+
+        Notes:
+            Because rCTF doesn't have an API endpoint for fetching a single challenge
+            at a time, we need to request all challenges using the `/api/v1/challs`
+            endpoint and loop through them in order to fetch a specific challenge.
+        """
 
         # A util that would pull solvers if we need them
         async def proceed(result: Challenge) -> Challenge:
