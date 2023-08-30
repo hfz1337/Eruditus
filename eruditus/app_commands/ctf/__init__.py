@@ -23,6 +23,7 @@ from lib.util import sanitize_channel_name
 from msg_components.buttons.workon import WorkonButton
 from msg_components.forms.credentials import CredentialsForm
 from msg_components.forms.flag import FlagSubmissionForm
+from msg_components.forms.registration import RegistrationForm
 
 
 class CTF(app_commands.Group):
@@ -1203,7 +1204,7 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             url: Base URL of the CTF platform.
         """
-        ctx = PlatformCTX.from_credentials({"url": url})
+        ctx = PlatformCTX(base_url=url)
         try:
             platform = await match_platform(ctx)
         except ClientError:
@@ -1293,7 +1294,7 @@ class CTF(app_commands.Group):
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
-        if (message := ctf["credentials"].get("message")) is None:
+        if (message := ctf["credentials"].get("_message")) is None:
             await interaction.response.send_message(
                 "No credentials set for this CTF.", ephemeral=True
             )
@@ -1432,9 +1433,6 @@ class CTF(app_commands.Group):
         self,
         interaction: discord.Interaction,
         url: str,
-        username: str,
-        password: str,
-        email: str,
     ) -> None:
         """Register a team account in the platform.
 
@@ -1445,54 +1443,59 @@ class CTF(app_commands.Group):
             password: Password to register with (also the team password).
             email: Email to register with.
         """
-        await interaction.response.defer()
-
-        ctx: PlatformCTX = PlatformCTX(
-            base_url=url,
-            args={"username": username, "password": password, "email": email},
-        )
+        ctx: PlatformCTX = PlatformCTX(base_url=url)
         platform = await match_platform(ctx)
-        if not platform:
-            interaction.followup.send(
-                "Invalid URL set for this " "CTF, or platform isn't " "supported."
-            )
-            return
 
-        result = await platform.register(ctx)
-        if not result.success:
-            await interaction.followup.send(result.message)
-            return
+        match Platform(platform):
+            case Platform.CTFd:
+                form = RegistrationForm(
+                    url=url,
+                    platform=platform,
+                    username={
+                        "label": "Username",
+                        "style": discord.TextStyle.short,
+                        "placeholder": "Enter your username...",
+                        "required": True,
+                        "max_length": 128,
+                    },
+                    email={
+                        "label": "Email",
+                        "style": discord.TextStyle.short,
+                        "placeholder": "Enter your email...",
+                        "required": True,
+                        "max_length": 128,
+                    },
+                    password={
+                        "label": "Password",
+                        "style": discord.TextStyle.short,
+                        "placeholder": "Enter your password...",
+                        "required": True,
+                        "max_length": 128,
+                    },
+                )
+            case Platform.RCTF:
+                form = RegistrationForm(
+                    url=url,
+                    platform=platform,
+                    team={
+                        "label": "Team",
+                        "style": discord.TextStyle.short,
+                        "placeholder": "Enter your team name...",
+                        "required": True,
+                        "max_length": 128,
+                    },
+                    email={
+                        "label": "Email",
+                        "style": discord.TextStyle.short,
+                        "placeholder": "Enter your email...",
+                        "required": True,
+                        "max_length": 128,
+                    },
+                )
+            case Platform.UNKNOWN:
+                interaction.followup.send(
+                    "Invalid URL set for this CTF, or platform isn't supported."
+                )
+                return
 
-        # Add credentials.
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
-        ctf["credentials"]["url"] = url
-        ctf["credentials"]["username"] = username
-        ctf["credentials"]["password"] = password
-        ctf["credentials"]["token"] = result.token
-        ctf["credentials"]["teamToken"] = result.invite
-
-        MONGO[DBNAME][CTF_COLLECTION].update_one(
-            {"_id": ctf["_id"]},
-            {"$set": {"credentials": ctf["credentials"]}},
-        )
-
-        creds_channel = discord.utils.get(
-            interaction.guild.text_channels, id=ctf["guild_channels"]["credentials"]
-        )
-        message = (
-            f"CTF platform: {url}\n"
-            "```yaml\n"
-            f"Username: {username}\n"
-            f"Password: {password}\n"
-        )
-
-        if result.invite is not None:
-            message += f"Invite: {result.invite}\n"
-
-        message += "```"
-
-        await creds_channel.purge()
-        await creds_channel.send(message)
-        await interaction.followup.send(result.message or "Success")
+        await interaction.response.send_modal(form)

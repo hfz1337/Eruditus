@@ -189,7 +189,7 @@ class RCTF(PlatformABC):
     @classmethod
     async def register(cls, ctx: PlatformCTX) -> RegistrationStatus:
         # Assert registration data
-        if any(is_empty_string(ctx.args.get(value)) for value in ("username", "email")):
+        if any(is_empty_string(ctx.args.get(value)) for value in ("team", "email")):
             return RegistrationStatus(
                 success=False, message="Not enough values in context"
             )
@@ -199,7 +199,7 @@ class RCTF(PlatformABC):
             method="post",
             url=f"{ctx.url_stripped}/api/v1/auth/register",
             json={
-                "name": ctx.args.get("username"),
+                "name": ctx.args.get("team"),
                 "email": ctx.args.get("email"),
             },
             allow_redirects=False,
@@ -233,11 +233,9 @@ class RCTF(PlatformABC):
 
             # Obtain our team's object
             our_team: Optional[Team] = await cls.get_me(ctx)
-
-            # No team?
             if not our_team:
                 result.success = False
-                result.message = "No team object huh?"
+                result.message = "Couldn't retrieve our team information"
                 return result
 
             # Save the token

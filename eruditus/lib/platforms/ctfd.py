@@ -244,11 +244,11 @@ class CTFd(PlatformABC):
         """Registers an account in the CTFd platform.
 
         Args:
-            ctx: Context
+            ctx: Platform context.
 
         Returns:
-            A dictionary containing either a "success" or "error"
-             key with an explanatory message.
+            A dictionary containing either a "success" or "error" key with an
+            explanatory message.
         """
         # Assert registration data
         if any(
