@@ -33,6 +33,20 @@ and more.
 - Provides a utility for basic encoding schemes
 - Provides a utility for classic ciphers
 
+### Supported platforms
+As you already read this bot can interact with the CTF platforms, meaning that you can:
+- Submit your flags within the bot
+- Observe the leaderboard
+- Automatically parse challenges from the platform
+- Automatically create team accounts on the platform (or use already existing ones)
+- And many more
+
+Currently, Eruditus supports these platforms:
+- CTFd
+- rCTF
+
+_You can check out our [abstract interfaces](eruditus/lib/platforms/abc.py) if you wish to add support for a new platform_
+
 ## Usage
 Here's a list of the currently supported commands:
 ```
@@ -57,10 +71,10 @@ Here's a list of the currently supported commands:
 /ctf createchallenge                                 (Create a new challenge)
 /ctf renamechallenge                                 (Rename a challenge)
 /ctf deletechallenge                                 (Delete a challenge)
-/ctf pull                                            (Pull unsolved challenges from the CTFd platform)
-/ctf submit                                          (Submits a flag to CTFd)
+/ctf pull                                            (Pull unsolved challenges from the platform)
+/ctf submit                                          (Submit a flag to the platform)
 /ctf remaining                                       (Show remaining time for the CTF)
-/ctf register                                        (Register a CTFd account)
+/ctf register                                        (Register a team account in the platform)
 
 /syscalls                                            (Show information for a specific syscall)
 
@@ -90,7 +104,7 @@ Here's a list of the currently supported commands:
 3. Go to the **Bot** pane and add a bot for your application.
 4. Enable **Server Members Intent** and **Message Content Intent** under
 **Privileged Gateway Intents**.
-5. Put your configuration in the [.env](eruditus/.env) file.
+5. Put your configuration to the `eruditus/.env` file by using the [.env.example](eruditus/.env.example) template.
 6. Deploy the bot using `docker-compose up -d --build`.
 7. Go to the **OAuth2 URL Generator** pane, tick `bot` and `applications.commands`
 under the **Scopes** section, tick `Administrator` under the **Bot Permissions**

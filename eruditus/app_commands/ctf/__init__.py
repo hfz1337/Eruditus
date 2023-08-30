@@ -1390,7 +1390,7 @@ class CTF(app_commands.Group):
         password: str,
         email: str,
     ) -> None:
-        """Register team account in the platform.
+        """Register a team account in the platform.
 
         Args:
             interaction: The interaction that triggered this command.
