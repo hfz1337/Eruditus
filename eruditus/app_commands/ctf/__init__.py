@@ -1314,7 +1314,7 @@ class CTF(app_commands.Group):
             return
 
         if not teams:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "Failed to fetch the scoreboard.", ephemeral=True
             )
             return
