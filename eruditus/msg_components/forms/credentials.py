@@ -101,13 +101,13 @@ async def add_credentials_callback(
 
         if not session or not session.validate():
             await interaction.followup.send(
-                "❌ Unable authorize on the platform.", ephemeral=True
+                "❌ Unable to authorize on the platform.", ephemeral=True
             )
             return
 
         me = await self.platform.value.get_me(ctx)
         if me:
-            msg += f" Authorized as {me.name}"
+            msg += f" Authorized as `{me.name}`"
 
     # Add credentials.
     ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
