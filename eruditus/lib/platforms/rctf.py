@@ -213,7 +213,7 @@ class RCTF(PlatformABC):
                 )
 
             # If something went wrong
-            if data.is_not_good():
+            if data.is_not_good() or not data.data or not data.data.authToken:
                 return RegistrationStatus(success=False, message=data.message)
 
             # Build the result object
