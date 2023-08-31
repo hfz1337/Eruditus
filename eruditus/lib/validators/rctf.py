@@ -31,8 +31,8 @@ class RCTFChallenge(BaseModel):
 
     category: str
     name: str
-    points: int
-    solves: int
+    points: Optional[int]
+    solves: Optional[int]
     id: str
 
     # Optional vales that would be set only in `/challs` response
@@ -53,9 +53,9 @@ class RCTFChallenge(BaseModel):
             category=self.category,
             name=self.name,
             description=self.description,
-            value=self.points,
+            value=self.points if self.points is not None else 0,
             files=[x.convert() for x in self.files] if self.files is not None else None,
-            solves=self.solves,
+            solves=self.solves if self.solves is not None else 0,
         )
 
 
