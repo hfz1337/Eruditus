@@ -1319,6 +1319,9 @@ class CTF(app_commands.Group):
             )
             return
 
+        me = await platform.get_me(ctx)
+        our_team_name: str = me.name if me is not None else TEAM_NAME
+
         name_field_width = max(len(team.name) for team in teams) + 10
         message = (
             f"**Scoreboard as of "
@@ -1331,7 +1334,7 @@ class CTF(app_commands.Group):
         scoreboard = ""
         for rank, team in enumerate(teams, start=1):
             line = (
-                f"{['-', '+'][team.name == TEAM_NAME]} "
+                f"{['-', '+'][team.name == our_team_name]} "
                 f"{rank:<10}{team.name:<{name_field_width}}"
                 f"{round(team.score or 0, 4)}\n"
             )
