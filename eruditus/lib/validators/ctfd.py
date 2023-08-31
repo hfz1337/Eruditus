@@ -7,6 +7,10 @@ from lib.platforms.abc import Challenge, ChallengeFile, ChallengeSolver, Team
 from lib.util import extract_filename_from_url
 
 
+class MessageResponse(BaseModel):
+    message: str
+
+
 class BaseValidResponse(BaseModel):
     success: bool
 

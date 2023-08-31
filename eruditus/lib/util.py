@@ -12,6 +12,7 @@ from aiohttp import ClientResponse
 from pydantic import TypeAdapter, ValidationError
 
 T = TypeVar("T")
+logger = logging.getLogger("eruditus.util")
 
 
 def get_local_time() -> datetime:
@@ -142,12 +143,15 @@ def extract_filename_from_url(url: str) -> str:
     return os.path.basename(urllib.parse.urlparse(url).path)
 
 
-async def deserialize_response(response: ClientResponse, model: Type[T]) -> Optional[T]:
+async def deserialize_response(
+    response: ClientResponse, model: Type[T], suppress_warnings: bool = False
+) -> Optional[T]:
     """Validate response status code and JSON content.
 
     Args:
         response: The HTTP response.
         model: The pydantic model used to validate the JSON response.
+        suppress_warnings: No warnings would be printed if set to true.
 
     Returns:
         A deserialized response if the response is valid, None otherwise.
@@ -169,10 +173,11 @@ async def deserialize_response(response: ClientResponse, model: Type[T]) -> Opti
     try:
         return TypeAdapter(model).validate_python(response_json)
     except ValidationError as e:
-        logging.getLogger("validator").warning(
-            "Could not validate response data using the %s model:\n%s\nErrors - %s",
-            model.__name__,
-            json.dumps(response_json, indent=2),
-            str(e),
-        )
+        if not suppress_warnings:
+            logger.warning(
+                "Could not validate response data using the %s model:\n%s\nErrors - %s",
+                model.__name__,
+                json.dumps(response_json, indent=2),
+                str(e),
+            )
         return None

@@ -1,4 +1,5 @@
 import re
+from logging import getLogger
 from typing import AsyncIterator, Dict
 
 import aiohttp
@@ -21,11 +22,14 @@ from lib.util import deserialize_response, is_empty_string
 from lib.validators.ctfd import (
     ChallengeResponse,
     ChallengesResponse,
+    MessageResponse,
     ScoreboardResponse,
     SolvesResponse,
     SubmissionResponse,
     UserResponse,
 )
+
+logger = getLogger("eruditus.ctfd")
 
 
 class CTFd(PlatformABC):
@@ -193,8 +197,22 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
+            # If there's a message instead of challenges
+            msg_response = await deserialize_response(
+                response, model=MessageResponse, suppress_warnings=True
+            )
+            if msg_response:
+                logger.warning(
+                    "Suppressing challenge getter warnings because "
+                    f'of the "{msg_response.message}"'
+                )
+
             # Validating and deserializing response
-            data = await deserialize_response(response, model=ChallengesResponse)
+            data = await deserialize_response(
+                response,
+                model=ChallengesResponse,
+                suppress_warnings=msg_response is not None,
+            )
             if not data:
                 return
 
