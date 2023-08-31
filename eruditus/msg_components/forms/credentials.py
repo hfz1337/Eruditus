@@ -92,6 +92,23 @@ async def add_credentials_callback(
                 "_message": "\n".join(line for line in lines if line is not None),
             }
 
+    msg = "✅ Credentials added."
+
+    # Trying to authorize.
+    if self.platform.value is not None:
+        ctx = PlatformCTX.from_credentials(credentials)
+        session = await self.platform.value.login(ctx)
+
+        if not session or not session.validate():
+            await interaction.followup.send(
+                "❌ Unable authorize on the platform.", ephemeral=True
+            )
+            return
+
+        me = await self.platform.value.get_me(ctx)
+        if me:
+            msg += f" Authorized as {me.name}"
+
     # Add credentials.
     ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
         {"guild_category": interaction.channel.category_id}
@@ -106,7 +123,7 @@ async def add_credentials_callback(
     )
     await creds_channel.purge()
     await creds_channel.send(credentials["_message"], suppress_embeds=True)
-    await interaction.followup.send("✅ Credentials added.", ephemeral=True)
+    await interaction.followup.send(msg, ephemeral=True)
 
 
 async def register_account_callback(
