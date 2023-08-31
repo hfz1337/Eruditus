@@ -17,13 +17,12 @@ from config import (
     MONGO,
     TEAM_NAME,
 )
-from lib.platforms import Platform, PlatformCTX, match_platform
+from lib.platforms import PlatformCTX, match_platform
 from lib.types import ArchiveMode, CTFStatusMode, Permissions
 from lib.util import sanitize_channel_name
 from msg_components.buttons.workon import WorkonButton
-from msg_components.forms.credentials import CredentialsForm
+from msg_components.forms.credentials import create_credentials_modal_for_platform
 from msg_components.forms.flag import FlagSubmissionForm
-from msg_components.forms.registration import RegistrationForm
 
 
 class CTF(app_commands.Group):
@@ -1220,73 +1219,9 @@ class CTF(app_commands.Group):
             )
             return
 
-        match Platform(platform):
-            case Platform.CTFd:
-                form = CredentialsForm(
-                    url=url,
-                    platform=Platform.CTFd,
-                    username={
-                        "label": "Username",
-                        "style": discord.TextStyle.short,
-                        "placeholder": "Enter your username...",
-                        "required": True,
-                        "max_length": 128,
-                    },
-                    password={
-                        "label": "Password",
-                        "style": discord.TextStyle.short,
-                        "placeholder": "Enter your password...",
-                        "required": True,
-                        "max_length": 128,
-                    },
-                )
-            case Platform.RCTF:
-                form = CredentialsForm(
-                    url=url,
-                    platform=Platform.RCTF,
-                    invite={
-                        "label": "rCTF invite link",
-                        "style": discord.TextStyle.short,
-                        "placeholder": "https://rctf.example.com/login?token=<token>",
-                        "required": True,
-                        "max_length": 128,
-                    },
-                )
-            case _:
-                form = CredentialsForm(
-                    url=url,
-                    platform=None,
-                    username={
-                        "label": "Username",
-                        "style": discord.TextStyle.short,
-                        "placeholder": "Enter your username...",
-                        "required": True,
-                        "max_length": 128,
-                    },
-                    password={
-                        "label": "Password",
-                        "style": discord.TextStyle.short,
-                        "placeholder": "Enter your password...",
-                        "required": False,
-                        "max_length": 128,
-                    },
-                    invite={
-                        "label": "Invite link",
-                        "style": discord.TextStyle.short,
-                        "placeholder": "Enter your team invite URL...",
-                        "required": False,
-                        "max_length": 128,
-                    },
-                    token={
-                        "label": "Token",
-                        "style": discord.TextStyle.short,
-                        "placeholder": "Enter your team token...",
-                        "required": False,
-                        "max_length": 128,
-                    },
-                )
-
-        await interaction.response.send_modal(form)
+        await interaction.response.send_modal(
+            create_credentials_modal_for_platform(url, platform)
+        )
 
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
@@ -1460,9 +1395,6 @@ class CTF(app_commands.Group):
         Args:
             interaction: The interaction that triggered this command.
             url: Platform base url.
-            username: Username to register with (also the team name).
-            password: Password to register with (also the team password).
-            email: Email to register with.
         """
         ctx: PlatformCTX = PlatformCTX(base_url=url)
         try:
@@ -1480,57 +1412,15 @@ class CTF(app_commands.Group):
             )
             return
 
-        match Platform(platform):
-            case Platform.CTFd:
-                form = RegistrationForm(
-                    url=url,
-                    platform=platform,
-                    username={
-                        "label": "Username",
-                        "style": discord.TextStyle.short,
-                        "placeholder": "Enter your username...",
-                        "required": True,
-                        "max_length": 128,
-                    },
-                    email={
-                        "label": "Email",
-                        "style": discord.TextStyle.short,
-                        "placeholder": "Enter your email...",
-                        "required": True,
-                        "max_length": 128,
-                    },
-                    password={
-                        "label": "Password",
-                        "style": discord.TextStyle.short,
-                        "placeholder": "Enter your password...",
-                        "required": True,
-                        "max_length": 128,
-                    },
-                )
-            case Platform.RCTF:
-                form = RegistrationForm(
-                    url=url,
-                    platform=platform,
-                    team={
-                        "label": "Team",
-                        "style": discord.TextStyle.short,
-                        "placeholder": "Enter your team name...",
-                        "required": True,
-                        "max_length": 128,
-                    },
-                    email={
-                        "label": "Email",
-                        "style": discord.TextStyle.short,
-                        "placeholder": "Enter your email...",
-                        "required": True,
-                        "max_length": 128,
-                    },
-                )
-            case Platform.UNKNOWN:
-                await interaction.response.send_message(
-                    "Invalid URL set for this CTF, or platform isn't supported.",
-                    ephemeral=True,
-                )
-                return
+        form = create_credentials_modal_for_platform(
+            url=url, platform=platform, is_registration=True
+        )
+
+        if not form:
+            await interaction.response.send_message(
+                "Invalid URL set for this CTF, or platform isn't supported.",
+                ephemeral=True,
+            )
+            return
 
         await interaction.response.send_modal(form)
