@@ -1,7 +1,8 @@
 import discord
 from discord import app_commands
 
-from config import GUILD_ID, COMMIT_HASH
+from config import COMMIT_HASH, GUILD_ID
+from lib.platforms import Platform
 
 
 class Help(app_commands.Command):
@@ -9,10 +10,10 @@ class Help(app_commands.Command):
         super().__init__(
             name="help",
             description="Show help about the bot usage.",
-            callback=self.callback,
+            callback=self.cmd_callback,  # type: ignore
         )
 
-    async def callback(self, interaction: discord.Interaction) -> None:
+    async def cmd_callback(self, interaction: discord.Interaction) -> None:
         """Show help about the bot usage."""
         embed = (
             discord.Embed(
@@ -21,6 +22,8 @@ class Help(app_commands.Command):
                 description=(
                     "Eruditus is dedicated to CTF teams who communicate via Discord "
                     "during CTF competitions.\n"
+                    "Currently supported platforms: "
+                    f"{', '.join(p.__name__ for p in Platform if p)}.\n"
                     f"Current revision: [`{COMMIT_HASH:.8}`]"
                     f"(https://github.com/hfz1337/Eruditus/commit/{COMMIT_HASH})."
                 ),

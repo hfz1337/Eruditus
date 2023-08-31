@@ -1,9 +1,9 @@
-import aiohttp
 from io import BytesIO
 
+import aiohttp
 import discord
 
-from config import OPENAI_URL, OPENAI_API_KEY, MAX_CONTENT_SIZE, OPENAI_GPT_MODEL
+from config import MAX_CONTENT_SIZE, OPENAI_API_KEY, OPENAI_GPT_MODEL, OPENAI_URL
 
 
 class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):
@@ -44,7 +44,7 @@ class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):
 
             try:
                 response = (await response.json())["choices"][0]["message"]["content"]
-            except Exception:
+            except Exception:  # noqa
                 await interaction.followup.send("Something went wrong")
                 return None
 

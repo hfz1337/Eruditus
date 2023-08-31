@@ -1,0 +1,11 @@
+[flake8]
+show-source = true
+max-line-length = 88
+
+ignore =
+    W503
+
+exclude =
+    venv
+    __pycache__
+    .env

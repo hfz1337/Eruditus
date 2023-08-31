@@ -1,12 +1,10 @@
-from base64 import b64encode, b64decode, b32encode, b32decode
-
-from binascii import hexlify, unhexlify
 import binascii
+import urllib
+from base64 import b32decode, b32encode, b64decode, b64encode
+from binascii import hexlify, unhexlify
 
 import discord
 from discord import app_commands
-
-import urllib
 
 from lib.types import EncodingOperationMode
 
@@ -21,6 +19,7 @@ class Encoding(app_commands.Group):
         """Base64 encoding/decoding.
 
         Args:
+            interaction: Discord interaction.
             mode: Operation mode.
             data: The data to encode or decode.
         """
@@ -49,6 +48,7 @@ class Encoding(app_commands.Group):
         """Base32 encoding/decoding.
 
         Args:
+            interaction: Discord interaction.
             mode: Operation mode.
             data: The data to encode or decode.
         """
@@ -77,6 +77,7 @@ class Encoding(app_commands.Group):
         """Binary encoding/decoding.
 
         Args:
+            interaction: Discord interaction.
             mode: Operation mode.
             data: The data to encode or decode.
         """
@@ -107,6 +108,7 @@ class Encoding(app_commands.Group):
         """Hex encoding/decoding.
 
         Args:
+            interaction: Discord interaction.
             mode: Operation mode.
             data: The data to encode or decode.
         """
@@ -134,6 +136,7 @@ class Encoding(app_commands.Group):
         """URL encoding/decoding.
 
         Args:
+            interaction: Discord interaction.
             mode: Operation mode.
             data: The data to encode or decode.
         """

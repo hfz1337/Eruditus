@@ -8,10 +8,10 @@ class Bookmark(app_commands.ContextMenu):
     def __init__(self) -> None:
         super().__init__(
             name="⭐ Bookmark",
-            callback=self.callback,
+            callback=self.context_callback,
         )
 
-    async def callback(
+    async def context_callback(
         self, interaction: discord.Interaction, message: discord.Message
     ) -> None:
         """Bookmark a message.

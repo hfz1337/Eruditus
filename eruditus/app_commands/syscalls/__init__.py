@@ -1,11 +1,10 @@
 import os
 from collections import OrderedDict
+from typing import Any, List, Union
 
 import discord
 from discord import app_commands
 from discord.app_commands import Choice
-
-from typing import Union, List
 
 from lib.types import CPUArchitecture
 
@@ -37,7 +36,7 @@ class SyscallTable:
         return self.syscalls.get(name) if name in self.syscalls else None
 
 
-class Syscalls(app_commands.Command):
+class Syscalls(app_commands.Command[Any, Any, Any]):
     architectures = {
         arch.value: SyscallTable(
             f"{os.path.dirname(os.path.abspath(__file__))}/tables/{arch.name}"
@@ -49,7 +48,7 @@ class Syscalls(app_commands.Command):
         super().__init__(
             name="syscalls",
             description="Show information for a syscall from a specific architecture.",
-            callback=self.callback,
+            callback=self.cmd_callback,  # type: ignore
         )
 
         @self.autocomplete("syscall")
@@ -78,13 +77,13 @@ class Syscalls(app_commands.Command):
                     break
             return suggestions
 
-    async def callback(
+    async def cmd_callback(
         self, interaction: discord.Interaction, arch: CPUArchitecture, syscall: str
-    ) -> None:
+    ):
         """Show information for a syscall from a specific architecture.
 
         Args:
-            inetraction: The interaction that triggered this command.
+            interaction: The interaction that triggered this command.
             arch: The CPU architecture.
             syscall: The syscall name.
         """

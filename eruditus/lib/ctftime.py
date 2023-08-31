@@ -1,12 +1,11 @@
 from datetime import datetime, timezone
-from typing import Generator
+from typing import Generator, Optional
 
 import aiohttp
 from bs4 import BeautifulSoup
 
-from lib.util import truncate
-
 from config import CTFTIME_URL, USER_AGENT
+from lib.util import truncate
 
 
 def ctftime_date_to_datetime(ctftime_date: str) -> datetime:
@@ -24,7 +23,7 @@ def ctftime_date_to_datetime(ctftime_date: str) -> datetime:
     ).replace(tzinfo=timezone.utc)
 
 
-async def scrape_event_info(event_id: int) -> dict:
+async def scrape_event_info(event_id: int) -> Optional[dict]:
     """Scrape event information off the CTFtime website.
 
     Args:
@@ -91,8 +90,8 @@ async def scrape_event_info(event_id: int) -> dict:
                 method="get",
                 url=f"{CTFTIME_URL}/api/v1/events/{event_id}/",
                 headers={"User-Agent": USER_AGENT},
-            ) as response:
-                event_logo = (await response.json())["logo"]
+            ) as event_resp:
+                event_logo = (await event_resp.json())["logo"]
         else:
             event_logo = f"{CTFTIME_URL}/{event_logo}"
 

@@ -1,23 +1,20 @@
-from datetime import datetime, timedelta
-import aiohttp
 import io
-
-from discord import app_commands
-import discord
-
-import dotenv
-
-from lib.ctftime import (
-    scrape_current_events,
-    scrape_event_info,
-    ctftime_date_to_datetime,
-)
-from lib.util import get_local_time, truncate
-
+from datetime import datetime, timedelta
 from typing import Optional
 
-from config import CTFTIME_URL, USER_AGENT, GUILD_ID
+import aiohttp
+import discord
+import dotenv
+from discord import app_commands
+
 import config
+from config import CTFTIME_URL, GUILD_ID, USER_AGENT
+from lib.ctftime import (
+    ctftime_date_to_datetime,
+    scrape_current_events,
+    scrape_event_info,
+)
+from lib.util import get_local_time, truncate
 
 
 class CTFTime(app_commands.Group):
@@ -92,7 +89,7 @@ class CTFTime(app_commands.Group):
         async with aiohttp.request(
             method="get",
             url=f"{CTFTIME_URL}/api/v1/events/",
-            params={"limit": min(limit, 10)},
+            params={"limit": str(min(limit, 10))},
             headers={"User-Agent": USER_AGENT},
         ) as response:
             if response.status == 200:
@@ -198,7 +195,7 @@ class CTFTime(app_commands.Group):
         async with aiohttp.request(
             method="get",
             url=f"{CTFTIME_URL}/api/v1/events/",
-            params={"limit": 20},
+            params={"limit": "20"},
             headers={"User-Agent": USER_AGENT},
         ) as response:
             if response.status == 200:
@@ -230,7 +227,7 @@ class CTFTime(app_commands.Group):
                     )
                     parameters = {
                         "name": event_info["name"],
-                        "description": truncate(text=event_description, maxlen=1000),
+                        "description": truncate(text=event_description, max_len=1000),
                         "start_time": event_start,
                         "end_time": event_end,
                         "entity_type": discord.EntityType.external,
@@ -239,8 +236,9 @@ class CTFTime(app_commands.Group):
                             f"{CTFTIME_URL}/event/{event_info['id']}"
                             " — "
                             f"{event_info['website']}",
-                            maxlen=100,
+                            max_len=100,
                         ),
+                        "privacy_level": discord.PrivacyLevel.guild_only,
                     }
 
                     # In case the event was already scheduled, we update it, otherwise
@@ -249,14 +247,12 @@ class CTFTime(app_commands.Group):
                         scheduled_event = guild.get_scheduled_event(
                             scheduled_events[event_info["name"]]
                         )
-                        scheduled_event = await scheduled_event.edit(**parameters)
+                        await scheduled_event.edit(**parameters)
 
                     else:
-                        scheduled_event = await guild.create_scheduled_event(
-                            **parameters
-                        )
+                        await guild.create_scheduled_event(**parameters)
 
-        await interaction.followup.send("✅ Done pulling events")
+        await interaction.followup.send("✅ Done pulling events", ephemeral=True)
 
     @app_commands.checks.has_permissions(manage_channels=True)
     @app_commands.command()

@@ -1,19 +1,13 @@
 import re
-
-from typing import Optional, List
 from datetime import datetime
-import aiohttp
+from typing import Callable, List, Optional
 
+import aiohttp
 import discord
+from aiohttp.client_exceptions import ClientError
 from discord import HTTPException, app_commands
 from discord.app_commands import Choice
 
-from lib.util import sanitize_channel_name
-from lib.ctfd import get_scoreboard, register_to_ctfd
-
-from lib.types import ArchiveMode, CTFStatusMode, Permissions
-from msg_components.forms.flag import FlagSubmissionForm
-from msg_components.buttons.workon import WorkonButton
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
@@ -23,6 +17,12 @@ from config import (
     MONGO,
     TEAM_NAME,
 )
+from lib.platforms import PlatformCTX, match_platform
+from lib.types import ArchiveMode, CTFStatusMode, Permissions
+from lib.util import sanitize_channel_name
+from msg_components.buttons.workon import WorkonButton
+from msg_components.forms.credentials import create_credentials_modal_for_platform
+from msg_components.forms.flag import FlagSubmissionForm
 
 
 class CTF(app_commands.Group):
@@ -31,7 +31,8 @@ class CTF(app_commands.Group):
     def __init__(self) -> None:
         super().__init__(name="ctf")
 
-    def _in_ctf_channel() -> bool:
+    @staticmethod
+    def _in_ctf_channel() -> Callable[..., bool]:
         """Wrapper function to check if a command was issued from a CTF channel."""
 
         async def predicate(interaction: discord.Interaction) -> bool:
@@ -48,13 +49,13 @@ class CTF(app_commands.Group):
         return app_commands.check(predicate)
 
     async def _ctf_autocompletion_func(
-        self, interaction: discord.Interaction, current: str
+        self, _: discord.Interaction, current: str
     ) -> List[Choice[str]]:
         """Autocomplete CTF name.
         This function is inefficient, might improve it later.
 
         Args:
-            interaction: The interaction that triggered this command.
+            _: The interaction that triggered this command.
             current: The CTF name typed so far.
 
         Returns:
@@ -1151,7 +1152,7 @@ class CTF(app_commands.Group):
                         challenge["solve_time"]
                     ).strftime(DATE_FORMAT)
                     embed.add_field(
-                        name=(f"{icon} {challenge['name']} ({challenge['category']})"),
+                        name=f"{icon} {challenge['name']} ({challenge['category']})",
                         value=(
                             "```diff\n"
                             f"+ Solver{['', 's'][len(challenge['players'])>1]}:"
@@ -1195,45 +1196,32 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
     @_in_ctf_channel()
-    async def addcreds(
-        self, interaction: discord.Interaction, username: str, password: str, url: str
-    ) -> None:
+    async def addcreds(self, interaction: discord.Interaction, url: str) -> None:
         """Add credentials for the current CTF.
 
         Args:
             interaction: The interaction that triggered this command.
-            username: The username to login with.
-            password: The password to login with.
-            url: URL of the CTF platform.
+            url: Base URL of the CTF platform.
         """
-        await interaction.response.defer()
+        ctx = PlatformCTX(base_url=url)
+        try:
+            platform = await match_platform(ctx)
+        except aiohttp.client_exceptions.InvalidURL:
+            await interaction.response.send_message(
+                "The provided URL was invalid.",
+                ephemeral=True,
+            )
+            return
+        except ClientError:
+            await interaction.response.send_message(
+                "Could not communicate with the CTF platform, please try again.",
+                ephemeral=True,
+            )
+            return
 
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
+        await interaction.response.send_modal(
+            create_credentials_modal_for_platform(url, platform)
         )
-        ctf["credentials"]["url"] = url
-        ctf["credentials"]["username"] = username
-        ctf["credentials"]["password"] = password
-
-        MONGO[DBNAME][CTF_COLLECTION].update_one(
-            {"_id": ctf["_id"]},
-            {"$set": {"credentials": ctf["credentials"]}},
-        )
-
-        creds_channel = discord.utils.get(
-            interaction.guild.text_channels, id=ctf["guild_channels"]["credentials"]
-        )
-        message = (
-            f"CTF platform: {url}\n"
-            "```yaml\n"
-            f"Username: {username}\n"
-            f"Password: {password}\n"
-            "```"
-        )
-
-        await creds_channel.purge()
-        await creds_channel.send(message, suppress_embeds=True)
-        await interaction.followup.send("✅ Credentials added.")
 
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
@@ -1247,36 +1235,28 @@ class CTF(app_commands.Group):
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
-        url = ctf["credentials"]["url"]
-        username = ctf["credentials"]["username"]
-        password = ctf["credentials"]["password"]
-
-        if url is None:
+        if (message := ctf["credentials"].get("_message")) is None:
             await interaction.response.send_message(
                 "No credentials set for this CTF.", ephemeral=True
             )
-        else:
-            message = (
-                f"CTF platform: {url}\n"
-                "```yaml\n"
-                f"Username: {username}\n"
-                f"Password: {password}\n"
-                "```"
-            )
-
-            await interaction.response.send_message(message)
+            return
+        await interaction.response.send_message(message)
 
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
     @_in_ctf_channel()
     async def pull(self, interaction: discord.Interaction) -> None:
-        """Pull challenges from the CTFd platform.
+        """Pull challenges from the platform.
 
         Args:
             interaction: The interaction that triggered this command.
-            ctfd_url: URL of the CTFd platform (default: url from the previously
-                configured credentials).
         """
+        if interaction.client.challenge_puller_is_running:
+            await interaction.response.send_message(
+                "Challenge puller is already running.",
+                ephemeral=True,
+            )
+            return
         interaction.client.challenge_puller.restart()
         await interaction.response.send_message("✅ Started challenge puller.")
 
@@ -1285,7 +1265,7 @@ class CTF(app_commands.Group):
     async def submit(
         self, interaction: discord.Interaction, members: Optional[str] = None
     ) -> None:
-        """Submit a flag to the CTFd platform.
+        """Submit a flag to the platform.
 
         Args:
             interaction: The interaction that triggered this command.
@@ -1306,27 +1286,43 @@ class CTF(app_commands.Group):
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
-        ctfd_url = ctf["credentials"]["url"]
-        username = ctf["credentials"]["username"]
-        password = ctf["credentials"]["password"]
-
-        if ctfd_url is None:
+        if ctf["credentials"]["url"] is None:
             await interaction.followup.send("No credentials set for this CTF.")
             return
 
+        ctx: PlatformCTX = PlatformCTX.from_credentials(ctf["credentials"])
+        platform = await match_platform(ctx)
+        if not platform:
+            await interaction.followup.send(
+                "Invalid URL set for this CTF, or platform isn't supported."
+            )
+            return
+
         try:
-            teams = await get_scoreboard(ctfd_url, username, password)
+            teams = [x async for x in platform.pull_scoreboard(ctx)]
         except aiohttp.client_exceptions.InvalidURL:
-            interaction.followup.send("Invalid URL set for this CTF.")
+            await interaction.followup.send(
+                "Invalid URL set for this CTF.",
+                ephemeral=True,
+            )
+            return
+        except ClientError:
+            await interaction.followup.send(
+                "Could not communicate with the CTF platform, please try again.",
+                ephemeral=True,
+            )
             return
 
         if not teams:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "Failed to fetch the scoreboard.", ephemeral=True
             )
             return
 
-        name_field_width = max(len(team["name"]) for team in teams) + 10
+        me = await platform.get_me(ctx)
+        our_team_name: str = me.name if me is not None else TEAM_NAME
+
+        name_field_width = max(len(team.name) for team in teams) + 10
         message = (
             f"**Scoreboard as of "
             f"<t:{datetime.now().timestamp():.0f}>**"
@@ -1338,9 +1334,9 @@ class CTF(app_commands.Group):
         scoreboard = ""
         for rank, team in enumerate(teams, start=1):
             line = (
-                f"{['-', '+'][team['name'] == TEAM_NAME]} "
-                f"{rank:<10}{team['name']:<{name_field_width}}"
-                f"{round(team['score'], 4)}\n"
+                f"{['-', '+'][team.name == our_team_name]} "
+                f"{rank:<10}{team.name:<{name_field_width}}"
+                f"{round(team.score or 0, 4)}\n"
             )
             if len(message) + len(scoreboard) + len(line) - 2 > MAX_CONTENT_SIZE:
                 break
@@ -1349,7 +1345,7 @@ class CTF(app_commands.Group):
         if scoreboard:
             message = message.format(scoreboard)
         else:
-            message = "No solves yet, or platform isn't CTFd."
+            message = "No solves yet, or platform isn't supported."
 
         # Update scoreboard in the scoreboard channel.
         scoreboard_channel = discord.utils.get(
@@ -1381,7 +1377,9 @@ class CTF(app_commands.Group):
             if scheduled_event.name == ctf["name"]:
                 break
         else:
-            await interaction.followup.send("🏁 This CTF has ended.")
+            await interaction.followup.send(
+                "🏁 This CTF has ended or we don't know its end time."
+            )
             return
 
         await interaction.followup.send(
@@ -1394,50 +1392,38 @@ class CTF(app_commands.Group):
         self,
         interaction: discord.Interaction,
         url: str,
-        username: str,
-        password: str,
-        email: str,
     ) -> None:
-        """Register team account in the CTFd platform.
+        """Register a team account in the platform.
 
         Args:
             interaction: The interaction that triggered this command.
-            url: CTFd base url.
-            username: Username to register with (also the team name).
-            password: Password to register with (also the team password).
-            email: Email to register with.
+            url: Platform base url.
         """
-        await interaction.response.defer()
-
-        result = await register_to_ctfd(url, username, password, email)
-        if "error" in result:
-            await interaction.followup.send(result["error"])
+        ctx: PlatformCTX = PlatformCTX(base_url=url)
+        try:
+            platform = await match_platform(ctx)
+        except aiohttp.client_exceptions.InvalidURL:
+            await interaction.response.send_message(
+                "The provided URL was invalid.",
+                ephemeral=True,
+            )
+            return
+        except ClientError:
+            await interaction.response.send_message(
+                "Could not communicate with the CTF platform, please try again.",
+                ephemeral=True,
+            )
             return
 
-        # Add credentials.
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
-        ctf["credentials"]["url"] = url
-        ctf["credentials"]["username"] = username
-        ctf["credentials"]["password"] = password
-
-        MONGO[DBNAME][CTF_COLLECTION].update_one(
-            {"_id": ctf["_id"]},
-            {"$set": {"credentials": ctf["credentials"]}},
+        form = create_credentials_modal_for_platform(
+            url=url, platform=platform, is_registration=True
         )
 
-        creds_channel = discord.utils.get(
-            interaction.guild.text_channels, id=ctf["guild_channels"]["credentials"]
-        )
-        message = (
-            f"CTF platform: {url}\n"
-            "```yaml\n"
-            f"Username: {username}\n"
-            f"Password: {password}\n"
-            "```"
-        )
+        if not form:
+            await interaction.response.send_message(
+                "Invalid URL set for this CTF, or platform isn't supported.",
+                ephemeral=True,
+            )
+            return
 
-        await creds_channel.purge()
-        await creds_channel.send(message)
-        await interaction.followup.send(result["success"])
+        await interaction.response.send_modal(form)
