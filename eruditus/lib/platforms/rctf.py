@@ -137,7 +137,7 @@ class RCTF(PlatformABC):
         ) as response:
             # Validate and deserialize response
             data = await deserialize_response(response, model=ChallengesReponse)
-            if not data or data.is_not_good():
+            if not data or data.is_not_good() or not data.data:
                 return
 
             # Iterate over challenges and parse them
@@ -160,7 +160,7 @@ class RCTF(PlatformABC):
         ) as response:
             # Validate and deserialize response
             data = await deserialize_response(response, model=LeaderboardResponse)
-            if not data or data.is_not_good():
+            if not data or data.is_not_good() or not data.data:
                 return
 
             # Iterate over teams and parse them

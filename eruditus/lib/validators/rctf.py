@@ -97,7 +97,7 @@ class LeaderboardResponse(BaseRCTFResponse):
         leaderboard: list[RCTFTeam]
 
     message: str
-    data: Data
+    data: Optional[Data]
 
 
 class UserResponse(BaseRCTFResponse):
@@ -111,7 +111,7 @@ class ChallengesReponse(BaseRCTFResponse):
     """Response schema returned by `/api/v1/challs`."""
 
     message: str
-    data: list[RCTFChallenge]
+    data: Optional[list[RCTFChallenge]]
 
 
 class AuthResponse(BaseRCTFResponse):
