@@ -591,7 +591,11 @@ class Eruditus(discord.Client):
 
             # Match the platform
             ctx = PlatformCTX.from_credentials(ctf["credentials"])
-            platform = await match_platform(ctx)
+            try:
+                platform = await match_platform(ctx)
+            except aiohttp.ClientError:
+                continue
+
             if platform is None:
                 # Unsupported platform
                 continue
@@ -615,25 +619,38 @@ class Eruditus(discord.Client):
                 ):
                     continue
 
-                # Make sure we didn't reach 50 channels, otherwise channel creation
-                # will throw an exception.
-                if len(category_channel.channels) == 50:
-                    continue
-
-                # Create a channel for the challenge and set its permissions.
-                overwrites = {
-                    guild.default_role: discord.PermissionOverwrite(read_messages=False)
-                }
-                channel_name = sanitize_channel_name(
-                    f"{challenge.category}-{challenge.name}"
+                # Create a channel for the challenge category if it doesn't exist.
+                channel_name = sanitize_channel_name(challenge.category)
+                text_channel = (
+                    discord.utils.get(
+                        guild.text_channels,
+                        category=category_channel,
+                        name=f"💤-{channel_name}",
+                    )
+                    or discord.utils.get(
+                        guild.text_channels,
+                        category=category_channel,
+                        name=f"🔄-{channel_name}",
+                    )
+                    or discord.utils.get(
+                        guild.text_channels,
+                        category=category_channel,
+                        name=f"⭐-{channel_name}",
+                    )
+                    or await guild.create_text_channel(
+                        name=f"🔄-{channel_name}",
+                        category=category_channel,
+                        default_auto_archive_duration=10080,
+                    )
                 )
-                challenge_channel = await guild.create_text_channel(
-                    name=f"❌-{channel_name}",
-                    category=category_channel,
-                    overwrites=overwrites,
+
+                # Create a private thread for the challenge.
+                thread_name = sanitize_channel_name(challenge.name)
+                challenge_thread = await text_channel.create_thread(
+                    name=f"❌-{thread_name}", invitable=False
                 )
 
-                # Send challenge information in its respective channel.
+                # Send challenge information in its respective thread.
                 description = (
                     "\n".join(
                         (
@@ -673,7 +690,7 @@ class Eruditus(discord.Client):
                     colour=discord.Colour.blue(),
                     timestamp=datetime.now(),
                 )
-                message = await challenge_channel.send(embed=embed)
+                message = await challenge_thread.send(embed=embed)
                 await message.pin()
 
                 # Announce that the challenge was added.
@@ -706,7 +723,7 @@ class Eruditus(discord.Client):
                             "id": challenge.id,
                             "name": challenge.name,
                             "category": challenge.category,
-                            "channel": challenge_channel.id,
+                            "thread": challenge_thread.id,
                             "solved": False,
                             "blooded": False,
                             "players": [],
@@ -723,6 +740,11 @@ class Eruditus(discord.Client):
                 MONGO[DBNAME][CTF_COLLECTION].update_one(
                     {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
                 )
+
+                await text_channel.edit(
+                    name=text_channel.name.replace("💤", "🔄").replace("⭐", "🔄")
+                )
+
         self.challenge_puller_is_running = False
 
     @tasks.loop(minutes=1, reconnect=True)

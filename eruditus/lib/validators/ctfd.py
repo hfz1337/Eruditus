@@ -46,7 +46,7 @@ class CTFDChallenge(BaseModel):
     class Hint(BaseModel):
         id: int
         cost: int
-        content: str
+        content: Optional[str] = None
 
     # Required fields
     id: int

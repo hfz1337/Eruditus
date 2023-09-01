@@ -31,6 +31,11 @@ class CTF(app_commands.Group):
     def __init__(self) -> None:
         super().__init__(name="ctf")
 
+    async def on_error(
+        self, interaction: discord.Interaction, error: app_commands.AppCommandError
+    ) -> None:
+        await interaction.response.send_message(error, ephemeral=True)
+
     @staticmethod
     def _in_ctf_channel() -> Callable[..., bool]:
         """Wrapper function to check if a command was issued from a CTF channel."""
@@ -169,13 +174,13 @@ class CTF(app_commands.Group):
         permissions: Optional[Permissions] = Permissions.RDONLY,
         name: Optional[str] = None,
     ):
-        """Archive a CTF by making its channels read-only.
+        """Archive a CTF by making its channels read-only by default.
 
         Args:
             interaction: The interaction that triggered this command.
             mode: Whether to archive all channels, or the important ones
                only (default: all).
-            permissions: Whether channels should be read only or writable
+            permissions: Whether channels should be read-only or writable
                as well (default: read only).
             name: CTF name (default: current channel's CTF).
         """
@@ -262,13 +267,18 @@ class CTF(app_commands.Group):
                 ):
                     await ctf_channel.delete()
 
-        # Make channels read-only by participants, except #general which must be kept
-        # readable and writable. The former depends on the `permissions` parameter.
+        # Change channels and threads permissions according to the `permissions`
+        # parameter.
         members = [
             member
             async for member in interaction.guild.fetch_members(limit=None)
             if role in member.roles
         ]
+
+        # Make threads invitable and lock them if needed.
+        locked = permissions == Permissions.RDONLY
+        for thread in interaction.guild.threads:
+            await thread.edit(locked=locked, invitable=True)
 
         perm_rdwr = discord.PermissionOverwrite(read_messages=True, send_messages=True)
         perm_rdonly = discord.PermissionOverwrite(
@@ -312,7 +322,7 @@ class CTF(app_commands.Group):
 
         # Only send a followup message if the channel from which the command was issued
         # still exists, otherwise we will fail with a 404 not found.
-        if interaction.channel in category_channel.text_channels:
+        if interaction.channel in category_channel.channels:
             await interaction.followup.send(f"✅ CTF `{ctf['name']}` has been archived.")
 
     @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
@@ -507,15 +517,16 @@ class CTF(app_commands.Group):
             f"{interaction.user.mention} abandonned the ship :frowning:"
         )
 
-        # Remove role and permissions.
+        # Remove user from the list of players.
         for challenge in MONGO[DBNAME][CHALLENGE_COLLECTION].find():
             if interaction.user.name in challenge["players"]:
-                challenge_channel = discord.utils.get(
-                    interaction.guild.text_channels, id=challenge["channel"]
+                challenge["players"].remove(interaction.user.name)
+                MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
+                    {"_id": challenge["_id"]},
+                    {"$set": {"players": challenge["players"]}},
                 )
-                await challenge_channel.set_permissions(
-                    interaction.user, overwrite=None
-                )
+
+        # Remove CTF role.
         await interaction.user.remove_roles(role)
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
@@ -550,35 +561,43 @@ class CTF(app_commands.Group):
             )
             return
 
+        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
+            {"guild_category": interaction.channel.category_id}
+        )
+
         category_channel = discord.utils.get(
             interaction.guild.categories, id=interaction.channel.category_id
         )
 
-        # Make sure we didn't reach 50 channels, otherwise channel creation
-        # will throw an exception.
-        if len(category_channel.channels) == 50:
-            await interaction.response.send_message(
-                "Max channels per category exceeded, please delete some "
-                "challenges first.",
-                ephemeral=True,
+        # Create a channel for the challenge category if it doesn't exist.
+        channel_name = sanitize_channel_name(category)
+        text_channel = (
+            discord.utils.get(
+                interaction.guild.text_channels,
+                category=category_channel,
+                name=f"💤-{channel_name}",
             )
-            return
-
-        # Create a channel for the challenge and set its permissions.
-        overwrites = {
-            interaction.guild.default_role: discord.PermissionOverwrite(
-                read_messages=False
+            or discord.utils.get(
+                interaction.guild.text_channels,
+                category=category_channel,
+                name=f"🔄-{channel_name}",
             )
-        }
-        channel_name = sanitize_channel_name(f"{category}-{name}")
-        challenge_channel = await interaction.guild.create_text_channel(
-            name=f"❌-{channel_name}",
-            category=category_channel,
-            overwrites=overwrites,
+            or discord.utils.get(
+                interaction.guild.text_channels,
+                category=category_channel,
+                name=f"⭐-{channel_name}",
+            )
+            or await interaction.guild.create_text_channel(
+                name=f"🔄-{channel_name}",
+                category=category_channel,
+                default_auto_archive_duration=10080,
+            )
         )
 
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
+        # Create a private thread for the challenge.
+        thread_name = sanitize_channel_name(name)
+        challenge_thread = await text_channel.create_thread(
+            name=f"❌-{thread_name}", invitable=False
         )
 
         # Announce that the challenge was added.
@@ -608,7 +627,7 @@ class CTF(app_commands.Group):
                 "id": None,
                 "name": name,
                 "category": category,
-                "channel": challenge_channel.id,
+                "thread": challenge_thread.id,
                 "solved": False,
                 "blooded": False,
                 "players": [],
@@ -625,6 +644,10 @@ class CTF(app_commands.Group):
             {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
         )
 
+        await text_channel.edit(
+            name=text_channel.name.replace("💤", "🔄").replace("⭐", "🔄")
+        )
+
         await interaction.response.send_message(
             f"✅ Challenge `{name}` has been created."
         )
@@ -636,49 +659,39 @@ class CTF(app_commands.Group):
         self,
         interaction: discord.Interaction,
         new_name: str,
-        new_category: Optional[str] = None,
     ) -> None:
         """Rename a challenge.
 
         Args:
             interaction: The interaction that triggered this command.
             new_name: New challenge name.
-            new_category: New challenge category.
         """
-        # Avoid having duplicate categories when people mix up upper/lower case
-        # or add unnecessary spaces at the beginning or the end.
-        new_category = new_category.title().strip() if new_category else None
-
         challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-            {"channel": interaction.channel_id}
+            {"thread": interaction.channel_id}
         )
 
         if challenge is None:
             await interaction.response.send_message(
-                "Run this command from within a challenge channel.",
+                "Run this command from within a challenge thread.",
                 ephemeral=True,
             )
             return
 
-        challenge["name"] = new_name
-        challenge["category"] = new_category or challenge["category"]
-        new_channel_name = sanitize_channel_name(
-            f"{challenge['category']}-{challenge['name']}"
+        challenge_thread = discord.utils.get(
+            interaction.guild.threads, id=interaction.channel_id
         )
+        new_thread_name = sanitize_channel_name(new_name)
 
-        challenge_channel = discord.utils.get(
-            interaction.guild.text_channels, id=interaction.channel_id
-        )
         if challenge["blooded"]:
-            await challenge_channel.edit(name=f"🩸-{new_channel_name}")
+            await challenge_thread.edit(name=f"🩸-{new_thread_name}")
         if challenge["solved"]:
-            await challenge_channel.edit(name=f"✅-{new_channel_name}")
+            await challenge_thread.edit(name=f"✅-{new_thread_name}")
         else:
-            await challenge_channel.edit(name=f"❌-{new_channel_name}")
+            await challenge_thread.edit(name=f"❌-{new_thread_name}")
 
         MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
-            {"$set": {"name": challenge["name"], "category": challenge["category"]}},
+            {"$set": {"name": new_name}},
         )
         await interaction.response.send_message("✅ Challenge renamed.")
 
@@ -693,17 +706,17 @@ class CTF(app_commands.Group):
 
         Args:
             interaction: The interaction that triggered this command.
-            name: Name of the challenge to delete (default: current channel's
+            name: Name of the challenge to delete (default: current threads's
                 challenge).
         """
         if name is None:
             challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-                {"channel": interaction.channel_id}
+                {"thread": interaction.channel_id}
             )
             if challenge is None:
                 await interaction.response.send_message(
                     (
-                        "Run this command from within a challenge channel, "
+                        "Run this command from within a challenge thread, "
                         "or provide the name of the challenge you wish to delete."
                     ),
                     ephemeral=True,
@@ -748,11 +761,19 @@ class CTF(app_commands.Group):
             f"✅ Challenge `{challenge['name']}` has been deleted."
         )
 
-        # Delete channel associated with the challenge.
-        challenge_channel = discord.utils.get(
-            interaction.guild.text_channels, id=challenge["channel"]
+        # Delete thread associated with the challenge.
+        challenge_thread = discord.utils.get(
+            interaction.guild.threads, id=challenge["thread"]
         )
-        await challenge_channel.delete()
+        await challenge_thread.delete()
+
+        # Indicate that the CTF category is empty in case that are no challenge threads
+        # inside.
+        text_channel = challenge_thread.parent
+        if len(text_channel.threads) == 0:
+            await text_channel.edit(
+                name=text_channel.name.replace("🔄", "💤").replace("⭐", "💤")
+            )
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
@@ -760,8 +781,7 @@ class CTF(app_commands.Group):
     async def solve(
         self, interaction: discord.Interaction, members: Optional[str] = None
     ) -> None:
-        """Mark the challenge as solved by you and other collaborators in
-        the channel.
+        """Mark the challenge as solved.
 
         Args:
             interaction: The interaction that triggered this command.
@@ -770,13 +790,13 @@ class CTF(app_commands.Group):
         await interaction.response.defer()
 
         challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-            {"channel": interaction.channel_id}
+            {"thread": interaction.channel_id}
         )
         if challenge is None:
-            # If we didn't find any challenge that corresponds to the channel from which
-            # the command was run, then we're probably in the wrong channel.
+            # If we didn't find any challenge that corresponds to the thread from which
+            # the command was run, then we're probably in the wrong thread.
             await interaction.followup.send(
-                "You may only run this command in the channel associated to the "
+                "You may only run this command in the thread associated to the "
                 "challenge."
             )
             return
@@ -857,6 +877,20 @@ class CTF(app_commands.Group):
 
         await interaction.followup.send("✅ Challenge solved.")
 
+        # Mark the CTF category maxed if all its challenges were solved.
+        solved_states = MONGO[DBNAME][CHALLENGE_COLLECTION].aggregate(
+            [
+                {"$match": {"category": challenge["category"]}},
+                {"$project": {"_id": 0, "solved": 1}},
+            ]
+        )
+        if any(not state["solved"] for state in solved_states):
+            return
+
+        text_channel = interaction.channel.parent
+        if text_channel.name.startswith("🔄"):
+            await text_channel.edit(name=text_channel.name.replace("🔄", "⭐"))
+
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
     @_in_ctf_channel()
@@ -869,13 +903,13 @@ class CTF(app_commands.Group):
         await interaction.response.defer()
 
         challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-            {"channel": interaction.channel_id}
+            {"thread": interaction.channel_id}
         )
         if challenge is None:
             # If we didn't find any challenge that corresponds to the channel from which
             # the command was run, then we're probably in a non-challenge channel.
             await interaction.followup.send(
-                "You may only run this command in the channel associated to the "
+                "You may only run this command in the thread associated to the "
                 "challenge."
             )
 
@@ -931,6 +965,11 @@ class CTF(app_commands.Group):
         )
         await announcement.edit(view=WorkonButton(name=challenge["name"]))
 
+        # In case the CTF category was maxed before adding this new challenge.
+        text_channel = interaction.channel.parent
+        if text_channel.name.startswith("⭐"):
+            await text_channel.edit(name=text_channel.name.replace("⭐", "🔄"))
+
         await interaction.followup.send("✅ Challenge unsolved.")
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
@@ -938,7 +977,7 @@ class CTF(app_commands.Group):
     @app_commands.autocomplete(name=_challenge_autocompletion_func)
     @_in_ctf_channel()
     async def workon(self, interaction: discord.Interaction, name: str) -> None:
-        """Start working on a challenge and join its channel.
+        """Start working on a challenge and join its thread.
 
         Args:
             interaction: The interaction that triggered this command.
@@ -967,11 +1006,11 @@ class CTF(app_commands.Group):
 
         challenge["players"].append(interaction.user.name)
 
-        challenge_channel = discord.utils.get(
-            interaction.guild.text_channels, id=challenge["channel"]
+        challenge_thread = discord.utils.get(
+            interaction.guild.threads, id=challenge["thread"]
         )
 
-        await challenge_channel.set_permissions(interaction.user, read_messages=True)
+        await challenge_thread.add_user(interaction.user)
 
         MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
@@ -981,7 +1020,7 @@ class CTF(app_commands.Group):
         await interaction.response.send_message(
             f"✅ Added to the `{challenge['name']}` challenge."
         )
-        await challenge_channel.send(
+        await challenge_thread.send(
             f"{interaction.user.mention} wants to collaborate 🤝"
         )
 
@@ -992,8 +1031,8 @@ class CTF(app_commands.Group):
     async def unworkon(
         self, interaction: discord.Interaction, name: Optional[str] = None
     ) -> None:
-        """Stop working on a challenge and leave its channel (default: current
-        channel's challenge).
+        """Stop working on a challenge and leave its thread (default: current
+        thread's challenge).
 
         Args:
             interaction: The interaction that triggered this command.
@@ -1001,12 +1040,12 @@ class CTF(app_commands.Group):
         """
         if name is None:
             challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-                {"channel": interaction.channel_id}
+                {"thread": interaction.channel_id}
             )
             if challenge is None:
                 await interaction.response.send_message(
                     (
-                        "Run this command from within a challenge channel, "
+                        "Run this command from within a challenge thread, "
                         "or provide the name of the challenge you wish to stop "
                         "working on."
                     ),
@@ -1032,8 +1071,8 @@ class CTF(app_commands.Group):
 
         challenge["players"].remove(interaction.user.name)
 
-        challenge_channel = discord.utils.get(
-            interaction.guild.text_channels, id=challenge["channel"]
+        challenge_thread = discord.utils.get(
+            interaction.guild.threads, id=challenge["thread"]
         )
 
         MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
@@ -1044,11 +1083,11 @@ class CTF(app_commands.Group):
         await interaction.response.send_message(
             f"✅ Removed from the `{challenge['name']}` challenge.", ephemeral=True
         )
-        await challenge_channel.send(
+        await challenge_thread.send(
             f"{interaction.user.mention} left you alone, what a chicken! 🐥"
         )
 
-        await challenge_channel.set_permissions(interaction.user, overwrite=None)
+        await challenge_thread.remove_user(interaction.user)
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()

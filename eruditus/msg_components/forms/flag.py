@@ -26,11 +26,11 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         members = self.members
 
         challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
-            {"channel": interaction.channel_id}
+            {"thread": interaction.channel_id}
         )
         if challenge is None:
             await interaction.followup.send(
-                "❌ This command may only be used from within a challenge channel."
+                "❌ This command may only be used from within a challenge thread."
             )
             return
 
@@ -124,12 +124,12 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             ).set_thumbnail(url=interaction.user.display_avatar.url)
         announcement = await solves_channel.send(embed=embed)
 
-        challenge_channel = discord.utils.get(
-            interaction.guild.text_channels, id=challenge["channel"]
+        challenge_thread = discord.utils.get(
+            interaction.guild.threads, id=challenge["thread"]
         )
 
         try:
-            await challenge_channel.edit(
+            await challenge_thread.edit(
                 name=interaction.channel.name.replace(
                     "❌", "🩸" if challenge["blooded"] else "✅"
                 )
@@ -167,3 +167,17 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         await announcement.edit(
             view=WorkonButton(name=challenge["name"], disabled=True)
         )
+
+        # Mark the CTF category maxed if all its challenges were solved.
+        solved_states = MONGO[DBNAME][CHALLENGE_COLLECTION].aggregate(
+            [
+                {"$match": {"category": challenge["category"]}},
+                {"$project": {"_id": 0, "solved": 1}},
+            ]
+        )
+        if any(not state["solved"] for state in solved_states):
+            return
+
+        text_channel = interaction.channel.parent
+        if text_channel.name.startswith("🔄"):
+            await text_channel.edit(name=text_channel.name.replace("🔄", "⭐"))
