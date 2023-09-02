@@ -56,7 +56,12 @@ class RCTFChallenge(BaseModel):
             return None
 
         # Convert to markdown.
-        md = html2md(self.description, heading_style="atx")
+        md = html2md(
+            self.description,
+            heading_style="atx",
+            escape_asterisks=False,
+            escape_underscores=False,
+        )
         # Remove all images.
         md = re.sub(r'[^\S\r\n]*!\[[^\]]*\]\((.*?)\s*("(?:.*[^"])")?\s*\)\s*', "", md)
         # Remove multilines.
