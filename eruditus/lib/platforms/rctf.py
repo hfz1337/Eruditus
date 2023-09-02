@@ -173,7 +173,7 @@ class RCTF(PlatformABC):
 
             # Iterate over challenges and parse them
             for challenge in data.data:
-                yield challenge.convert()
+                yield challenge.convert(ctx.url_stripped)
 
     @classmethod
     async def pull_scoreboard(
