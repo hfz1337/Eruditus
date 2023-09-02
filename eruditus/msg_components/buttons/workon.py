@@ -27,11 +27,11 @@ class WorkonButton(discord.ui.View):
 
         challenge["players"].append(interaction.user.name)
 
-        challenge_channel = discord.utils.get(
-            interaction.guild.text_channels, id=challenge["channel"]
+        challenge_thread = discord.utils.get(
+            interaction.guild.threads, id=challenge["thread"]
         )
 
-        await challenge_channel.set_permissions(interaction.user, read_messages=True)
+        await challenge_thread.add_user(interaction.user)
 
         MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
@@ -43,7 +43,7 @@ class WorkonButton(discord.ui.View):
             view=UnworkonButton(name=self.name),
             ephemeral=True,
         )
-        await challenge_channel.send(
+        await challenge_thread.send(
             f"{interaction.user.mention} wants to collaborate 🤝"
         )
 
@@ -76,8 +76,8 @@ class UnworkonButton(discord.ui.View):
 
         challenge["players"].remove(interaction.user.name)
 
-        challenge_channel = discord.utils.get(
-            interaction.guild.text_channels, id=challenge["channel"]
+        challenge_thread = discord.utils.get(
+            interaction.guild.threads, id=challenge["thread"]
         )
 
         MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
@@ -88,8 +88,8 @@ class UnworkonButton(discord.ui.View):
         await interaction.response.edit_message(
             content=f"✅ Removed from the `{challenge['name']}` challenge.", view=None
         )
-        await challenge_channel.send(
+        await challenge_thread.send(
             f"{interaction.user.mention} left you alone, what a chicken! 🐥"
         )
 
-        await challenge_channel.set_permissions(interaction.user, overwrite=None)
+        await challenge_thread.remove_user(interaction.user)

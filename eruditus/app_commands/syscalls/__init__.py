@@ -1,6 +1,6 @@
 import os
 from collections import OrderedDict
-from typing import Any, List, Union
+from typing import Any, Union
 
 import discord
 from discord import app_commands
@@ -17,7 +17,9 @@ class SyscallTable:
         self.parse_table(architecture)
 
     def parse_table(self, filename: str) -> None:
-        lines = [line.split("\t") for line in open(filename).readlines()]
+        lines = [
+            line.split("\t") for line in open(filename, encoding="utf-8").readlines()
+        ]
 
         for line in lines[1:]:
             syscall = OrderedDict()
@@ -54,7 +56,7 @@ class Syscalls(app_commands.Command[Any, Any, Any]):
         @self.autocomplete("syscall")
         async def _syscall_autocompletion_func(
             interaction: discord.Interaction, current: str
-        ) -> List[Choice[str]]:
+        ) -> list[Choice[str]]:
             """Autocomplete syscall name.
 
             Args:

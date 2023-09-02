@@ -1,4 +1,5 @@
-from typing import AsyncIterator, Dict
+import io
+from typing import AsyncIterator
 
 import aiohttp
 
@@ -25,7 +26,7 @@ from lib.validators.rctf import (
 )
 
 
-def generate_headers(ctx: PlatformCTX) -> Dict[str, str]:
+def generate_headers(ctx: PlatformCTX) -> dict[str, str]:
     if not ctx.session or not ctx.session.validate():
         return {}
 
@@ -75,6 +76,36 @@ class RCTF(PlatformABC):
             return Session(token=data.data.authToken)
 
     @classmethod
+    async def fetch(cls, ctx: PlatformCTX, url: str) -> io.BytesIO:
+        """Fetch a URL endpoint from the rCTF platform and return its response.
+
+        Args:
+            url: The URL to fetch.
+
+        Returns:
+            A file-like object for reading the response data.
+        """
+        if not await ctx.login(cls.login):
+            return
+
+        if not url.startswith(ctx.base_url):
+            return
+
+        async with aiohttp.request(
+            method="get",
+            url=url,
+            headers=generate_headers(ctx),
+            allow_redirects=False,
+        ) as response:
+            if response.status != 200:
+                return
+            try:
+                content = await response.read()
+            except aiohttp.ClientError:
+                return None
+            return io.BytesIO(content)
+
+    @classmethod
     async def submit_flag(
         cls, ctx: PlatformCTX, challenge_id: str, flag: str
     ) -> Optional[SubmittedFlag]:
@@ -98,7 +129,7 @@ class RCTF(PlatformABC):
             result: SubmittedFlag = SubmittedFlag(state=SubmittedFlagState.UNKNOWN)
 
             # Lookup table for flag submission states
-            statuses: Dict[str, SubmittedFlagState] = {
+            statuses: dict[str, SubmittedFlagState] = {
                 "goodFlag": SubmittedFlagState.CORRECT,
                 "badNotStarted": SubmittedFlagState.CTF_NOT_STARTED,
                 "badEnded": SubmittedFlagState.CTF_ENDED,
@@ -142,7 +173,7 @@ class RCTF(PlatformABC):
 
             # Iterate over challenges and parse them
             for challenge in data.data:
-                yield challenge.convert()
+                yield challenge.convert(ctx.url_stripped)
 
     @classmethod
     async def pull_scoreboard(
@@ -189,6 +220,7 @@ class RCTF(PlatformABC):
     @classmethod
     async def register(cls, ctx: PlatformCTX) -> RegistrationStatus:
         # Assert registration data
+        ctx.args["team"] = ctx.args.get("team") or ctx.args.get("username")
         if any(is_empty_string(ctx.args.get(value)) for value in ("team", "email")):
             return RegistrationStatus(
                 success=False, message="Not enough values in context"

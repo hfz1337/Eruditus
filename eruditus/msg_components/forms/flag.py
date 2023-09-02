@@ -1,6 +1,5 @@
 import re
 from datetime import datetime
-from typing import Dict
 
 import discord
 from discord import HTTPException
@@ -26,11 +25,11 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         members = self.members
 
         challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
-            {"channel": interaction.channel_id}
+            {"thread": interaction.channel_id}
         )
         if challenge is None:
             await interaction.followup.send(
-                "❌ This command may only be used from within a challenge channel."
+                "❌ This command may only be used from within a challenge thread."
             )
             return
 
@@ -51,7 +50,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             await interaction.followup.send("❌ Failed to submit the flag.")
             return
 
-        error_messages: Dict[SubmittedFlagState, str] = {
+        error_messages: dict[SubmittedFlagState, str] = {
             SubmittedFlagState.ALREADY_SUBMITTED: "You already solved this challenge.",
             SubmittedFlagState.INCORRECT: "❌ Incorrect flag.",
             SubmittedFlagState.CTF_NOT_STARTED: "❌ CTF not started.",
@@ -70,8 +69,6 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             await interaction.followup.send(error_msg)
             return
 
-        # @note: @es3n1n: Ignore other states, they should be handled within the
-        # `error_messages` dict
         if result.state != SubmittedFlagState.CORRECT:
             return
 
@@ -124,12 +121,12 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             ).set_thumbnail(url=interaction.user.display_avatar.url)
         announcement = await solves_channel.send(embed=embed)
 
-        challenge_channel = discord.utils.get(
-            interaction.guild.text_channels, id=challenge["channel"]
+        challenge_thread = discord.utils.get(
+            interaction.guild.threads, id=challenge["thread"]
         )
 
         try:
-            await challenge_channel.edit(
+            await challenge_thread.edit(
                 name=interaction.channel.name.replace(
                     "❌", "🩸" if challenge["blooded"] else "✅"
                 )
@@ -167,3 +164,17 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         await announcement.edit(
             view=WorkonButton(name=challenge["name"], disabled=True)
         )
+
+        # Mark the CTF category maxed if all its challenges were solved.
+        solved_states = MONGO[DBNAME][CHALLENGE_COLLECTION].aggregate(
+            [
+                {"$match": {"category": challenge["category"]}},
+                {"$project": {"_id": 0, "solved": 1}},
+            ]
+        )
+        if any(not state["solved"] for state in solved_states):
+            return
+
+        text_channel = interaction.channel.parent
+        if text_channel.name.startswith("🔄"):
+            await text_channel.edit(name=text_channel.name.replace("🔄", "🎯"))

@@ -1,6 +1,9 @@
+import re
 from datetime import datetime
 from typing import Any, Optional
 
+from bs4 import BeautifulSoup
+from markdownify import markdownify as html2md
 from pydantic import BaseModel, field_validator
 
 from lib.platforms.abc import Challenge, ChallengeFile, ChallengeSolver, Team
@@ -46,7 +49,7 @@ class CTFDChallenge(BaseModel):
     class Hint(BaseModel):
         id: int
         cost: int
-        content: str
+        content: Optional[str] = None
 
     # Required fields
     id: int
@@ -75,6 +78,18 @@ class CTFDChallenge(BaseModel):
     hints: Optional[list[Hint]] = None
     view: Optional[str] = None
 
+    def _description_to_markdown(self) -> None:
+        if self.description is None:
+            return None
+
+        # Convert to markdown.
+        md = html2md(self.description, heading_style="atx")
+        # Remove all images.
+        md = re.sub(r'[^\S\r\n]*!\[[^\]]*\]\((.*?)\s*("(?:.*[^"])")?\s*\)\s*', "", md)
+        # Remove multilines.
+        md = re.sub(r"\n+", "\n", md)
+        return md
+
     def convert(self, url_stripped: str) -> Challenge:
         return Challenge(
             id=str(self.id),
@@ -83,7 +98,7 @@ class CTFDChallenge(BaseModel):
             else None,
             category=self.category,
             name=self.name,
-            description=self.description,
+            description=self._description_to_markdown(),
             value=self.value,
             files=[
                 ChallengeFile(
@@ -92,6 +107,18 @@ class CTFDChallenge(BaseModel):
                 for x in self.files
             ]
             if self.files is not None
+            else None,
+            images=[
+                ChallengeFile(
+                    url=f"{url_stripped}/{img['src'].lstrip('/')}"
+                    if img["src"].startswith("/")
+                    else img["src"],
+                    name=extract_filename_from_url(img["src"]),
+                )
+                for img in BeautifulSoup(self.description, "html.parser").findAll("img")
+                if img.get("src")
+            ]
+            if self.description is not None
             else None,
             connection_info=self.connection_info,
             solves=self.solves,

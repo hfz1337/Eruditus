@@ -1,6 +1,7 @@
+import io
 import re
 from logging import getLogger
-from typing import AsyncIterator, Dict
+from typing import AsyncIterator
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -98,6 +99,36 @@ class CTFd(PlatformABC):
             return ctx.session
 
     @classmethod
+    async def fetch(cls, ctx: PlatformCTX, url: str) -> io.BytesIO:
+        """Fetch a URL endpoint from the CTFd platform and return its response.
+
+        Args:
+            url: The URL to fetch.
+
+        Returns:
+            A file-like object for reading the response data.
+        """
+        if not await ctx.login(cls.login):
+            return
+
+        if not url.startswith(ctx.base_url):
+            return
+
+        async with aiohttp.request(
+            method="get",
+            url=url,
+            cookies=ctx.session.cookies,
+            allow_redirects=False,
+        ) as response:
+            if response.status != 200:
+                return
+            try:
+                content = await response.read()
+            except aiohttp.ClientError:
+                return None
+            return io.BytesIO(content)
+
+    @classmethod
     async def submit_flag(
         cls, ctx: PlatformCTX, challenge_id: str, flag: str
     ) -> Optional[SubmittedFlag]:
@@ -152,7 +183,7 @@ class CTFd(PlatformABC):
             tries_left = int(matched.group("tries")) if matched is not None else None
 
             # Parse the flag state.
-            rules: Dict[str, SubmittedFlagState] = {
+            rules: dict[str, SubmittedFlagState] = {
                 "paused": SubmittedFlagState.CTF_PAUSED,
                 "ratelimited": SubmittedFlagState.RATE_LIMITED,
                 "incorrect": SubmittedFlagState.INCORRECT,
@@ -203,8 +234,8 @@ class CTFd(PlatformABC):
             )
             if msg_response:
                 logger.warning(
-                    "Suppressing challenge getter warnings because "
-                    f'of the "{msg_response.message}"'
+                    'Suppressing challenge getter warnings because of the "%s"',
+                    msg_response.message,
                 )
 
             # Validating and deserializing response
