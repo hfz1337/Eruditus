@@ -13,11 +13,6 @@ class EncodingOperationMode(Enum):
     decode = 2
 
 
-class ArchiveMode(Enum):
-    minimal = 1
-    all = 2
-
-
 class CTFStatusMode(Enum):
     active = 1
     all = 2

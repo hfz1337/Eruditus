@@ -18,7 +18,7 @@ from config import (
     TEAM_NAME,
 )
 from lib.platforms import PlatformCTX, match_platform
-from lib.types import ArchiveMode, CTFStatusMode, Permissions
+from lib.types import CTFStatusMode, Permissions
 from lib.util import sanitize_channel_name
 from msg_components.buttons.workon import WorkonButton
 from msg_components.forms.credentials import create_credentials_modal_for_platform
@@ -170,7 +170,6 @@ class CTF(app_commands.Group):
     async def archivectf(
         self,
         interaction: discord.Interaction,
-        mode: Optional[ArchiveMode] = ArchiveMode.all,
         permissions: Optional[Permissions] = Permissions.RDONLY,
         name: Optional[str] = None,
     ):
@@ -178,8 +177,6 @@ class CTF(app_commands.Group):
 
         Args:
             interaction: The interaction that triggered this command.
-            mode: Whether to archive all channels, or the important ones
-               only (default: all).
             permissions: Whether channels should be read-only or writable
                as well (default: read only).
             name: CTF name (default: current channel's CTF).
@@ -257,28 +254,19 @@ class CTF(app_commands.Group):
             for summary in summaries:
                 await scoreboard_channel.send(head.format(summary))
 
-        # Delete unimportant channels if we are in minimal mode.
-        if mode == ArchiveMode.minimal:
-            for ctf_channel in category_channel.channels:
-                if (
-                    ctf_channel.id != ctf["guild_channels"]["notes"]
-                    and ctf_channel.id != ctf["guild_channels"]["solves"]
-                    and ctf_channel.id != ctf["guild_channels"]["scoreboard"]
-                ):
-                    await ctf_channel.delete()
+        # Make threads invitable and lock them if needed.
+        locked = permissions == Permissions.RDONLY
+        for thread in interaction.guild.threads:
+            if thread.category_id != ctf["guild_category"]:
+                continue
+            await thread.edit(locked=locked, invitable=True)
 
-        # Change channels and threads permissions according to the `permissions`
-        # parameter.
+        # Change channels permissions according to the `permissions` parameter.
         members = [
             member
             async for member in interaction.guild.fetch_members(limit=None)
             if role in member.roles
         ]
-
-        # Make threads invitable and lock them if needed.
-        locked = permissions == Permissions.RDONLY
-        for thread in interaction.guild.threads:
-            await thread.edit(locked=locked, invitable=True)
 
         perm_rdwr = discord.PermissionOverwrite(read_messages=True, send_messages=True)
         perm_rdonly = discord.PermissionOverwrite(
@@ -320,10 +308,7 @@ class CTF(app_commands.Group):
             {"_id": ctf["_id"]}, {"$set": {"archived": True, "ended": True}}
         )
 
-        # Only send a followup message if the channel from which the command was issued
-        # still exists, otherwise we will fail with a 404 not found.
-        if interaction.channel in category_channel.channels:
-            await interaction.followup.send(f"✅ CTF `{ctf['name']}` has been archived.")
+        await interaction.followup.send(f"✅ CTF `{ctf['name']}` has been archived.")
 
     @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.checks.has_permissions(manage_channels=True, manage_roles=True)
