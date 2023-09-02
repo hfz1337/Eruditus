@@ -203,6 +203,13 @@ class CTF(app_commands.Group):
                 await interaction.followup.send("No such CTF.")
                 return
 
+        # In case CTF was already archived.
+        if ctf["archived"]:
+            await interaction.followup.send(
+                "This CTF was already archived.", ephemeral=True
+            )
+            return
+
         category_channel = discord.utils.get(
             interaction.guild.categories, id=ctf["guild_category"]
         )
