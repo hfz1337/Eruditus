@@ -1,3 +1,4 @@
+import io
 import re
 from logging import getLogger
 from typing import AsyncIterator
@@ -97,25 +98,35 @@ class CTFd(PlatformABC):
             ctx.session = Session(cookies=cookies)
             return ctx.session
 
-    async def fetch(
-        cls, ctx: PlatformCTX, path: str
-    ) -> Optional[aiohttp.ClientResponse]:
+    @classmethod
+    async def fetch(cls, ctx: PlatformCTX, url: str) -> io.BytesIO:
         """Fetch a URL endpoint from the CTFd platform and return its response.
 
         Args:
-            path: The URL path (e.g., /a/b/c).
+            url: The URL to fetch.
 
         Returns:
-            The HTTP response object.
+            A file-like object for reading the response data.
         """
         if not await ctx.login(cls.login):
             return
 
-        url = f"{ctx.url_stripped}/{path.lstrip('/')}"
+        if not url.startswith(ctx.base_url):
+            return
+
         async with aiohttp.request(
-            method="get", url=url, cookies=ctx.session.cookies
+            method="get",
+            url=url,
+            cookies=ctx.session.cookies,
+            allow_redirects=False,
         ) as response:
-            return response
+            if response.status != 200:
+                return
+            try:
+                content = await response.read()
+            except aiohttp.ClientError:
+                return None
+            return io.BytesIO(content)
 
     @classmethod
     async def submit_flag(

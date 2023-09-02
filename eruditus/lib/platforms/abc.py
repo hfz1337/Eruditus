@@ -1,10 +1,10 @@
+import io
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum, auto, unique
 from typing import AsyncIterator, Awaitable, Callable, Optional
 
-import aiohttp
 from pydantic import field_validator
 
 
@@ -391,9 +391,7 @@ class PlatformABC(ABC):
 
     @classmethod
     @abstractmethod
-    async def fetch(
-        cls, ctx: PlatformCTX, path: str
-    ) -> Optional[aiohttp.ClientResponse]:
+    async def fetch(cls, ctx: PlatformCTX, url: str) -> Optional[io.BytesIO]:
         pass
 
     @classmethod

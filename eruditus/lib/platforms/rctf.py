@@ -1,3 +1,4 @@
+import io
 from typing import AsyncIterator
 
 import aiohttp
@@ -74,25 +75,35 @@ class RCTF(PlatformABC):
             ctx.args["authToken"] = data.data.authToken
             return Session(token=data.data.authToken)
 
-    async def fetch(
-        cls, ctx: PlatformCTX, path: str
-    ) -> Optional[aiohttp.ClientResponse]:
+    @classmethod
+    async def fetch(cls, ctx: PlatformCTX, url: str) -> io.BytesIO:
         """Fetch a URL endpoint from the rCTF platform and return its response.
 
         Args:
-            path: The URL path (e.g., /a/b/c).
+            url: The URL to fetch.
 
         Returns:
-            The HTTP response object.
+            A file-like object for reading the response data.
         """
         if not await ctx.login(cls.login):
             return
 
-        url = f"{ctx.url_stripped}/{path.lstrip('/')}"
+        if not url.startswith(ctx.base_url):
+            return
+
         async with aiohttp.request(
-            method="get", url=url, headers=generate_headers(ctx)
+            method="get",
+            url=url,
+            headers=generate_headers(ctx),
+            allow_redirects=False,
         ) as response:
-            return response
+            if response.status != 200:
+                return
+            try:
+                content = await response.read()
+            except aiohttp.ClientError:
+                return None
+            return io.BytesIO(content)
 
     @classmethod
     async def submit_flag(

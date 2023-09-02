@@ -578,6 +578,69 @@ class Eruditus(discord.Client):
                 ):
                     continue
 
+                # Send challenge information in its respective thread.
+                description = (
+                    "\n".join(
+                        (
+                            challenge.description,
+                            f"`{challenge.connection_info}`"
+                            if challenge.connection_info is not None
+                            else "",
+                        )
+                    )
+                    or "No description."
+                )
+                tags = ", ".join(challenge.tags or []) or "No tags."
+
+                # Format file information.
+                files: list[str] = list()
+                for file in challenge.files:
+                    if file.name is not None:
+                        hyperlink = f"[{file.name}]({file.url})"
+                    else:
+                        hyperlink = file.url
+
+                    files.append(hyperlink)
+
+                files_str = "No files."
+                if len(files) > 0:
+                    files_str = "\n- ".join(files)
+                files_str = "\n- " + files_str
+
+                # Try to fetch images if any.
+                img_attachments = []
+                img_urls = []
+                for image in challenge.images or []:
+                    # If the image is internal to the platform itself, it may require
+                    # authentication.
+                    if image.url.startswith(ctx.base_url):
+                        raw_image = await platform.fetch(ctx, image.url)
+                        if raw_image is None:
+                            continue
+                        attachment = discord.File(raw_image, filename=image.name)
+                        img_attachments.append(attachment)
+                    # Otherwise, if it's external, we don't need to fetch it ourself,
+                    # we can just send the URL as is.
+                    else:
+                        img_urls.append(image.url)
+
+                embed = discord.Embed(
+                    title=f"{challenge.name} - {challenge.value} points",
+                    description=truncate(
+                        f"**Category:** {challenge.category}\n"
+                        f"**Description:** {description}\n"
+                        f"**Files:** {files_str}\n"
+                        f"**Tags:** {tags}",
+                        max_len=4096,
+                    ),
+                    colour=discord.Colour.blue(),
+                    timestamp=datetime.now(),
+                )
+
+                # Add a single image to the embed if there are external images.
+                if img_urls:
+                    embed.set_image(url=img_urls.pop(0))
+
                 # Create a channel for the challenge category if it doesn't exist.
                 channel_name = sanitize_channel_name(challenge.category)
                 text_channel = (
@@ -609,47 +672,21 @@ class Eruditus(discord.Client):
                     name=f"❌-{thread_name}", invitable=False
                 )
 
-                # Send challenge information in its respective thread.
-                description = (
-                    "\n".join(
-                        (
-                            challenge.description,
-                            f"`{challenge.connection_info}`"
-                            if challenge.connection_info is not None
-                            else "",
-                        )
+                # Send out challenge information.
+                message = await challenge_thread.send(
+                    content="\n".join(img_urls) if img_urls else None,
+                    embed=embed,
+                    files=img_attachments or None,
+                )
+
+                # Send remaining images if any.
+                if img_urls or img_attachments:
+                    await challenge_thread.send(
+                        content="\n".join(img_urls) if img_urls else None,
+                        files=img_attachments or None,
                     )
-                    or "No description."
-                )
-                tags = ", ".join(challenge.tags or []) or "No tags."
 
-                files: list[str] = list()
-                for file in challenge.files:
-                    if file.name is not None:
-                        hyperlink = f"[{file.name}]({file.url})"
-                    else:
-                        hyperlink = file.url
-
-                    files.append(hyperlink)
-
-                files_str = "No files."
-                if len(files) > 0:
-                    files_str = "\n- ".join(files)
-                files_str = "\n- " + files_str
-
-                embed = discord.Embed(
-                    title=f"{challenge.name} - {challenge.value} points",
-                    description=truncate(
-                        f"**Category:** {challenge.category}\n"
-                        f"**Description:** {description}\n"
-                        f"**Files:** {files_str}\n"
-                        f"**Tags:** {tags}",
-                        max_len=4096,
-                    ),
-                    colour=discord.Colour.blue(),
-                    timestamp=datetime.now(),
-                )
-                message = await challenge_thread.send(embed=embed)
+                # Pin the challenge info message.
                 await message.pin()
 
                 # Announce that the challenge was added.

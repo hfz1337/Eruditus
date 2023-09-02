@@ -82,9 +82,13 @@ class CTFDChallenge(BaseModel):
         if self.description is None:
             return None
 
-        # Convert to markdown and remove all images
+        # Convert to markdown.
         md = html2md(self.description)
-        return re.sub(r'[^\S\r\n]*!\[[^\]]*\]\((.*?)\s*("(?:.*[^"])")?\s*\)\s*', "", md)
+        # Remove all images.
+        md = re.sub(r'[^\S\r\n]*!\[[^\]]*\]\((.*?)\s*("(?:.*[^"])")?\s*\)\s*', "", md)
+        # Remove multilines.
+        md = re.sub(r"\n+", "\n", md)
+        return md
 
     def convert(self, url_stripped: str) -> Challenge:
         return Challenge(
@@ -105,7 +109,12 @@ class CTFDChallenge(BaseModel):
             if self.files is not None
             else None,
             images=[
-                img["src"]
+                ChallengeFile(
+                    url=f"{url_stripped}/{img['src'].lstrip('/')}"
+                    if img["src"].startswith("/")
+                    else img["src"],
+                    name=extract_filename_from_url(img["src"]),
+                )
                 for img in BeautifulSoup(self.description, "html.parser").findAll("img")
                 if img.get("src")
             ]
