@@ -257,7 +257,7 @@ class CTF(app_commands.Group):
         # Make threads invitable and lock them if needed.
         locked = permissions == Permissions.RDONLY
         for thread in interaction.guild.threads:
-            if thread.category_id != ctf["guild_category"]:
+            if thread.parent is None or thread.category_id != ctf["guild_category"]:
                 continue
             await thread.edit(locked=locked, invitable=True)
 
