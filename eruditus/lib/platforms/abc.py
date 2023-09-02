@@ -4,6 +4,7 @@ from datetime import datetime
 from enum import IntEnum, auto, unique
 from typing import AsyncIterator, Awaitable, Callable, Optional
 
+import aiohttp
 from pydantic import field_validator
 
 
@@ -386,6 +387,13 @@ class PlatformABC(ABC):
     @classmethod
     @abstractmethod
     async def login(cls, ctx: PlatformCTX) -> Optional[Session]:
+        pass
+
+    @classmethod
+    @abstractmethod
+    async def fetch(
+        cls, ctx: PlatformCTX, path: str
+    ) -> Optional[aiohttp.ClientResponse]:
         pass
 
     @classmethod

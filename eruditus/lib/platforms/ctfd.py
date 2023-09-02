@@ -97,6 +97,26 @@ class CTFd(PlatformABC):
             ctx.session = Session(cookies=cookies)
             return ctx.session
 
+    async def fetch(
+        cls, ctx: PlatformCTX, path: str
+    ) -> Optional[aiohttp.ClientResponse]:
+        """Fetch a URL endpoint from the CTFd platform and return its response.
+
+        Args:
+            path: The URL path (e.g., /a/b/c).
+
+        Returns:
+            The HTTP response object.
+        """
+        if not await ctx.login(cls.login):
+            return
+
+        url = f"{ctx.url_stripped}/{path.lstrip('/')}"
+        async with aiohttp.request(
+            method="get", url=url, cookies=ctx.session.cookies
+        ) as response:
+            return response
+
     @classmethod
     async def submit_flag(
         cls, ctx: PlatformCTX, challenge_id: str, flag: str
@@ -203,8 +223,8 @@ class CTFd(PlatformABC):
             )
             if msg_response:
                 logger.warning(
-                    "Suppressing challenge getter warnings because "
-                    f'of the "{msg_response.message}"'
+                    'Suppressing challenge getter warnings because of the "%s"',
+                    msg_response.message,
                 )
 
             # Validating and deserializing response

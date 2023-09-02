@@ -35,7 +35,7 @@ class RCTFChallenge(BaseModel):
     solves: Optional[int]
     id: str
 
-    # Optional vales that would be set only in `/challs` response
+    # Optional values that would be set only in `/challs` response
     class File(BaseModel):
         url: str
         name: str

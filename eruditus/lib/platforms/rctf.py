@@ -74,6 +74,26 @@ class RCTF(PlatformABC):
             ctx.args["authToken"] = data.data.authToken
             return Session(token=data.data.authToken)
 
+    async def fetch(
+        cls, ctx: PlatformCTX, path: str
+    ) -> Optional[aiohttp.ClientResponse]:
+        """Fetch a URL endpoint from the rCTF platform and return its response.
+
+        Args:
+            path: The URL path (e.g., /a/b/c).
+
+        Returns:
+            The HTTP response object.
+        """
+        if not await ctx.login(cls.login):
+            return
+
+        url = f"{ctx.url_stripped}/{path.lstrip('/')}"
+        async with aiohttp.request(
+            method="get", url=url, headers=generate_headers(ctx)
+        ) as response:
+            return response
+
     @classmethod
     async def submit_flag(
         cls, ctx: PlatformCTX, challenge_id: str, flag: str

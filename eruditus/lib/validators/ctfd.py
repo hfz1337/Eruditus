@@ -77,7 +77,6 @@ class CTFDChallenge(BaseModel):
     files: Optional[list[str]] = None
     hints: Optional[list[Hint]] = None
     view: Optional[str] = None
-    images: Optional[list[str]] = None
 
     def _description_to_markdown(self) -> None:
         if self.description is None:
