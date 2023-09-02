@@ -101,6 +101,7 @@ class Challenge:
     description: Optional[str] = None
     value: Optional[int] = None
     files: Optional[list[ChallengeFile]] = None
+    images: Optional[list[ChallengeFile]] = None
     connection_info: Optional[str] = None
     solves: Optional[int] = None
     solved_by: Optional[list[ChallengeSolver]] = None

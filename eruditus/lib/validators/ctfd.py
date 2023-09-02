@@ -1,6 +1,9 @@
+import re
 from datetime import datetime
 from typing import Any, Optional
 
+from bs4 import BeautifulSoup
+from markdownify import markdownify as html2md
 from pydantic import BaseModel, field_validator
 
 from lib.platforms.abc import Challenge, ChallengeFile, ChallengeSolver, Team
@@ -74,6 +77,15 @@ class CTFDChallenge(BaseModel):
     files: Optional[list[str]] = None
     hints: Optional[list[Hint]] = None
     view: Optional[str] = None
+    images: Optional[list[str]] = None
+
+    def _description_to_markdown(self) -> None:
+        if self.description is None:
+            return None
+
+        # Convert to markdown and remove all images
+        md = html2md(self.description)
+        return re.sub(r'[^\S\r\n]*!\[[^\]]*\]\((.*?)\s*("(?:.*[^"])")?\s*\)\s*', "", md)
 
     def convert(self, url_stripped: str) -> Challenge:
         return Challenge(
@@ -83,7 +95,7 @@ class CTFDChallenge(BaseModel):
             else None,
             category=self.category,
             name=self.name,
-            description=self.description,
+            description=self._description_to_markdown(),
             value=self.value,
             files=[
                 ChallengeFile(
@@ -92,6 +104,13 @@ class CTFDChallenge(BaseModel):
                 for x in self.files
             ]
             if self.files is not None
+            else None,
+            images=[
+                img["src"]
+                for img in BeautifulSoup(self.description, "html.parser").findAll("img")
+                if img.get("src")
+            ]
+            if self.description is not None
             else None,
             connection_info=self.connection_info,
             solves=self.solves,
