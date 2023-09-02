@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 import aiohttp
 import discord
@@ -55,7 +55,7 @@ class CTF(app_commands.Group):
 
     async def _ctf_autocompletion_func(
         self, _: discord.Interaction, current: str
-    ) -> List[Choice[str]]:
+    ) -> list[Choice[str]]:
         """Autocomplete CTF name.
         This function is inefficient, might improve it later.
 
@@ -78,7 +78,7 @@ class CTF(app_commands.Group):
 
     async def _challenge_autocompletion_func(
         self, interaction: discord.Interaction, current: str
-    ) -> List[Choice[str]]:
+    ) -> list[Choice[str]]:
         """Autocomplete challenge name.
         This function is inefficient, might improve it later.
 

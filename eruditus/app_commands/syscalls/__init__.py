@@ -1,6 +1,6 @@
 import os
 from collections import OrderedDict
-from typing import Any, List, Union
+from typing import Any, Union
 
 import discord
 from discord import app_commands
@@ -54,7 +54,7 @@ class Syscalls(app_commands.Command[Any, Any, Any]):
         @self.autocomplete("syscall")
         async def _syscall_autocompletion_func(
             interaction: discord.Interaction, current: str
-        ) -> List[Choice[str]]:
+        ) -> list[Choice[str]]:
             """Autocomplete syscall name.
 
             Args:

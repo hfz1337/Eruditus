@@ -1,6 +1,6 @@
 import re
 from logging import getLogger
-from typing import AsyncIterator, Dict
+from typing import AsyncIterator
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -152,7 +152,7 @@ class CTFd(PlatformABC):
             tries_left = int(matched.group("tries")) if matched is not None else None
 
             # Parse the flag state.
-            rules: Dict[str, SubmittedFlagState] = {
+            rules: dict[str, SubmittedFlagState] = {
                 "paused": SubmittedFlagState.CTF_PAUSED,
                 "ratelimited": SubmittedFlagState.RATE_LIMITED,
                 "incorrect": SubmittedFlagState.INCORRECT,

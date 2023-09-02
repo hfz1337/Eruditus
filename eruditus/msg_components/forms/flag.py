@@ -1,6 +1,5 @@
 import re
 from datetime import datetime
-from typing import Dict
 
 import discord
 from discord import HTTPException
@@ -51,7 +50,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             await interaction.followup.send("❌ Failed to submit the flag.")
             return
 
-        error_messages: Dict[SubmittedFlagState, str] = {
+        error_messages: dict[SubmittedFlagState, str] = {
             SubmittedFlagState.ALREADY_SUBMITTED: "You already solved this challenge.",
             SubmittedFlagState.INCORRECT: "❌ Incorrect flag.",
             SubmittedFlagState.CTF_NOT_STARTED: "❌ CTF not started.",

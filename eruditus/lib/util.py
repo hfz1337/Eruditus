@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from hashlib import md5
 from logging import Logger
 from string import ascii_lowercase, digits
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 from aiohttp import ClientResponse
 from pydantic import TypeAdapter, ValidationError
@@ -156,7 +156,7 @@ async def deserialize_response(
     Returns:
         A deserialized response if the response is valid, None otherwise.
     """
-    response_ranges: List[List[int]] = [
+    response_ranges: list[list[int]] = [
         [200, 299],  # ok
         [400, 499],  # client-side errors
     ]
@@ -168,7 +168,7 @@ async def deserialize_response(
     if not valid_status_code:
         return None
 
-    response_json: Dict[str, Any] = await response.json()
+    response_json: dict[str, Any] = await response.json()
 
     try:
         return TypeAdapter(model).validate_python(response_json)

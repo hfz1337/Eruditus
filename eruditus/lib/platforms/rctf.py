@@ -1,4 +1,4 @@
-from typing import AsyncIterator, Dict
+from typing import AsyncIterator
 
 import aiohttp
 
@@ -25,7 +25,7 @@ from lib.validators.rctf import (
 )
 
 
-def generate_headers(ctx: PlatformCTX) -> Dict[str, str]:
+def generate_headers(ctx: PlatformCTX) -> dict[str, str]:
     if not ctx.session or not ctx.session.validate():
         return {}
 
@@ -98,7 +98,7 @@ class RCTF(PlatformABC):
             result: SubmittedFlag = SubmittedFlag(state=SubmittedFlagState.UNKNOWN)
 
             # Lookup table for flag submission states
-            statuses: Dict[str, SubmittedFlagState] = {
+            statuses: dict[str, SubmittedFlagState] = {
                 "goodFlag": SubmittedFlagState.CORRECT,
                 "badNotStarted": SubmittedFlagState.CTF_NOT_STARTED,
                 "badEnded": SubmittedFlagState.CTF_ENDED,

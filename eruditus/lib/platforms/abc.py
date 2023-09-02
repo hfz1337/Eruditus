@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum, auto, unique
-from typing import AsyncIterator, Awaitable, Callable, Dict, List, Optional
+from typing import AsyncIterator, Awaitable, Callable, Optional
 
 from pydantic import field_validator
 
@@ -23,7 +23,7 @@ class Session:
     """
 
     token: Optional[str] = None
-    cookies: Dict[str, str] = field(default_factory=dict)
+    cookies: dict[str, str] = field(default_factory=dict)
 
     def validate(self) -> bool:
         return len(self.cookies) > 0 or self.token is not None
@@ -95,21 +95,21 @@ class Challenge:
     """
 
     id: str
-    tags: Optional[List[str]] = None
+    tags: Optional[list[str]] = None
     category: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
     value: Optional[int] = None
-    files: Optional[List[ChallengeFile]] = None
+    files: Optional[list[ChallengeFile]] = None
     connection_info: Optional[str] = None
     solves: Optional[int] = None
-    solved_by: Optional[List[ChallengeSolver]] = None
+    solved_by: Optional[list[ChallengeSolver]] = None
 
     @classmethod
     @field_validator("solved_by", mode="before")
     def validate_solved_by(
-        cls, value: Optional[List[ChallengeSolver]]
-    ) -> Optional[List[ChallengeSolver]]:
+        cls, value: Optional[list[ChallengeSolver]]
+    ) -> Optional[list[ChallengeSolver]]:
         if value is None:
             return value
 
@@ -241,7 +241,7 @@ class Team:
     name: str
     score: Optional[int] = None
     invite_token: Optional[str] = None
-    solves: Optional[List[Challenge]] = None
+    solves: Optional[list[Challenge]] = None
 
     def __eq__(self, other: Optional["Team"]) -> bool:
         if other is None:
@@ -300,7 +300,7 @@ class PlatformCTX:
     """
 
     base_url: str
-    args: Dict[str, str] = field(default_factory=dict)
+    args: dict[str, str] = field(default_factory=dict)
     session: Optional[Session] = None
 
     @property
@@ -308,7 +308,7 @@ class PlatformCTX:
         return self.base_url.strip("/")
 
     @staticmethod
-    def from_credentials(credentials: Dict[str, str]) -> "PlatformCTX":
+    def from_credentials(credentials: dict[str, str]) -> "PlatformCTX":
         """Custom constructor that initializes a class instance from a set of
         credentials.
 
@@ -321,7 +321,7 @@ class PlatformCTX:
             args=credentials,
         )
 
-    def get_args(self, *required_fields: str, **kwargs: str) -> Dict[str, str]:
+    def get_args(self, *required_fields: str, **kwargs: str) -> dict[str, str]:
         """Get arguments from the set of custom arguments (i.e., self.args), optionally
         extending them with additional items.
 
@@ -332,7 +332,7 @@ class PlatformCTX:
         Returns:
             A dictionary of arguments (e.g., email, password, etc.).
         """
-        result: Dict[str, str] = {
+        result: dict[str, str] = {
             key: value for key, value in self.args.items() if key in required_fields
         }
 
