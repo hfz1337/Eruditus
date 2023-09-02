@@ -619,7 +619,7 @@ class Eruditus(discord.Client):
                             continue
                         attachment = discord.File(raw_image, filename=image.name)
                         img_attachments.append(attachment)
-                    # Otherwise, if it's external, we don't need to fetch it ourself,
+                    # Otherwise, if it's external, we don't need to fetch it ourselves,
                     # we can just send the URL as is.
                     else:
                         img_urls.append(image.url)
