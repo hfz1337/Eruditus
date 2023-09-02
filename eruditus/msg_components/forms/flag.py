@@ -69,8 +69,6 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             await interaction.followup.send(error_msg)
             return
 
-        # @note: @es3n1n: Ignore other states, they should be handled within the
-        # `error_messages` dict
         if result.state != SubmittedFlagState.CORRECT:
             return
 
@@ -179,4 +177,4 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
 
         text_channel = interaction.channel.parent
         if text_channel.name.startswith("🔄"):
-            await text_channel.edit(name=text_channel.name.replace("🔄", "⭐"))
+            await text_channel.edit(name=text_channel.name.replace("🔄", "🎯"))

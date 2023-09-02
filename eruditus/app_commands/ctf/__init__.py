@@ -585,7 +585,7 @@ class CTF(app_commands.Group):
             or discord.utils.get(
                 interaction.guild.text_channels,
                 category=category_channel,
-                name=f"⭐-{channel_name}",
+                name=f"🎯-{channel_name}",
             )
             or await interaction.guild.create_text_channel(
                 name=f"🔄-{channel_name}",
@@ -645,7 +645,7 @@ class CTF(app_commands.Group):
         )
 
         await text_channel.edit(
-            name=text_channel.name.replace("💤", "🔄").replace("⭐", "🔄")
+            name=text_channel.name.replace("💤", "🔄").replace("🎯", "🔄")
         )
 
         await interaction.response.send_message(
@@ -772,7 +772,7 @@ class CTF(app_commands.Group):
         text_channel = challenge_thread.parent
         if len(text_channel.threads) == 0:
             await text_channel.edit(
-                name=text_channel.name.replace("🔄", "💤").replace("⭐", "💤")
+                name=text_channel.name.replace("🔄", "💤").replace("🎯", "💤")
             )
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
@@ -889,7 +889,7 @@ class CTF(app_commands.Group):
 
         text_channel = interaction.channel.parent
         if text_channel.name.startswith("🔄"):
-            await text_channel.edit(name=text_channel.name.replace("🔄", "⭐"))
+            await text_channel.edit(name=text_channel.name.replace("🔄", "🎯"))
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
@@ -967,8 +967,8 @@ class CTF(app_commands.Group):
 
         # In case the CTF category was maxed before adding this new challenge.
         text_channel = interaction.channel.parent
-        if text_channel.name.startswith("⭐"):
-            await text_channel.edit(name=text_channel.name.replace("⭐", "🔄"))
+        if text_channel.name.startswith("🎯"):
+            await text_channel.edit(name=text_channel.name.replace("🎯", "🔄"))
 
         await interaction.followup.send("✅ Challenge unsolved.")
 

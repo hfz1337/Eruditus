@@ -5,7 +5,7 @@ import re
 import traceback
 from binascii import hexlify
 from datetime import datetime, timedelta
-from typing import List, Union
+from typing import Any, Union
 
 import aiohttp
 import discord
@@ -58,21 +58,27 @@ class Eruditus(discord.Client):
         self.tree = discord.app_commands.CommandTree(self)
         self.challenge_puller_is_running = False
 
-    async def create_ctf(self, name: str, live: bool = True) -> Union[dict, None]:
+    async def create_ctf(
+        self, name: str, live: bool = True, return_if_exists: bool = False
+    ) -> Union[dict, None]:
         """Create a CTF along with its channels and role.
 
         Args:
             name: CTF name.
             live: True if the CTF is ongoing.
+            return_if_exists: Causes the function to return the CTF object instead of
+                None in case it exists.
 
         Returns:
             A dictionary containing information about the created CTF, or None if the
             CTF already exists.
         """
         # Check if the CTF already exists (case insensitive).
-        if MONGO[DBNAME][CTF_COLLECTION].find_one(
+        if ctf := MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
         ):
+            if return_if_exists:
+                return ctf
             return None
 
         # The bot is supposed to be part of a single guild.
@@ -177,7 +183,7 @@ class Eruditus(discord.Client):
 
     async def on_ready(self) -> None:
         for guild in self.guilds:
-            logger.info(f"{self.user} connected to {guild}")
+            logger.info("%s connected to %s", self.user, guild)
 
         # Sync global and guild specific commands.
         await self.tree.sync()
@@ -186,10 +192,64 @@ class Eruditus(discord.Client):
         await self.change_presence(activity=discord.Game(name="/help"))
 
     async def on_guild_join(self, guild: discord.Guild) -> None:
-        logger.info(f"{self.user} joined {guild}!")
+        logger.info("%s joined %s!", self.user, guild)
 
     async def on_guild_remove(self, guild: discord.Guild) -> None:
-        logger.info(f"{self.user} left {guild}.")
+        logger.info("%s left %s.", self.user, guild)
+
+    async def _do_ctf_registration(
+        self,
+        ctf: dict[str, Any],
+        guild: discord.Guild,
+        event: discord.ScheduledEvent,
+        users: list[discord.User],
+    ) -> None:
+        # Register a team account if it's a supported platform.
+        url = event.location.split(" — ")[1]
+        password = hexlify(os.urandom(32)).decode()
+
+        # Match the platform
+        ctx = PlatformCTX(
+            base_url=url,
+            args={"username": TEAM_NAME, "password": password, "email": TEAM_EMAIL},
+        )
+        platform = await match_platform(ctx)
+        if platform is None:
+            # Unsupported platform
+            return
+
+        result = await platform.register(ctx)
+
+        if result.success:
+            # Add credentials.
+            ctf["credentials"]["url"] = url
+            ctf["credentials"]["username"] = TEAM_NAME
+            ctf["credentials"]["password"] = password
+            ctf["credentials"]["token"] = result.token
+            ctf["credentials"]["teamToken"] = result.invite
+
+            MONGO[DBNAME][CTF_COLLECTION].update_one(
+                {"_id": ctf["_id"]},
+                {"$set": {"credentials": ctf["credentials"]}},
+            )
+
+            creds_channel = discord.utils.get(
+                guild.text_channels, id=ctf["guild_channels"]["credentials"]
+            )
+            message = (
+                f"CTF platform: {url}\n"
+                "```yaml\n"
+                f"Username: {TEAM_NAME}\n"
+                f"Password: {password}\n"
+            )
+
+            if result.invite is not None:
+                message += f"Invite: {result.invite}\n"
+
+            message += "```"
+
+            await creds_channel.purge()
+            await creds_channel.send(message)
 
     async def on_scheduled_event_update(
         self, before: discord.ScheduledEvent, after: discord.ScheduledEvent
@@ -208,68 +268,18 @@ class Eruditus(discord.Client):
             users = [user async for user in after.users()]
             if len(users) < MIN_PLAYERS:
                 return
-            ctf = await self.create_ctf(event_name, live=True)
-            if ctf is None:
-                ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-                    {
-                        "name": re.compile(
-                            f"^{re.escape(event_name.strip())}$", re.IGNORECASE
-                        )
-                    }
-                )
-
-            # Register a team account if it's a supported platform.
-            url = after.location.split(" — ")[1]
-            password = hexlify(os.urandom(32)).decode()
-
-            # Matching platform
-            ctx = PlatformCTX(
-                base_url=url,
-                args=dict(username=TEAM_NAME, password=password, email=TEAM_EMAIL),
-            )
-            platform = await match_platform(ctx)
-            if platform is None:
-                # unsupported platform gg
-                return
-
-            result = await platform.register(ctx)
-
-            if result.success:
-                # Add credentials.
-                ctf["credentials"]["url"] = url
-                ctf["credentials"]["username"] = TEAM_NAME
-                ctf["credentials"]["password"] = password
-                ctf["credentials"]["token"] = result.token
-                ctf["credentials"]["teamToken"] = result.invite
-
-                MONGO[DBNAME][CTF_COLLECTION].update_one(
-                    {"_id": ctf["_id"]},
-                    {"$set": {"credentials": ctf["credentials"]}},
-                )
-
-                creds_channel = discord.utils.get(
-                    guild.text_channels, id=ctf["guild_channels"]["credentials"]
-                )
-                message = (
-                    f"CTF platform: {url}\n"
-                    "```yaml\n"
-                    f"Username: {TEAM_NAME}\n"
-                    f"Password: {password}\n"
-                )
-
-                if result.invite is not None:
-                    message += f"Invite: {result.invite}\n"
-
-                message += "```"
-
-                await creds_channel.purge()
-                await creds_channel.send(message)
+            ctf = await self.create_ctf(after.name, live=True, return_if_exists=True)
 
             # Give the CTF role to the interested people if they didn't get it yet.
             role = discord.utils.get(guild.roles, id=ctf["guild_role"])
             for user in users:
                 member = await guild.fetch_member(user.id)
                 await member.add_roles(role)
+
+            # Register to the CTF.
+            await self._do_ctf_registration(
+                ctf=ctf, guild=guild, event=after, users=users
+            )
 
             # Substitute the ⏰ in the category channel name with a 🔴 to say that
             # we're live.
@@ -389,69 +399,18 @@ class Eruditus(discord.Client):
                 continue
 
             # If a CTF is starting soon, we create it if it wasn't created yet.
-            ctf = await self.create_ctf(event_name, live=False)
-            if ctf is None:
-                ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-                    {
-                        "name": re.compile(
-                            f"^{re.escape(event_name.strip())}$",
-                            re.IGNORECASE,
-                        )
-                    }
-                )
+            ctf = await self.create_ctf(event_name, live=False, return_if_exists=True)
 
-            # Register a team account if the platform is supported.
-            url = scheduled_event.location.split(" — ")[1]
-            password = hexlify(os.urandom(32)).decode()
-
-            # Matching platform
-            ctx = PlatformCTX(
-                base_url=url,
-                args=dict(username=TEAM_NAME, password=password, email=TEAM_EMAIL),
-            )
-            platform = await match_platform(ctx)
-            if platform is None:
-                # unsupported platform gg
-                return
-
-            result = await platform.register(ctx)
-
-            if result.success:
-                # Add credentials.
-                ctf["credentials"]["url"] = url
-                ctf["credentials"]["username"] = TEAM_NAME
-                ctf["credentials"]["password"] = password
-                ctf["credentials"]["token"] = result.token
-                ctf["credentials"]["teamToken"] = result.invite
-
-                MONGO[DBNAME][CTF_COLLECTION].update_one(
-                    {"_id": ctf["_id"]},
-                    {"$set": {"credentials": ctf["credentials"]}},
-                )
-
-                creds_channel = discord.utils.get(
-                    guild.text_channels, id=ctf["guild_channels"]["credentials"]
-                )
-                message = (
-                    f"CTF platform: {url}\n"
-                    "```yaml\n"
-                    f"Username: {TEAM_NAME}\n"
-                    f"Password: {password}\n"
-                )
-
-                if result.invite is not None:
-                    message += f"Invite: {result.invite}\n"
-
-                message += "```"
-
-                await creds_channel.purge()
-                await creds_channel.send(message)
-
-            # Add interested people automatically.
+            # Give the CTF role to the interested people if they didn't get it yet.
             role = discord.utils.get(guild.roles, id=ctf["guild_role"])
             for user in users:
                 member = await guild.fetch_member(user.id)
                 await member.add_roles(role)
+
+            # Register to the CTF.
+            await self._do_ctf_registration(
+                ctf=ctf, guild=guild, event=scheduled_event, users=users
+            )
 
             # Send a reminder that the CTF is starting soon.
             if reminder_channel:
@@ -635,7 +594,7 @@ class Eruditus(discord.Client):
                     or discord.utils.get(
                         guild.text_channels,
                         category=category_channel,
-                        name=f"⭐-{channel_name}",
+                        name=f"🎯-{channel_name}",
                     )
                     or await guild.create_text_channel(
                         name=f"🔄-{channel_name}",
@@ -664,7 +623,7 @@ class Eruditus(discord.Client):
                 )
                 tags = ", ".join(challenge.tags or []) or "No tags."
 
-                files: List[str] = list()
+                files: list[str] = list()
                 for file in challenge.files:
                     if file.name is not None:
                         hyperlink = f"[{file.name}]({file.url})"
@@ -742,7 +701,7 @@ class Eruditus(discord.Client):
                 )
 
                 await text_channel.edit(
-                    name=text_channel.name.replace("💤", "🔄").replace("⭐", "🔄")
+                    name=text_channel.name.replace("💤", "🔄").replace("🎯", "🔄")
                 )
 
         self.challenge_puller_is_running = False
@@ -760,11 +719,15 @@ class Eruditus(discord.Client):
             if ctf["credentials"]["url"] is None:
                 continue
 
-            # Matching platform
+            # Match the platform
             ctx = PlatformCTX.from_credentials(ctf["credentials"])
-            platform = await match_platform(ctx)
+            try:
+                platform = await match_platform(ctx)
+            except aiohttp.ClientError:
+                continue
+
             if platform is None:
-                # unsupported platform gg
+                # Unsupported platform
                 return
 
             try:

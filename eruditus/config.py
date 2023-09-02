@@ -11,7 +11,7 @@ def load_revision() -> str:
     """Get the current revision.
 
     Author:
-        es3n1n (refactoring and handling of multiple cases)
+        @es3n1n (refactoring and handling of multiple cases)
 
     Notes:
         We start by looking up the `.revision` file, if it's present, we use it.
@@ -21,13 +21,13 @@ def load_revision() -> str:
     dot_revision: Path = root_dir / ".revision"
 
     if dot_revision.exists():
-        return open(dot_revision).read()
+        return open(dot_revision, encoding="utf-8").read()
 
     git_dir: Path = root_dir.parent / ".git"
 
     head_ref: Path = git_dir / "refs" / "heads" / "master"
     if head_ref.exists():
-        return open(head_ref).read()
+        return open(head_ref, encoding="utf-8").read()
 
     return "unknown"
 

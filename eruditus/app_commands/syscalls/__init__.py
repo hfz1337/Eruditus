@@ -17,7 +17,9 @@ class SyscallTable:
         self.parse_table(architecture)
 
     def parse_table(self, filename: str) -> None:
-        lines = [line.split("\t") for line in open(filename).readlines()]
+        lines = [
+            line.split("\t") for line in open(filename, encoding="utf-8").readlines()
+        ]
 
         for line in lines[1:]:
             syscall = OrderedDict()

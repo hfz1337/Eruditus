@@ -189,6 +189,7 @@ class RCTF(PlatformABC):
     @classmethod
     async def register(cls, ctx: PlatformCTX) -> RegistrationStatus:
         # Assert registration data
+        ctx.args["team"] = ctx.args.get("team") or ctx.args.get("username")
         if any(is_empty_string(ctx.args.get(value)) for value in ("team", "email")):
             return RegistrationStatus(
                 success=False, message="Not enough values in context"
