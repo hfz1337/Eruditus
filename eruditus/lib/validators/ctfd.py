@@ -83,7 +83,7 @@ class CTFDChallenge(BaseModel):
             return None
 
         # Convert to markdown.
-        md = html2md(self.description)
+        md = html2md(self.description, heading_style="atx")
         # Remove all images.
         md = re.sub(r'[^\S\r\n]*!\[[^\]]*\]\((.*?)\s*("(?:.*[^"])")?\s*\)\s*', "", md)
         # Remove multilines.
