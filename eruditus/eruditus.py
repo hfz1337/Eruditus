@@ -673,11 +673,7 @@ class Eruditus(discord.Client):
                 )
 
                 # Send out challenge information.
-                message = await challenge_thread.send(
-                    content="\n".join(img_urls) if img_urls else None,
-                    embed=embed,
-                    files=img_attachments or None,
-                )
+                message = await challenge_thread.send(embed=embed)
 
                 # Send remaining images if any.
                 if img_urls or img_attachments:
