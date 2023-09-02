@@ -676,11 +676,10 @@ class Eruditus(discord.Client):
                 message = await challenge_thread.send(embed=embed)
 
                 # Send remaining images if any.
-                if img_urls or img_attachments:
-                    await challenge_thread.send(
-                        content="\n".join(img_urls) if img_urls else None,
-                        files=img_attachments or None,
-                    )
+                for img_url in img_urls:
+                    await challenge_thread.send(content=img_url)
+                if img_attachments:
+                    await challenge_thread.send(files=img_attachments)
 
                 # Pin the challenge info message.
                 await message.pin()
