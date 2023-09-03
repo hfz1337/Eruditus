@@ -99,20 +99,21 @@ class CTFd(PlatformABC):
             return ctx.session
 
     @classmethod
-    async def fetch(cls, ctx: PlatformCTX, url: str) -> io.BytesIO:
+    async def fetch(cls, ctx: PlatformCTX, url: str) -> Optional[io.BytesIO]:
         """Fetch a URL endpoint from the CTFd platform and return its response.
 
         Args:
+            ctx: Platform context.
             url: The URL to fetch.
 
         Returns:
             A file-like object for reading the response data.
         """
         if not await ctx.login(cls.login):
-            return
+            return None
 
         if not url.startswith(ctx.base_url):
-            return
+            return None
 
         async with aiohttp.request(
             method="get",
@@ -121,7 +122,7 @@ class CTFd(PlatformABC):
             allow_redirects=False,
         ) as response:
             if response.status != 200:
-                return
+                return None
             try:
                 content = await response.read()
             except aiohttp.ClientError:
