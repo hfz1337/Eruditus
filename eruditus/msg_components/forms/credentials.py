@@ -186,6 +186,9 @@ async def register_account_callback(
                 ),
             }
 
+        case _:
+            return
+
     # Add credentials.
     ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
         {"guild_category": interaction.channel.category_id}
