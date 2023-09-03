@@ -196,7 +196,7 @@ class RCTF(PlatformABC):
 
             # Iterate over teams and parse them
             for team in data.data.leaderboard[:max_entries_count]:
-                yield team.convert()
+                yield team.convert(ctx.url_stripped)
 
     @classmethod
     async def get_me(cls, ctx: PlatformCTX) -> Optional[Team]:
@@ -215,7 +215,7 @@ class RCTF(PlatformABC):
                 return
 
             # Parse as a team
-            return data.data.convert()
+            return data.data.convert(ctx.url_stripped)
 
     @classmethod
     async def register(cls, ctx: PlatformCTX) -> RegistrationStatus:

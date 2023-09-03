@@ -1,13 +1,10 @@
-import re
 from datetime import datetime
 from typing import Optional
 
-from bs4 import BeautifulSoup
-from markdownify import markdownify as html2md
 from pydantic import BaseModel, field_validator
 
 from lib.platforms.abc import Challenge, ChallengeFile, ChallengeSolver, Team
-from lib.util import extract_filename_from_url
+from lib.util import extract_images_from_html, html_to_markdown
 
 
 class BaseRCTFResponse(BaseModel):
@@ -51,43 +48,15 @@ class RCTFChallenge(BaseModel):
     description: Optional[str] = None
     author: Optional[str] = None
 
-    def _description_to_markdown(self) -> None:
-        if self.description is None:
-            return None
-
-        # Convert to markdown.
-        md = html2md(
-            self.description,
-            heading_style="atx",
-            escape_asterisks=False,
-            escape_underscores=False,
-        )
-        # Remove all images.
-        md = re.sub(r'[^\S\r\n]*!\[[^\]]*\]\((.*?)\s*("(?:.*[^"])")?\s*\)\s*', "", md)
-        # Remove multilines.
-        md = re.sub(r"\n+", "\n", md)
-        return md
-
     def convert(self, url_stripped: str) -> Challenge:
         return Challenge(
             id=self.id,
             category=self.category,
             name=self.name,
-            description=self._description_to_markdown(),
+            description=html_to_markdown(self.description),
             value=self.points if self.points is not None else 0,
             files=[x.convert() for x in self.files] if self.files is not None else None,
-            images=[
-                ChallengeFile(
-                    url=f"{url_stripped}/{img['src'].lstrip('/')}"
-                    if img["src"].startswith("/")
-                    else img["src"],
-                    name=extract_filename_from_url(img["src"]),
-                )
-                for img in BeautifulSoup(self.description, "html.parser").findAll("img")
-                if img.get("src")
-            ]
-            if self.description is not None
-            else None,
+            images=extract_images_from_html(self.description, url_stripped),
             solves=self.solves if self.solves is not None else 0,
         )
 
@@ -110,13 +79,13 @@ class RCTFTeam(BaseModel):
     allowedDivisions: Optional[list[str]] = None
     email: Optional[str] = None
 
-    def convert(self) -> Team:
+    def convert(self, url_stripped: str) -> Team:
         return Team(
             id=self.id,
             name=self.name,
             score=self.score,
             invite_token=self.teamToken,
-            solves=[x.convert() for x in self.solves]
+            solves=[x.convert(url_stripped) for x in self.solves]
             if self.solves is not None
             else None,
         )
