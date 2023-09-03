@@ -407,7 +407,7 @@ class CTF(app_commands.Group):
         role = discord.utils.get(interaction.guild.roles, id=ctf["guild_role"])
         if role is None:
             await interaction.followup.send(
-                "CTF role was (accidently?) deleted by an admin, aborting."
+                "CTF role was (accidentally?) deleted by an admin, aborting."
             )
             return
 

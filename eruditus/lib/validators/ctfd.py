@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel, field_validator
 
@@ -97,7 +97,7 @@ class CTFDChallenge(BaseModel):
 class CTFDTeam(BaseModel):
     class Member(BaseModel):
         id: int
-        oauth_id: Optional[str] = None
+        oauth_id: Optional[Union[str, int]] = None
         name: str
         score: int
 
@@ -105,7 +105,7 @@ class CTFDTeam(BaseModel):
     account_id: int
     account_url: str
     account_type: str
-    oauth_id: Optional[str] = None
+    oauth_id: Optional[Union[str, int]] = None
     name: str
     score: int
     members: list[Member]
@@ -149,7 +149,7 @@ class UserResponse(BaseValidResponse):
         website: Optional[str]
         id: int
         members: list[int]
-        oauth_id: Optional[str]
+        oauth_id: Optional[Union[str, int]]
         email: Optional[str]
         country: Optional[str]
         captain_id: int
