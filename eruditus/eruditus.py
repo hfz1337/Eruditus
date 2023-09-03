@@ -48,6 +48,8 @@ from lib.util import (
 )
 from msg_components.buttons.workon import WorkonButton
 
+logger = setup_logger("eruditus", logging.INFO)
+
 
 class Eruditus(discord.Client):
     def __init__(self) -> None:
@@ -197,12 +199,11 @@ class Eruditus(discord.Client):
     async def on_guild_remove(self, guild: discord.Guild) -> None:
         logger.info("%s left %s.", self.user, guild)
 
+    @staticmethod
     async def _do_ctf_registration(
-        self,
         ctf: dict[str, Any],
         guild: discord.Guild,
         event: discord.ScheduledEvent,
-        users: list[discord.User],
     ) -> None:
         # Register a team account if it's a supported platform.
         url = event.location.split(" — ")[1]
@@ -277,9 +278,7 @@ class Eruditus(discord.Client):
                 await member.add_roles(role)
 
             # Register to the CTF.
-            await self._do_ctf_registration(
-                ctf=ctf, guild=guild, event=after, users=users
-            )
+            await self._do_ctf_registration(ctf=ctf, guild=guild, event=after)
 
             # Substitute the ⏰ in the category channel name with a 🔴 to say that
             # we're live.
@@ -408,9 +407,7 @@ class Eruditus(discord.Client):
                 await member.add_roles(role)
 
             # Register to the CTF.
-            await self._do_ctf_registration(
-                ctf=ctf, guild=guild, event=scheduled_event, users=users
-            )
+            await self._do_ctf_registration(ctf=ctf, guild=guild, event=scheduled_event)
 
             # Send a reminder that the CTF is starting soon.
             if reminder_channel:
@@ -830,6 +827,5 @@ class Eruditus(discord.Client):
 
 
 if __name__ == "__main__":
-    logger = setup_logger(logging.INFO)
     client = Eruditus()
     client.run(os.getenv("DISCORD_TOKEN"))

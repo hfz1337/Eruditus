@@ -1,7 +1,9 @@
 import json
 import logging
 import os
+import re
 import urllib.parse
+import warnings
 from datetime import datetime, timezone
 from hashlib import md5
 from logging import Logger
@@ -9,10 +11,17 @@ from string import ascii_lowercase, digits
 from typing import Any, Optional, Type, TypeVar
 
 from aiohttp import ClientResponse
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
+from markdownify import markdownify as html2md
 from pydantic import TypeAdapter, ValidationError
+
+from lib.platforms.abc import ChallengeFile
 
 T = TypeVar("T")
 logger = logging.getLogger("eruditus.util")
+
+# "The input looks more like a filename than a markup" warnings
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 
 def get_local_time() -> datetime:
@@ -76,28 +85,28 @@ def derive_colour(role_name: str) -> int:
     return int(md5(role_name.encode()).hexdigest()[:6], 16)
 
 
-def setup_logger(level: int) -> Logger:
+def setup_logger(name: str, level: int) -> Logger:
     """Set up logging.
 
     Args:
+        name: Logger name.
         level: Logging level.
 
     Returns:
         The logger.
     """
     log_formatter = logging.Formatter(
-        "[%(asctime)s] [%(levelname)-8s:%(name)-24s] => %(message)s"
+        "[{asctime}] [{levelname:<8}] {name}: {message}", "%Y-%m-%d %H:%M:%S", style="{"
     )
 
-    logger = logging.getLogger()
-    logger.setLevel(level)
+    result = logging.getLogger(name)
+    result.setLevel(level)
 
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(log_formatter)
 
-    logger.addHandler(stream_handler)
-
-    return logger
+    result.addHandler(stream_handler)
+    return result
 
 
 def in_range(value: int, minimal: int, maximum: int) -> bool:
@@ -141,6 +150,97 @@ def extract_filename_from_url(url: str) -> str:
         The filename.
     """
     return os.path.basename(urllib.parse.urlparse(url).path)
+
+
+def html_to_markdown(description: Optional[str]) -> Optional[str]:
+    """Convert HTML content to Markdown.
+
+    Args:
+        The HTML content.
+
+    Returns:
+        Converted result.
+    """
+    if description is None:
+        return None
+
+    # Convert to markdown.
+    md = html2md(
+        description,
+        heading_style="atx",
+        escape_asterisks=False,
+        escape_underscores=False,
+    )
+
+    # Remove all images.
+    md = re.sub(r'[^\S\r\n]*!\[[^\]]*\]\((.*?)\s*("(?:.*[^"])")?\s*\)\s*', "", md)
+
+    # Remove multilines.
+    md = re.sub(r"\n+", "\n", md)
+
+    return md
+
+
+def convert_attachment_url(url: str, base_url: Optional[str]) -> str:
+    """Convert attachment URL to an absolute URL.
+
+    Args:
+        url: The attachment url.
+        base_url: Domain base url.
+
+    Returns:
+        Absolute url.
+    """
+    if not url.startswith("http") and base_url:
+        url = f'{base_url.rstrip("/")}/{url.lstrip("/")}'
+
+    return url
+
+
+def parse_attachment(url: str, base_url: Optional[str]) -> ChallengeFile:
+    """Convert attachment URL to a ChallengeFile item.
+
+    Args:
+        url: The attachment url.
+        base_url: Domain base url.
+
+    Returns:
+        Converted file.
+    """
+    return ChallengeFile(
+        url=convert_attachment_url(url, base_url),
+        name=extract_filename_from_url(url),
+    )
+
+
+def extract_images_from_html(
+    description: Optional[str], base_url: Optional[str] = None
+) -> Optional[list[ChallengeFile]]:
+    """Extract `img` tags from the HTML description.
+
+    Args:
+        description: The HTMl content.
+        base_url: Domain base url.
+
+    TODO:
+        Add markdown support.
+
+    Returns:
+        Converted files.
+    """
+    if not description:
+        return None
+
+    result = list()
+
+    for img in BeautifulSoup(description, "html.parser").findAll("img"):
+        src: Optional[str] = img.get("src")
+        if not src:
+            continue
+
+        result.append(parse_attachment(src, base_url))
+
+    return result
 
 
 async def deserialize_response(

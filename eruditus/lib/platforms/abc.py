@@ -404,7 +404,7 @@ class PlatformABC(ABC):
     @classmethod
     @abstractmethod
     async def pull_challenges(cls, ctx: PlatformCTX) -> AsyncIterator[Challenge]:
-        pass
+        yield Challenge(id="")
 
     @classmethod
     @abstractmethod
