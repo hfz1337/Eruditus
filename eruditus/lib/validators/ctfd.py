@@ -88,7 +88,7 @@ class CTFDChallenge(BaseModel):
             files=[parse_attachment(x, url_stripped) for x in self.files]
             if self.files is not None
             else None,
-            images=extract_images_from_html(self.description),
+            images=extract_images_from_html(self.description, url_stripped),
             connection_info=self.connection_info,
             solves=self.solves,
         )
