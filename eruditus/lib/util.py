@@ -192,7 +192,7 @@ def convert_attachment_url(url: str, base_url: Optional[str]) -> str:
         Absolute url.
     """
     if not url.startswith("http") and base_url:
-        url = f'{base_url.lstrip("/")}/{url.rstrip("/")}'
+        url = f'{base_url.rstrip("/")}/{url.lstrip("/")}'
 
     return url
 
