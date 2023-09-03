@@ -153,7 +153,7 @@ def extract_filename_from_url(url: str) -> str:
 
 
 def html_to_markdown(description: Optional[str]) -> Optional[str]:
-    """Converts HTML content to Markdown.
+    """Convert HTML content to Markdown.
 
     Args:
         The HTML content.
@@ -182,7 +182,7 @@ def html_to_markdown(description: Optional[str]) -> Optional[str]:
 
 
 def convert_attachment_url(url: str, base_url: Optional[str]) -> str:
-    """Converts attachment url to an absolute url.
+    """Convert attachment URL to an absolute URL.
 
     Args:
         url: The attachment url.
@@ -198,7 +198,7 @@ def convert_attachment_url(url: str, base_url: Optional[str]) -> str:
 
 
 def parse_attachment(url: str, base_url: Optional[str]) -> ChallengeFile:
-    """Converts attachment url to the ChallengeFile item.
+    """Convert attachment URL to a ChallengeFile item.
 
     Args:
         url: The attachment url.
@@ -216,14 +216,14 @@ def parse_attachment(url: str, base_url: Optional[str]) -> ChallengeFile:
 def extract_images_from_html(
     description: Optional[str], base_url: Optional[str] = None
 ) -> Optional[list[ChallengeFile]]:
-    """Extracts `img` tags from the HTML description.
+    """Extract `img` tags from the HTML description.
 
     Args:
         description: The HTMl content.
         base_url: Domain base url.
 
-    Todo:
-        * Add markdown support
+    TODO:
+        Add markdown support.
 
     Returns:
         Converted files.
