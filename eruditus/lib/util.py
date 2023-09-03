@@ -85,28 +85,28 @@ def derive_colour(role_name: str) -> int:
     return int(md5(role_name.encode()).hexdigest()[:6], 16)
 
 
-def setup_logger(level: int) -> Logger:
+def setup_logger(name: str, level: int) -> Logger:
     """Set up logging.
 
     Args:
+        name: Logger name.
         level: Logging level.
 
     Returns:
         The logger.
     """
     log_formatter = logging.Formatter(
-        "[%(asctime)s] [%(levelname)-8s:%(name)-24s] => %(message)s"
+        "[{asctime}] [{levelname:<8}] {name}: {message}", "%Y-%m-%d %H:%M:%S", style="{"
     )
 
-    logger = logging.getLogger()
-    logger.setLevel(level)
+    result = logging.getLogger(name)
+    result.setLevel(level)
 
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(log_formatter)
 
-    logger.addHandler(stream_handler)
-
-    return logger
+    result.addHandler(stream_handler)
+    return result
 
 
 def in_range(value: int, minimal: int, maximum: int) -> bool:
