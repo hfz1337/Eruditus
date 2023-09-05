@@ -304,7 +304,7 @@ class CTFd(PlatformABC):
             A list where each element is a tuple containing:
                 - The team name (used as the label in the graph).
                 - The timestamps of each solve (as `datetime` objects, these will fill
-                  x axis).
+                  the x axis).
                 - The change in the number of points (these will add to form the y axis
                   values).
         """
