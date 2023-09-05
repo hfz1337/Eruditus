@@ -322,6 +322,7 @@ def plot_scoreboard(
             [x.time for x in team.history],
             [x.score for x in team.history],
             label=team.name,
+            **kw,
         )
 
     plt.grid(color="gray", linestyle="dashed", alpha=0.5)
