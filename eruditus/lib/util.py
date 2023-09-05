@@ -338,7 +338,7 @@ def plot_scoreboard(
 
     # Applying grid and legend style
     gca.grid(color="gray", linestyle="dashed", alpha=0.5)
-    gca.legend(loc="lower right")
+    gca.legend(loc="best")
 
     # Applying x tick labels styles
     for label in gca.get_xticklabels(minor=False):
