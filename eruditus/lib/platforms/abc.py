@@ -246,10 +246,30 @@ class Team:
     solves: Optional[list[Challenge]] = None
 
     def __eq__(self, other: Optional["Team"]) -> bool:
-        if other is None:
-            return False
+        return other is not None and (self.id == other.id or self.name == other.name)
 
-        return self.id == other.id or self.name == other.name
+
+@dataclass
+class TeamScoreHistory:
+    """A class representing CTF team score history.
+
+    Author:
+        @es3n1n
+
+    Attributes:
+        name: The team name.
+        is_me: Set to true if this team is the team that we're currently authorized as.
+        history: Score history.
+    """
+
+    @dataclass
+    class HistoryItem:
+        time: datetime
+        score: int
+
+    name: str
+    is_me: bool = False
+    history: list[HistoryItem] = field(default_factory=list)
 
 
 @dataclass
@@ -416,8 +436,8 @@ class PlatformABC(ABC):
     @classmethod
     @abstractmethod
     async def pull_scoreboard_datapoints(
-        cls, ctx: PlatformCTX
-    ) -> Optional[list[str, list[datetime], list[int]]]:
+        cls, ctx: PlatformCTX, count: int = 10
+    ) -> Optional[list[TeamScoreHistory]]:
         pass
 
     @classmethod

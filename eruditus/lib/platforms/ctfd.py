@@ -19,6 +19,7 @@ from lib.platforms.abc import (
     SubmittedFlag,
     SubmittedFlagState,
     Team,
+    TeamScoreHistory,
 )
 from lib.util import deserialize_response, is_empty_string
 from lib.validators.ctfd import (
@@ -293,15 +294,16 @@ class CTFd(PlatformABC):
 
     @classmethod
     async def pull_scoreboard_datapoints(
-        cls, ctx: PlatformCTX
-    ) -> Optional[list[tuple[str, list[datetime], list[int]]]]:
+        cls, ctx: PlatformCTX, count: int = 10
+    ) -> Optional[list[TeamScoreHistory]]:
         """Get scoreboard data points for the top teams.
 
         Args:
             ctx: Platform context.
+            count: Number of teams to fetch.
 
         Returns:
-            A list where each element is a tuple containing:
+            A list where each element is a struct containing:
                 - The team name (used as the label in the graph).
                 - The timestamps of each solve (as `datetime` objects, these will fill
                   the x axis).
@@ -311,9 +313,11 @@ class CTFd(PlatformABC):
         if not await ctx.login(cls.login):
             return
 
+        me = await cls.get_me(ctx)
+
         async with aiohttp.request(
             method="get",
-            url=f"{ctx.url_stripped}/api/v1/scoreboard/top/10",
+            url=f"{ctx.url_stripped}/api/v1/scoreboard/top/{count}",
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
@@ -322,17 +326,26 @@ class CTFd(PlatformABC):
             if not data or not data.data:
                 return
 
-            graphs = []
+            graphs: list[TeamScoreHistory] = list()
+
             for standing in data.data.values():
+                item = TeamScoreHistory(
+                    name=standing.name,
+                    is_me=standing.name == me.name if me is not None else False,
+                )
+
                 score = 0
-                team = standing.name
-                x = []
-                y = []
                 for solve in standing.solves:
                     score += solve.value
-                    x.append(datetime.strptime(solve.date, "%Y-%m-%dT%H:%M:%S.%fZ"))
-                    y.append(score)
-                graphs.append((team, x, y))
+
+                    item.history.append(
+                        TeamScoreHistory.HistoryItem(
+                            time=datetime.strptime(solve.date, "%Y-%m-%dT%H:%M:%S.%fZ"),
+                            score=score,
+                        )
+                    )
+
+                graphs.append(item)
 
             return graphs
 
