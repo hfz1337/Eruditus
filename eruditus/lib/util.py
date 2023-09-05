@@ -302,21 +302,38 @@ def plot_scoreboard(
         A BytesIO buffer containing the saved figure data in bytes.
     """
     plt.figure(figsize=fig_size)
-    plt.title(label=f"Top {len(data)} Teams", fontdict={"weight": "bold"})
+    plt.title(
+        label=f"Top {len(data)} Teams", fontdict={"weight": "bold", "color": "white"}
+    )
 
     for team in data:
+        kw = {}
+        if team.is_me:
+            kw["zorder"] = len(data) + 1  # bring our team to the front
+
         plt.plot(
             [x.time for x in team.history],
             [x.score for x in team.history],
             label=team.name,
         )
 
-    plt.legend(loc="upper left")
-    plt.xticks(rotation=45)
+    plt.grid(color="gray", linestyle="dashed", alpha=0.5)
+    plt.legend(loc="lower right")
+
+    plt.xticks(rotation=45, color="white")
+    plt.yticks(color="white")
+
+    for highlighted_spine in ["bottom", "left"]:
+        plt.gca().spines[highlighted_spine].set_color("white")
+
+    for invisible_spine in ["top", "right"]:
+        plt.gca().spines[invisible_spine].set_visible(False)
+
+    plt.tight_layout()
 
     result = io.BytesIO()
 
-    plt.savefig(result, bbox_inches="tight")
+    plt.savefig(result, bbox_inches="tight", transparent=True)
     plt.close()
 
     result.seek(0)

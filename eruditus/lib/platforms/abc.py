@@ -258,6 +258,7 @@ class TeamScoreHistory:
 
     Attributes:
         name: The team name.
+        is_me: Set to true if this team is the team that we're currently authorized as.
         history: Score history.
     """
 
@@ -267,6 +268,7 @@ class TeamScoreHistory:
         score: int
 
     name: str
+    is_me: bool = False
     history: list[HistoryItem] = field(default_factory=list)
 
 

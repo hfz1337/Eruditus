@@ -223,6 +223,8 @@ class RCTF(PlatformABC):
         if not await ctx.login(cls.login):
             return
 
+        me = await cls.get_me(ctx)
+
         async with aiohttp.request(
             method="get",
             url=f"{ctx.url_stripped}/api/v1/leaderboard/graph",
@@ -237,7 +239,10 @@ class RCTF(PlatformABC):
             graphs: list[TeamScoreHistory] = list()
 
             for standing in data.data.graph:
-                item = TeamScoreHistory(name=standing.name)
+                item = TeamScoreHistory(
+                    name=standing.name,
+                    is_me=standing.name == me.name if me is not None else False,
+                )
 
                 for solve in standing.points:
                     item.history.append(
