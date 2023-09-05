@@ -15,6 +15,7 @@ from lib.platforms.abc import (
     SubmittedFlag,
     SubmittedFlagState,
     Team,
+    TeamScoreHistory,
 )
 from lib.util import deserialize_response, is_empty_string
 from lib.validators.rctf import (
@@ -203,15 +204,16 @@ class RCTF(PlatformABC):
 
     @classmethod
     async def pull_scoreboard_datapoints(
-        cls, ctx: PlatformCTX
-    ) -> Optional[list[tuple[str, list[datetime], list[int]]]]:
+        cls, ctx: PlatformCTX, count: int = 10
+    ) -> Optional[list[TeamScoreHistory]]:
         """Get scoreboard data points for the top teams.
 
         Args:
             ctx: Platform context.
+            count: Number of teams to fetch.
 
         Returns:
-            A list where each element is a tuple containing:
+            A list where each element is a struct containing:
                 - The team name (used as the label in the graph).
                 - The timestamps of each solve (as `datetime` objects, these will fill
                   the x axis).
@@ -224,7 +226,7 @@ class RCTF(PlatformABC):
         async with aiohttp.request(
             method="get",
             url=f"{ctx.url_stripped}/api/v1/leaderboard/graph",
-            params={"limit": 10, "offset": "0"},
+            params={"limit": count, "offset": "0"},
             headers=generate_headers(ctx),
         ) as response:
             # Validating and deserializing response
@@ -232,15 +234,20 @@ class RCTF(PlatformABC):
             if not data or not data.data.graph:
                 return
 
-            graphs = []
+            graphs: list[TeamScoreHistory] = list()
+
             for standing in data.data.graph:
-                team = standing.name
-                x = []
-                y = []
+                item = TeamScoreHistory(name=standing.name)
+
                 for solve in standing.points:
-                    x.append(datetime.fromtimestamp(solve.time // 1e3))
-                    y.append(solve.score)
-                graphs.append((team, x, y))
+                    item.history.append(
+                        TeamScoreHistory.HistoryItem(
+                            time=datetime.fromtimestamp(solve.time // 1e3),
+                            score=solve.score,
+                        )
+                    )
+
+                graphs.append(item)
 
             return graphs
 

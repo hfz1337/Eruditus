@@ -17,7 +17,7 @@ from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from markdownify import markdownify as html2md
 from pydantic import TypeAdapter, ValidationError
 
-from lib.platforms.abc import ChallengeFile
+from lib.platforms.abc import ChallengeFile, TeamScoreHistory
 
 T = TypeVar("T")
 logger = logging.getLogger("eruditus.util")
@@ -286,33 +286,38 @@ async def deserialize_response(
 
 
 def plot_scoreboard(
-    data: list[tuple[str, list[datetime], list[int]]], figsize: tuple = (15, 6)
+    data: list[TeamScoreHistory], fig_size: tuple = (15, 6)
 ) -> io.BytesIO:
     """Plot scoreboard.
 
     Args:
-        data: A list where each element is a tuple containing:
+        data: A list where each element is a struct containing:
             - The team name (used as the label in the graph).
             - The timestamps of each solve (as `datetime` objects, these will fill the
                 x axis).
             - The number of points at each instant (these will fill the y axis).
-        figsize: The figure size.
+        fig_size: The figure size.
 
     Returns:
         A BytesIO buffer containing the saved figure data in bytes.
     """
-    plt.figure(figsize=figsize)
-    plt.title(label="Top 10 Teams", fontdict={"weight": "bold"})
+    plt.figure(figsize=fig_size)
+    plt.title(label=f"Top {len(data)} Teams", fontdict={"weight": "bold"})
 
-    for team, x, y in data:
-        plt.plot(x, y, label=team)
-
-    buffer = io.BytesIO()
+    for team in data:
+        plt.plot(
+            [x.time for x in team.history],
+            [x.score for x in team.history],
+            label=team.name,
+        )
 
     plt.legend(loc="upper left")
     plt.xticks(rotation=45)
-    plt.savefig(buffer, bbox_inches="tight")
-    plt.close()
-    buffer.seek(0)
 
-    return buffer
+    result = io.BytesIO()
+
+    plt.savefig(result, bbox_inches="tight")
+    plt.close()
+
+    result.seek(0)
+    return result
