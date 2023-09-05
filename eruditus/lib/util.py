@@ -295,8 +295,7 @@ def plot_scoreboard(
             - The team name (used as the label in the graph).
             - The timestamps of each solve (as `datetime` objects, these will fill the
                 x axis).
-            - The change in the number of points (these will add to form the y axis
-                values).
+            - The number of points at each instant (these will fill the y axis).
         figsize: The figure size.
 
     Returns:
