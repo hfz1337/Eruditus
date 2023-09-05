@@ -276,7 +276,6 @@ class CTFd(PlatformABC):
             A list of teams sorted by rank in descending order.
         """
         if not await ctx.login(cls.login):
-            print("!login")
             return
 
         async with aiohttp.request(
@@ -288,10 +287,7 @@ class CTFd(PlatformABC):
             # Validating and deserializing response
             data = await deserialize_response(response, model=ScoreboardResponse)
             if not data:
-                print("!data")
                 return
-
-            print(len(data.data))
 
             for team in data.data[:max_entries_count]:
                 yield team.convert()
