@@ -9,8 +9,10 @@ from lib.platforms.rctf import RCTF
 class PlatformMeta(EnumMeta):
     def __iter__(cls):
         for platform in super().__iter__():
-            if platform.value:
-                yield platform.value
+            if not platform.value:
+                continue
+
+            yield platform.value
 
 
 class Platform(Enum, metaclass=PlatformMeta):

@@ -1,5 +1,6 @@
 import io
 import re
+from datetime import datetime
 from logging import getLogger
 from typing import AsyncIterator
 
@@ -18,6 +19,7 @@ from lib.platforms.abc import (
     SubmittedFlag,
     SubmittedFlagState,
     Team,
+    TeamScoreHistory,
 )
 from lib.util import deserialize_response, is_empty_string
 from lib.validators.ctfd import (
@@ -26,6 +28,7 @@ from lib.validators.ctfd import (
     MessageResponse,
     ScoreboardResponse,
     SolvesResponse,
+    StandingsResponse,
     SubmissionResponse,
     UserResponse,
 )
@@ -288,6 +291,63 @@ class CTFd(PlatformABC):
 
             for team in data.data[:max_entries_count]:
                 yield team.convert()
+
+    @classmethod
+    async def pull_scoreboard_datapoints(
+        cls, ctx: PlatformCTX, count: int = 10
+    ) -> Optional[list[TeamScoreHistory]]:
+        """Get scoreboard data points for the top teams.
+
+        Args:
+            ctx: Platform context.
+            count: Number of teams to fetch.
+
+        Returns:
+            A list where each element is a struct containing:
+                - The team name (used as the label in the graph).
+                - The timestamps of each solve (as `datetime` objects, these will fill
+                  the x axis).
+                - The change in the number of points (these will add to form the y axis
+                  values).
+        """
+        if not await ctx.login(cls.login):
+            return
+
+        me = await cls.get_me(ctx)
+
+        async with aiohttp.request(
+            method="get",
+            url=f"{ctx.url_stripped}/api/v1/scoreboard/top/{count}",
+            cookies=ctx.session.cookies,
+            allow_redirects=False,
+        ) as response:
+            # Validating and deserializing response
+            data = await deserialize_response(response, model=StandingsResponse)
+            if not data or not data.data:
+                return
+
+            graphs: list[TeamScoreHistory] = list()
+
+            for standing in data.data.values():
+                item = TeamScoreHistory(
+                    name=standing.name,
+                    is_me=standing.name == me.name if me is not None else False,
+                )
+
+                score = 0
+                for solve in standing.solves:
+                    score += solve.value
+
+                    item.history.append(
+                        TeamScoreHistory.HistoryItem(
+                            time=datetime.strptime(solve.date, "%Y-%m-%dT%H:%M:%S.%fZ"),
+                            score=score,
+                        )
+                    )
+
+                graphs.append(item)
+
+            return graphs
 
     @classmethod
     async def register(cls, ctx: PlatformCTX) -> RegistrationStatus:

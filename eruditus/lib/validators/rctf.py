@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, field_validator
 
 from lib.platforms.abc import Challenge, ChallengeFile, ChallengeSolver, Team
-from lib.util import extract_images_from_html, html_to_markdown
+from lib.util import convert_attachment_url, extract_images_from_html, html_to_markdown
 
 
 class BaseRCTFResponse(BaseModel):
@@ -41,8 +41,10 @@ class RCTFChallenge(BaseModel):
         url: str
         name: str
 
-        def convert(self) -> ChallengeFile:
-            return ChallengeFile(url=self.url, name=self.name)
+        def convert(self, url_stripped: str) -> ChallengeFile:
+            return ChallengeFile(
+                url=convert_attachment_url(self.url, url_stripped), name=self.name
+            )
 
     files: Optional[list[File]] = None
     description: Optional[str] = None
@@ -55,7 +57,9 @@ class RCTFChallenge(BaseModel):
             name=self.name,
             description=html_to_markdown(self.description),
             value=self.points if self.points is not None else 0,
-            files=[x.convert() for x in self.files] if self.files is not None else None,
+            files=[x.convert(url_stripped) for x in self.files]
+            if self.files is not None
+            else None,
             images=extract_images_from_html(self.description, url_stripped),
             solves=self.solves if self.solves is not None else 0,
         )
@@ -89,6 +93,16 @@ class RCTFTeam(BaseModel):
             if self.solves is not None
             else None,
         )
+
+
+class RCTFStanding(BaseModel):
+    class Solve(BaseModel):
+        time: int
+        score: int
+
+    id: str
+    name: str
+    points: list[Solve]
 
 
 class LeaderboardResponse(BaseRCTFResponse):
@@ -153,3 +167,13 @@ class SubmissionResponse(BaseRCTFResponse):
 
     message: str
     data: None
+
+
+class StandingsResponse(BaseRCTFResponse):
+    """Response schema returned by `/api/v1/leaderboard/graph`."""
+
+    class Data(BaseModel):
+        graph: list[RCTFStanding]
+
+    message: str
+    data: Data

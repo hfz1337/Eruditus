@@ -114,6 +114,20 @@ class CTFDTeam(BaseModel):
         return Team(id=str(self.account_id), name=self.name, score=self.score)
 
 
+class CTFDStanding(BaseModel):
+    class Solve(BaseModel):
+        challenge_id: Union[int, None]
+        account_id: int
+        team_id: int
+        user_id: int
+        value: int
+        date: str
+
+    id: int
+    name: str
+    solves: list[Solve]
+
+
 class ChallengeResponse(BaseValidResponse):
     """Response schema returned by `/api/v1/challenges/:id`."""
 
@@ -168,3 +182,9 @@ class UserResponse(BaseValidResponse):
             )
 
     data: Data
+
+
+class StandingsResponse(BaseValidResponse):
+    """Response schema returned by `/api/v1/scoreboard/top/10`."""
+
+    data: dict[str, CTFDStanding]

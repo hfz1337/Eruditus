@@ -1,4 +1,5 @@
 import io
+from datetime import datetime
 from typing import AsyncIterator
 
 import aiohttp
@@ -14,6 +15,7 @@ from lib.platforms.abc import (
     SubmittedFlag,
     SubmittedFlagState,
     Team,
+    TeamScoreHistory,
 )
 from lib.util import deserialize_response, is_empty_string
 from lib.validators.rctf import (
@@ -21,6 +23,7 @@ from lib.validators.rctf import (
     ChallengesReponse,
     LeaderboardResponse,
     SolvesResponse,
+    StandingsResponse,
     SubmissionResponse,
     UserResponse,
 )
@@ -198,6 +201,60 @@ class RCTF(PlatformABC):
             # Iterate over teams and parse them
             for team in data.data.leaderboard[:max_entries_count]:
                 yield team.convert(ctx.url_stripped)
+
+    @classmethod
+    async def pull_scoreboard_datapoints(
+        cls, ctx: PlatformCTX, count: int = 10
+    ) -> Optional[list[TeamScoreHistory]]:
+        """Get scoreboard data points for the top teams.
+
+        Args:
+            ctx: Platform context.
+            count: Number of teams to fetch.
+
+        Returns:
+            A list where each element is a struct containing:
+                - The team name (used as the label in the graph).
+                - The timestamps of each solve (as `datetime` objects, these will fill
+                  the x axis).
+                - The number of accumulated points after each new solve (these will
+                  fill the y axis).
+        """
+        if not await ctx.login(cls.login):
+            return
+
+        me = await cls.get_me(ctx)
+
+        async with aiohttp.request(
+            method="get",
+            url=f"{ctx.url_stripped}/api/v1/leaderboard/graph",
+            params={"limit": count, "offset": "0"},
+            headers=generate_headers(ctx),
+        ) as response:
+            # Validating and deserializing response
+            data = await deserialize_response(response, model=StandingsResponse)
+            if not data or not data.data.graph:
+                return
+
+            graphs: list[TeamScoreHistory] = list()
+
+            for standing in data.data.graph:
+                item = TeamScoreHistory(
+                    name=standing.name,
+                    is_me=standing.name == me.name if me is not None else False,
+                )
+
+                for solve in standing.points:
+                    item.history.append(
+                        TeamScoreHistory.HistoryItem(
+                            time=datetime.fromtimestamp(solve.time // 1e3),
+                            score=solve.score,
+                        )
+                    )
+
+                graphs.append(item)
+
+            return graphs
 
     @classmethod
     async def get_me(cls, ctx: PlatformCTX) -> Optional[Team]:

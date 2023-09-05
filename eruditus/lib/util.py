@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import os
@@ -10,12 +11,13 @@ from logging import Logger
 from string import ascii_lowercase, digits
 from typing import Any, Optional, Type, TypeVar
 
+import matplotlib.pyplot as plt
 from aiohttp import ClientResponse
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from markdownify import markdownify as html2md
 from pydantic import TypeAdapter, ValidationError
 
-from lib.platforms.abc import ChallengeFile
+from lib.platforms.abc import ChallengeFile, TeamScoreHistory
 
 T = TypeVar("T")
 logger = logging.getLogger("eruditus.util")
@@ -281,3 +283,84 @@ async def deserialize_response(
                 str(e),
             )
         return None
+
+
+def plot_scoreboard(
+    data: list[TeamScoreHistory], fig_size: tuple = (15, 6)
+) -> io.BytesIO:
+    """Plot scoreboard.
+
+    Args:
+        data: A list where each element is a struct containing:
+            - The team name (used as the label in the graph).
+            - The timestamps of each solve (as `datetime` objects, these will fill the
+                x-axis).
+            - The number of points at each instant (these will fill the y-axis).
+        fig_size: The figure size.
+
+    Returns:
+        A BytesIO buffer containing the saved figure data in bytes.
+    """
+
+    # @note: @es3n1n: We're using the hardcoded color instead of
+    # transparent pictures because we also want to support light theme
+    background_color: str = "#313338"
+
+    # Creating the new figure
+    fig: plt.Figure = plt.figure(
+        figsize=fig_size, facecolor=background_color, layout="tight"
+    )
+
+    # Applying background color to the axes
+    axes = fig.subplots()
+    for axe in [axes] if not isinstance(axes, list) else axes:
+        axe.set_facecolor(background_color)
+
+    # Obtaining current axes and applying the title
+    gca: plt.Subplot = fig.gca()
+    gca.set_title(
+        label=f"Top {len(data)} Teams", fontdict={"weight": "bold", "color": "white"}
+    )
+
+    for team in data:
+        kw = {}
+        if team.is_me:
+            kw["zorder"] = len(data) + 1  # bring our team to the front
+
+        # Creating a new plot item with the X axis set to time
+        # and the Y axis set to score
+        gca.plot(
+            [x.time for x in team.history],
+            [x.score for x in team.history],
+            label=team.name,
+            **kw,
+        )
+
+    # Applying grid and legend style
+    gca.grid(color="gray", linestyle="dashed", alpha=0.5)
+    gca.legend(loc="lower right")
+
+    # Applying x tick labels styles
+    for label in gca.get_xticklabels(minor=False):
+        label.set(rotation=45, color="white")
+
+    # Applying y tick labels style
+    for label in gca.get_yticklabels(minor=False):
+        label.set(color="white")
+
+    # Applying spine colors
+    for highlighted_spine in ["bottom", "left"]:
+        gca.spines[highlighted_spine].set_color("white")
+
+    # Making the top/right spines invisible
+    for invisible_spine in ["top", "right"]:
+        gca.spines[invisible_spine].set_visible(False)
+
+    # Saving the result and closing the figure object
+    result = io.BytesIO()
+    fig.savefig(result, bbox_inches="tight")
+    plt.close(fig)
+
+    # Reset buffer pos and returning it
+    result.seek(0)
+    return result

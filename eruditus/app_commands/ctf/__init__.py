@@ -19,7 +19,7 @@ from config import (
 )
 from lib.platforms import PlatformCTX, match_platform
 from lib.types import CTFStatusMode, Permissions
-from lib.util import sanitize_channel_name
+from lib.util import plot_scoreboard, sanitize_channel_name
 from msg_components.buttons.workon import WorkonButton
 from msg_components.forms.credentials import create_credentials_modal_for_platform
 from msg_components.forms.flag import FlagSubmissionForm
@@ -1378,17 +1378,26 @@ class CTF(app_commands.Group):
         else:
             message = "No solves yet, or platform isn't supported."
 
+        graph_data = await platform.pull_scoreboard_datapoints(ctx)
+        graph = (
+            None
+            if graph_data is None
+            else discord.File(plot_scoreboard(graph_data), filename="scoreboard.png")
+        )
+
         # Update scoreboard in the scoreboard channel.
         scoreboard_channel = discord.utils.get(
             interaction.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
         )
         async for last_message in scoreboard_channel.history(limit=1):
-            await last_message.edit(content=message)
+            await last_message.edit(content=message, attachments=[graph])
             break
         else:
-            await scoreboard_channel.send(message)
+            await scoreboard_channel.send(message, file=graph)
 
-        await interaction.followup.send(message)
+        if graph:
+            graph.fp.seek(0)
+        await interaction.followup.send(message, file=graph)
 
     @app_commands.command()
     @_in_ctf_channel()
