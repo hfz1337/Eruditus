@@ -294,8 +294,8 @@ def plot_scoreboard(
         data: A list where each element is a struct containing:
             - The team name (used as the label in the graph).
             - The timestamps of each solve (as `datetime` objects, these will fill the
-                x axis).
-            - The number of points at each instant (these will fill the y axis).
+                x-axis).
+            - The number of points at each instant (these will fill the y-axis).
         fig_size: The figure size.
 
     Returns:
@@ -306,10 +306,19 @@ def plot_scoreboard(
     # transparent pictures because we also want to support light theme
     background_color: str = "#313338"
 
-    plt.figure(figsize=fig_size, facecolor=background_color, layout="tight")
-    plt.axes().set_facecolor(background_color)
+    # Creating the new figure
+    fig: plt.Figure = plt.figure(
+        figsize=fig_size, facecolor=background_color, layout="tight"
+    )
 
-    plt.title(
+    # Applying background color to the axes
+    axes = fig.subplots()
+    for axe in [axes] if not isinstance(axes, list) else axes:
+        axe.set_facecolor(background_color)
+
+    # Obtaining current axes and applying the title
+    gca: plt.Subplot = fig.gca()
+    gca.set_title(
         label=f"Top {len(data)} Teams", fontdict={"weight": "bold", "color": "white"}
     )
 
@@ -318,29 +327,40 @@ def plot_scoreboard(
         if team.is_me:
             kw["zorder"] = len(data) + 1  # bring our team to the front
 
-        plt.plot(
+        # Creating a new plot item with the X axis set to time
+        # and the Y axis set to score
+        gca.plot(
             [x.time for x in team.history],
             [x.score for x in team.history],
             label=team.name,
             **kw,
         )
 
-    plt.grid(color="gray", linestyle="dashed", alpha=0.5)
-    plt.legend(loc="lower right")
+    # Applying grid and legend style
+    gca.grid(color="gray", linestyle="dashed", alpha=0.5)
+    gca.legend(loc="lower right")
 
-    plt.xticks(rotation=45, color="white")
-    plt.yticks(color="white")
+    # Applying x tick labels styles
+    for label in gca.get_xticklabels(minor=False):
+        label.set(rotation=45, color="white")
 
+    # Applying y tick labels style
+    for label in gca.get_yticklabels(minor=False):
+        label.set(color="white")
+
+    # Applying spine colors
     for highlighted_spine in ["bottom", "left"]:
-        plt.gca().spines[highlighted_spine].set_color("white")
+        gca.spines[highlighted_spine].set_color("white")
 
+    # Making the top/right spines invisible
     for invisible_spine in ["top", "right"]:
-        plt.gca().spines[invisible_spine].set_visible(False)
+        gca.spines[invisible_spine].set_visible(False)
 
+    # Saving the result and closing the figure object
     result = io.BytesIO()
+    fig.savefig(result, bbox_inches="tight")
+    plt.close(fig)
 
-    plt.savefig(result, bbox_inches="tight")
-    plt.close()
-
+    # Reset buffer pos and returning it
     result.seek(0)
     return result
