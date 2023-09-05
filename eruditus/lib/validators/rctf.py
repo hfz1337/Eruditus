@@ -170,7 +170,7 @@ class SubmissionResponse(BaseRCTFResponse):
 
 
 class StandingsResponse(BaseRCTFResponse):
-    """Response schema returned by `/api/v1/scoreboard/top/10`."""
+    """Response schema returned by `/api/v1/leaderboard/graph`."""
 
     class Data(BaseModel):
         graph: list[RCTFStanding]
