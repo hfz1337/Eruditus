@@ -38,6 +38,12 @@ logger = getLogger("eruditus.ctfd")
 
 class CTFd(PlatformABC):
     @classmethod
+    @property
+    def name(cls) -> str:
+        """Get the platform display name."""
+        return "CTFd"
+
+    @classmethod
     async def match_platform(cls, ctx: PlatformCTX) -> bool:
         """Check whether a website is using the CTFd framework.
 

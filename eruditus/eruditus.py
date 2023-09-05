@@ -486,6 +486,13 @@ class Eruditus(discord.Client):
                     ) as image:
                         raw_image = io.BytesIO(await image.read()).read()
 
+                    # Check if the platform is supported.
+                    ctx = PlatformCTX.from_credentials({"url": event_info["website"]})
+                    try:
+                        platform = await match_platform(ctx)
+                    except aiohttp.ClientError:
+                        platform = None
+
                     event_description = (
                         f"{event_info['description']}\n\n"
                         f"👥 **Organizers**\n{', '.join(event_info['organizers'])}\n\n"
@@ -496,7 +503,15 @@ class Eruditus(discord.Client):
                     )
                     parameters = {
                         "name": event_info["name"],
-                        "description": truncate(text=event_description, max_len=1000),
+                        "description": truncate(
+                            text=(
+                                f"**☑️ Supported platform ({platform.name})**\n\n"
+                                if platform
+                                else ""
+                            )
+                            + event_description,
+                            max_len=1000,
+                        ),
                         "start_time": event_start,
                         "end_time": event_end,
                         "entity_type": discord.EntityType.external,

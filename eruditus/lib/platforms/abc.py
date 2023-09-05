@@ -400,6 +400,12 @@ class PlatformABC(ABC):
     """
 
     @classmethod
+    @property
+    @abstractmethod
+    def name(cls) -> str:
+        pass
+
+    @classmethod
     @abstractmethod
     async def match_platform(cls, ctx: PlatformCTX) -> bool:
         pass
