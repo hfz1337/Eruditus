@@ -215,8 +215,8 @@ class RCTF(PlatformABC):
                 - The team name (used as the label in the graph).
                 - The timestamps of each solve (as `datetime` objects, these will fill
                   the x axis).
-                - The change in the number of points (these will add to form the y axis
-                  values).
+                - The number of accumulated points after each new solve (these will
+                  fill the y axis).
         """
         if not await ctx.login(cls.login):
             return
