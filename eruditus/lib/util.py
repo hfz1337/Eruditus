@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import os
@@ -10,6 +11,7 @@ from logging import Logger
 from string import ascii_lowercase, digits
 from typing import Any, Optional, Type, TypeVar
 
+import matplotlib.pyplot as plt
 from aiohttp import ClientResponse
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from markdownify import markdownify as html2md
@@ -281,3 +283,37 @@ async def deserialize_response(
                 str(e),
             )
         return None
+
+
+def plot_scoreboard(
+    data: list[tuple[str, list[datetime], list[int]]], figsize: tuple = (15, 6)
+) -> io.BytesIO:
+    """Plot scoreboard.
+
+    Args:
+        data: A list where each element is a tuple containing:
+            - The team name (used as the label in the graph).
+            - The timestamps of each solve (as `datetime` objects, these will fill
+                x axis).
+            - The change in the number of points (these will add to form the y axis
+                values).
+        figsize: The figure size.
+
+    Returns:
+        A BytesIO buffer containing the saved figure data in bytes.
+    """
+    plt.figure(figsize=figsize)
+    plt.title(label="Top 10 Teams", fontdict={"weight": "bold"})
+
+    for team, x, y in data:
+        plt.plot(x, y, label=team)
+
+    buffer = io.BytesIO()
+
+    plt.legend(loc="upper left")
+    plt.xticks(rotation=45)
+    plt.savefig(buffer, bbox_inches="tight")
+    plt.close()
+    buffer.seek(0)
+
+    return buffer

@@ -42,6 +42,7 @@ from lib.platforms import PlatformCTX, match_platform
 from lib.util import (
     derive_colour,
     get_local_time,
+    plot_scoreboard,
     sanitize_channel_name,
     setup_logger,
     truncate,
@@ -795,15 +796,24 @@ class Eruditus(discord.Client):
             else:
                 message = "No solves yet, or platform isn't supported."
 
+            graph_data = await platform.pull_scoreboard_datapoints(ctx)
+            graph = (
+                None
+                if graph_data is None
+                else discord.File(
+                    plot_scoreboard(graph_data), filename="scoreboard.png"
+                )
+            )
+
             # Update scoreboard in the scoreboard channel.
             scoreboard_channel = discord.utils.get(
                 guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
             )
             async for last_message in scoreboard_channel.history(limit=1):
-                await last_message.edit(content=message)
+                await last_message.edit(content=message, attachments=[graph])
                 break
             else:
-                await scoreboard_channel.send(message)
+                await scoreboard_channel.send(content=message, file=graph)
 
     @create_upcoming_events.error
     async def create_upcoming_events_err_handler(self, _: Exception) -> None:

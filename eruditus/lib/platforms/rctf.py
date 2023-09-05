@@ -1,4 +1,5 @@
 import io
+from datetime import datetime
 from typing import AsyncIterator
 
 import aiohttp
@@ -21,6 +22,7 @@ from lib.validators.rctf import (
     ChallengesReponse,
     LeaderboardResponse,
     SolvesResponse,
+    StandingsResponse,
     SubmissionResponse,
     UserResponse,
 )
@@ -198,6 +200,49 @@ class RCTF(PlatformABC):
             # Iterate over teams and parse them
             for team in data.data.leaderboard[:max_entries_count]:
                 yield team.convert(ctx.url_stripped)
+
+    @classmethod
+    async def pull_scoreboard_datapoints(
+        cls, ctx: PlatformCTX
+    ) -> Optional[list[tuple[str, list[datetime], list[int]]]]:
+        """Get scoreboard data points for the top teams.
+
+        Args:
+            ctx: Platform context.
+
+        Returns:
+            A list where each element is a tuple containing:
+                - The team name (used as the label in the graph).
+                - The timestamps of each solve (as `datetime` objects, these will fill
+                  x axis).
+                - The change in the number of points (these will add to form the y axis
+                  values).
+        """
+        if not await ctx.login(cls.login):
+            return
+
+        async with aiohttp.request(
+            method="get",
+            url=f"{ctx.url_stripped}/api/v1/leaderboard/graph",
+            params={"limit": 10, "offset": "0"},
+            headers=generate_headers(ctx),
+        ) as response:
+            # Validating and deserializing response
+            data = await deserialize_response(response, model=StandingsResponse)
+            if not data or not data.data.graph:
+                return
+
+            graphs = []
+            for standing in data.data.graph:
+                team = standing.name
+                x = []
+                y = []
+                for solve in standing.points:
+                    x.append(datetime.fromtimestamp(solve.time // 1e3))
+                    y.append(solve.score)
+                graphs.append((team, x, y))
+
+            return graphs
 
     @classmethod
     async def get_me(cls, ctx: PlatformCTX) -> Optional[Team]:

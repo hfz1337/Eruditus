@@ -415,6 +415,13 @@ class PlatformABC(ABC):
 
     @classmethod
     @abstractmethod
+    async def pull_scoreboard_datapoints(
+        cls, ctx: PlatformCTX
+    ) -> Optional[list[str, list[datetime], list[int]]]:
+        pass
+
+    @classmethod
+    @abstractmethod
     async def register(cls, ctx: PlatformCTX) -> RegistrationStatus:
         pass
 

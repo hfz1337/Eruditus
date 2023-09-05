@@ -1,5 +1,6 @@
 import io
 import re
+from datetime import datetime
 from logging import getLogger
 from typing import AsyncIterator
 
@@ -26,6 +27,7 @@ from lib.validators.ctfd import (
     MessageResponse,
     ScoreboardResponse,
     SolvesResponse,
+    StandingsResponse,
     SubmissionResponse,
     UserResponse,
 )
@@ -288,6 +290,51 @@ class CTFd(PlatformABC):
 
             for team in data.data[:max_entries_count]:
                 yield team.convert()
+
+    @classmethod
+    async def pull_scoreboard_datapoints(
+        cls, ctx: PlatformCTX
+    ) -> Optional[list[tuple[str, list[datetime], list[int]]]]:
+        """Get scoreboard data points for the top teams.
+
+        Args:
+            ctx: Platform context.
+
+        Returns:
+            A list where each element is a tuple containing:
+                - The team name (used as the label in the graph).
+                - The timestamps of each solve (as `datetime` objects, these will fill
+                  x axis).
+                - The change in the number of points (these will add to form the y axis
+                  values).
+        """
+        if not await ctx.login(cls.login):
+            return
+
+        async with aiohttp.request(
+            method="get",
+            url=f"{ctx.url_stripped}/api/v1/scoreboard/top/10",
+            cookies=ctx.session.cookies,
+            allow_redirects=False,
+        ) as response:
+            # Validating and deserializing response
+            data = await deserialize_response(response, model=StandingsResponse)
+            if not data or not data.data:
+                return
+
+            graphs = []
+            for standing in data.data.values():
+                score = 0
+                team = standing.name
+                x = []
+                y = []
+                for solve in standing.solves:
+                    score += solve.value
+                    x.append(datetime.strptime(solve.date, "%Y-%m-%dT%H:%M:%S.%fZ"))
+                    y.append(score)
+                graphs.append((team, x, y))
+
+            return graphs
 
     @classmethod
     async def register(cls, ctx: PlatformCTX) -> RegistrationStatus:
