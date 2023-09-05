@@ -301,7 +301,14 @@ def plot_scoreboard(
     Returns:
         A BytesIO buffer containing the saved figure data in bytes.
     """
-    plt.figure(figsize=fig_size)
+
+    # @note: @es3n1n: We're using the hardcoded color instead of
+    # transparent pictures because we also want to support light theme
+    background_color: str = "#313338"
+
+    plt.figure(figsize=fig_size, facecolor=background_color, layout="tight")
+    plt.axes().set_facecolor(background_color)
+
     plt.title(
         label=f"Top {len(data)} Teams", fontdict={"weight": "bold", "color": "white"}
     )
@@ -329,11 +336,9 @@ def plot_scoreboard(
     for invisible_spine in ["top", "right"]:
         plt.gca().spines[invisible_spine].set_visible(False)
 
-    plt.tight_layout()
-
     result = io.BytesIO()
 
-    plt.savefig(result, bbox_inches="tight", transparent=True)
+    plt.savefig(result, bbox_inches="tight")
     plt.close()
 
     result.seek(0)
