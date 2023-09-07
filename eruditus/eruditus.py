@@ -21,6 +21,7 @@ from app_commands.encoding import Encoding
 from app_commands.help import Help
 from app_commands.report import Report
 from app_commands.request import Request
+from app_commands.revshell import Revshell
 from app_commands.search import Search
 from app_commands.syscalls import Syscalls
 from app_commands.takenote import TakeNote
@@ -168,6 +169,7 @@ class Eruditus(discord.Client):
     async def setup_hook(self) -> None:
         self.tree.add_command(Help())
         self.tree.add_command(Syscalls())
+        self.tree.add_command(Revshell())
         self.tree.add_command(Encoding())
         self.tree.add_command(CTFTime())
         self.tree.add_command(Cipher())

@@ -26,3 +26,9 @@ class PromptPrivacy(Enum):
 class Permissions(Enum):
     RDONLY = 0
     RDWR = 2
+
+
+class OSType(Enum):
+    linux = 0
+    windows = 1
+    mac = 2
