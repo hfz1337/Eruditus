@@ -1,6 +1,5 @@
 import json
 import os
-import string
 from typing import Optional
 
 import discord
@@ -111,11 +110,12 @@ class Revshell(app_commands.Command):
             )
             return
 
-        template = Revshell.payloads[platform.name][name]
-        for _, placeholder, _, _ in string.Formatter().parse(template):
-            if placeholder == "shell":
-                payload = template.format(ip=ip, port=port, shell=shell)
-                break
-        else:
-            payload = template.format(ip=ip, port=port)
-        await interaction.response.send_message(f"```sh\n{payload}\n```")
+        # Rather use `replace` than `format` in this case since the curly braces in
+        # payloads will cause the latter to fail.
+        payload = (
+            Revshell.payloads[platform.name][name]
+            .replace("{ip}", ip)
+            .replace("{port}", str(port))
+            .replace("{shell}", shell)
+        )
+        await interaction.response.send_message(f"```\n{payload}\n```")
