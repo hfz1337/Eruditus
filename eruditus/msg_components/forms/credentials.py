@@ -95,7 +95,7 @@ async def add_credentials_callback(
     msg = "✅ Credentials added."
 
     # Trying to authorize.
-    if self.platform.value is not None:
+    if self.platform is not None and self.platform.value is not None:
         ctx = PlatformCTX.from_credentials(credentials)
         session = await self.platform.value.login(ctx)
 
