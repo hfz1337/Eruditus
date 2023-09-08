@@ -19,7 +19,7 @@ from config import (
 )
 from lib.platforms import PlatformCTX, match_platform
 from lib.types import CTFStatusMode, Permissions
-from lib.util import plot_scoreboard, sanitize_channel_name
+from lib.util import plot_scoreboard, sanitize_channel_name, strip_url_components
 from msg_components.buttons.workon import WorkonButton
 from msg_components.forms.credentials import create_credentials_modal_for_platform
 from msg_components.forms.flag import FlagSubmissionForm
@@ -1234,7 +1234,7 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             url: Base URL of the CTF platform.
         """
-        ctx = PlatformCTX(base_url=url)
+        ctx = PlatformCTX(base_url=strip_url_components(url.strip()))
         try:
             platform = await match_platform(ctx)
         except aiohttp.client_exceptions.InvalidURL:
@@ -1250,9 +1250,9 @@ class CTF(app_commands.Group):
             )
             return
 
-        await interaction.response.send_modal(
-            create_credentials_modal_for_platform(url, platform)
-        )
+        modal = await create_credentials_modal_for_platform(url, platform, interaction)
+        if modal is not None:
+            await interaction.response.send_modal(modal)
 
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
@@ -1439,6 +1439,7 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             url: Platform base url.
         """
+        url = strip_url_components(url.strip())
         ctx: PlatformCTX = PlatformCTX(base_url=url)
         try:
             platform = await match_platform(ctx)
@@ -1455,8 +1456,8 @@ class CTF(app_commands.Group):
             )
             return
 
-        form = create_credentials_modal_for_platform(
-            url=url, platform=platform, is_registration=True
+        form = await create_credentials_modal_for_platform(
+            url=url, platform=platform, interaction=interaction, is_registration=True
         )
 
         if not form:

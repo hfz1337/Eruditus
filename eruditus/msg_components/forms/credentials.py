@@ -5,6 +5,11 @@ import discord
 
 from config import CTF_COLLECTION, DBNAME, MONGO
 from lib.platforms import Platform, PlatformCTX
+from lib.util import (
+    extract_rctf_team_token,
+    make_form_field_config,
+    strip_url_components,
+)
 
 
 class CredentialsForm(discord.ui.Modal, title="Add CTF credentials"):
@@ -26,33 +31,35 @@ class CredentialsForm(discord.ui.Modal, title="Add CTF credentials"):
             self.add_item(getattr(self, key))
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
-        await interaction.response.defer()
-
         await self.callback(self, interaction)
 
 
 async def add_credentials_callback(
     self: CredentialsForm, interaction: discord.Interaction
 ) -> None:
-    def extract_team_token() -> str:
-        parsed_url = urlparse(self.invite.value)
-        params = parse_qs(parsed_url.query)
-        if not (team_token := params.get("token")):
-            return self.invite.value
-
-        return team_token[0]
-
+    await interaction.response.defer()
     match Platform(self.platform):
         case Platform.RCTF:
-            team_token = extract_team_token()
+            invite = self.invite.value or self.url
+            self.url = strip_url_components(self.url)
+            team_token = extract_rctf_team_token(invite)
+            if team_token is None:
+                await interaction.followup.send(
+                    (
+                        "Token was not found in the URL, please submit a valid "
+                        "invite link."
+                    ),
+                    ephemeral=True,
+                )
+                return
 
             credentials = {
                 "url": self.url,
                 "teamToken": team_token,
-                "invite": self.invite.value,
+                "invite": invite,
                 "_message": (
                     f"rCTF platform: {self.url}\n"
-                    f"Invite link: {self.invite.value}\n"
+                    f"Invite link: {invite}\n"
                     "```yaml\n"
                     f"Team token: {team_token}\n"
                     "```"
@@ -94,8 +101,8 @@ async def add_credentials_callback(
 
     msg = "✅ Credentials added."
 
-    # Trying to authorize.
-    if self.platform.value is not None:
+    # Try to authorize.
+    if self.platform is not None:
         ctx = PlatformCTX.from_credentials(credentials)
         session = await self.platform.value.login(ctx)
 
@@ -123,12 +130,13 @@ async def add_credentials_callback(
     )
     await creds_channel.purge()
     await creds_channel.send(credentials["_message"], suppress_embeds=True)
-    await interaction.followup.send(msg, ephemeral=True)
+    await interaction.followup.send(msg)
 
 
 async def register_account_callback(
     self: CredentialsForm, interaction: discord.Interaction
 ) -> None:
+    await interaction.response.defer()
     match Platform(self.platform):
         case Platform.RCTF:
             ctx: PlatformCTX = PlatformCTX(
@@ -208,64 +216,19 @@ async def register_account_callback(
     )
 
 
-def create_credentials_modal_for_platform(
-    url: str, platform: Optional[Platform], is_registration: bool = False
+async def create_credentials_modal_for_platform(
+    url: str,
+    platform: Platform,
+    interaction: discord.Interaction,
+    is_registration: bool = False,
 ) -> Optional[CredentialsForm]:
     def make_fields(*args: str, **kwargs: dict) -> dict:
         """A util that is used for creation of the modal fields."""
-        result = dict()
-
-        def proceed(name: str, config: Optional[dict] = None) -> None:
-            if config is None:
-                config = dict()
-
-            def forward(**kw: str | bool | int | discord.TextStyle) -> dict[str, str]:
-                forwarded: dict[str, str] = dict()
-
-                for kw_k, kw_v in kw.items():
-                    forwarded[kw_k] = config.get(kw_k, kw_v)
-
-                return forwarded
-
-            def make_text_input(
-                label: str,
-                placeholder: str,
-                required: bool = True,
-                max_length: int = 128,
-                style: discord.TextStyle = discord.TextStyle.short,
-            ) -> dict:
-                """A util that is used to simplify the text inputs creation."""
-                return forward(
-                    label=label,
-                    placeholder=placeholder,
-                    required=required,
-                    max_length=max_length,
-                    style=style,
-                )
-
-            match name:
-                case "email":
-                    result[name] = make_text_input("Email", "Enter your email...")
-                case "username":
-                    result[name] = make_text_input("Username", "Enter your username...")
-                case "password":
-                    result[name] = make_text_input("Password", "Enter your password...")
-                case "invite":
-                    result[name] = make_text_input(
-                        "Invite link", "Enter your team invite URL...", max_length=512
-                    )
-                case "token":
-                    result[name] = make_text_input(
-                        "Token", "Enter your team token...", max_length=256
-                    )
-
-        for field_name in args:
-            proceed(field_name)
-
-        for k, v in kwargs.items():
-            proceed(k, v)
-
-        return result
+        fields = {field_name: {} for field_name in args} | kwargs
+        return {
+            field_name: make_form_field_config(field_name, config)
+            for field_name, config in fields.items()
+        }
 
     callback = (
         register_account_callback if is_registration else add_credentials_callback
@@ -285,21 +248,36 @@ def create_credentials_modal_for_platform(
 
         # rCTF platform
         case Platform.RCTF:
-            return CredentialsForm(
+            form = CredentialsForm(
                 url=url,
                 platform=Platform.RCTF,
                 callback=callback,
                 **(
                     make_fields(
-                        invite=dict(
-                            label="rCTF invite link",
-                            placeholder="https://rctf.example.com/login?token=<token>",
-                        )
+                        invite={
+                            "label": "rCTF invite link",
+                            "placeholder": (
+                                "https://rctf.example.com/login?token=<token>"
+                            ),
+                        }
                     )
                     if not is_registration
                     else make_fields("username", "email")
                 ),
             )
+
+            # Don't send the form if the URL already contains the token and we're just
+            # adding credentials, not doing registration.
+            if (
+                not is_registration
+                and (parsed_url := urlparse(url))
+                and parsed_url.path.endswith("/login")
+                and "token" in parse_qs(parsed_url.query)
+            ):
+                await add_credentials_callback(form, interaction)
+                return None
+
+            return form
 
     # No default form for registration command
     if is_registration:
@@ -312,8 +290,8 @@ def create_credentials_modal_for_platform(
         callback=callback,
         **make_fields(
             "username",
-            password=dict(required=False),
-            invite=dict(required=False),
-            token=dict(required=False),
+            password={"required": False},
+            invite={"required": False},
+            token={"required": False},
         ),
     )

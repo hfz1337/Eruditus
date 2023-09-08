@@ -11,6 +11,7 @@ from logging import Logger
 from string import ascii_lowercase, digits
 from typing import Any, Optional, Type, TypeVar
 
+import discord
 import matplotlib.pyplot as plt
 from aiohttp import ClientResponse
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
@@ -233,7 +234,7 @@ def extract_images_from_html(
     if not description:
         return None
 
-    result = list()
+    result = []
 
     for img in BeautifulSoup(description, "html.parser").findAll("img"):
         src: Optional[str] = img.get("src")
@@ -243,6 +244,77 @@ def extract_images_from_html(
         result.append(parse_attachment(src, base_url))
 
     return result
+
+
+def strip_url_components(url: str) -> str:
+    """Strip the path, query parameters and fragments from a URL.
+
+    Args:
+        The URL to parse.
+
+    Returns:
+        The base URL.
+    """
+    parsed_url = urllib.parse.urlparse(url)
+    return f"{parsed_url.scheme}://{parsed_url.netloc}"
+
+
+def extract_rctf_team_token(invite_url: str) -> Optional[str]:
+    """Extract the rCTF team token from an invite URL.
+
+    Args:
+        The rCTF invite URL (e.g., https://rctf.example.com/login?token=<token>).
+
+    Returns:
+        The team token.
+    """
+    parsed_url = urllib.parse.urlparse(invite_url)
+    params = urllib.parse.parse_qs(parsed_url.query)
+    if not (team_token := params.get("token")):
+        return None
+
+    return team_token[0]
+
+
+def make_form_field_config(name: str, config: dict) -> dict:
+    """Generate configuration for a form field.
+
+    Args:
+        name: The field name (e.g., username, password, etc.).
+        config: The form configuration (label, placeholder, etc.), for a full list, see
+            the arguments of `discord.ui.TextInput`.
+
+    Returns:
+        A dictionary containing the field configuration.
+    """
+    max_length = 128
+    match name:
+        case "email":
+            label, placeholder = "Email", "Enter your email..."
+        case "username":
+            label, placeholder = "Username", "Enter your username..."
+        case "password":
+            label, placeholder = "Password", "Enter your password..."
+        case "invite":
+            label, placeholder, max_length = (
+                "Invite link",
+                "Enter your team invite URL...",
+                512,
+            )
+        case "token":
+            label, placeholder, max_length = (
+                "Token",
+                "Enter your team token...",
+                256,
+            )
+
+    return {
+        "label": config.get("label", label),
+        "placeholder": config.get("placeholder", placeholder),
+        "required": config.get("required", True),
+        "max_length": config.get("max_length", max_length),
+        "style": config.get("style", discord.TextStyle.short),
+    }
 
 
 async def deserialize_response(
@@ -302,8 +374,8 @@ def plot_scoreboard(
         A BytesIO buffer containing the saved figure data in bytes.
     """
 
-    # @note: @es3n1n: We're using the hardcoded color instead of
-    # transparent pictures because we also want to support light theme
+    # Using an actual color instead of a transparent background in order for the text
+    # to be visible in light theme as well.
     background_color: str = "#313338"
 
     # Creating the new figure

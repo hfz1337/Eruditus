@@ -242,7 +242,7 @@ class RCTF(PlatformABC):
             if not data or not data.data.graph:
                 return
 
-            graphs: list[TeamScoreHistory] = list()
+            graphs: list[TeamScoreHistory] = []
 
             for standing in data.data.graph:
                 item = TeamScoreHistory(
