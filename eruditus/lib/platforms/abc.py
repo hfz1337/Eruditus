@@ -399,11 +399,7 @@ class PlatformABC(ABC):
         to try again.
     """
 
-    @classmethod
-    @property
-    @abstractmethod
-    def name(cls) -> str:
-        pass
+    name: str = "ABC"
 
     @classmethod
     @abstractmethod

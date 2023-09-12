@@ -37,11 +37,7 @@ def generate_headers(ctx: PlatformCTX) -> dict[str, str]:
 
 
 class RCTF(PlatformABC):
-    @classmethod
-    @property
-    def name(cls) -> str:
-        """Get the platform display name."""
-        return "rCTF"
+    name = "rCTF"
 
     @classmethod
     async def match_platform(cls, ctx: PlatformCTX) -> bool:

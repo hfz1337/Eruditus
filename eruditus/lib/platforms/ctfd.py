@@ -37,11 +37,7 @@ logger = getLogger("eruditus.ctfd")
 
 
 class CTFd(PlatformABC):
-    @classmethod
-    @property
-    def name(cls) -> str:
-        """Get the platform display name."""
-        return "CTFd"
+    name = "CTFd"
 
     @classmethod
     async def match_platform(cls, ctx: PlatformCTX) -> bool:
