@@ -1,6 +1,7 @@
 import discord
 
 from config import CHALLENGE_COLLECTION, DBNAME, MONGO
+from lib.discord_util import add_challenge_solver, remove_challenge_solver
 
 
 class WorkonButton(discord.ui.View):
@@ -25,18 +26,7 @@ class WorkonButton(discord.ui.View):
             )
             return
 
-        challenge["players"].append(interaction.user.name)
-
-        challenge_thread = discord.utils.get(
-            interaction.guild.threads, id=challenge["thread"]
-        )
-
-        await challenge_thread.add_user(interaction.user)
-
-        MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
-            {"_id": challenge["_id"]},
-            {"$set": {"players": challenge["players"]}},
-        )
+        challenge_thread = await add_challenge_solver(interaction, challenge)
 
         await interaction.response.send_message(
             f"✅ Added to the `{challenge['name']}` challenge.",
@@ -74,22 +64,7 @@ class UnworkonButton(discord.ui.View):
             )
             return
 
-        challenge["players"].remove(interaction.user.name)
-
-        challenge_thread = discord.utils.get(
-            interaction.guild.threads, id=challenge["thread"]
-        )
-
-        MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
-            {"_id": challenge["_id"]},
-            {"$set": {"players": challenge["players"]}},
-        )
-
+        await remove_challenge_solver(interaction, challenge)
         await interaction.response.edit_message(
             content=f"✅ Removed from the `{challenge['name']}` challenge.", view=None
         )
-        await challenge_thread.send(
-            f"{interaction.user.mention} left you alone, what a chicken! 🐥"
-        )
-
-        await challenge_thread.remove_user(interaction.user)

@@ -31,7 +31,6 @@ from config import (
     CTFTIME_URL,
     DBNAME,
     GUILD_ID,
-    MAX_CONTENT_SIZE,
     MIN_PLAYERS,
     MONGO,
     TEAM_EMAIL,
@@ -39,11 +38,11 @@ from config import (
     USER_AGENT,
 )
 from lib.ctftime import ctftime_date_to_datetime, scrape_event_info
+from lib.discord_util import send_scoreboard
 from lib.platforms import PlatformCTX, match_platform
 from lib.util import (
     derive_colour,
     get_local_time,
-    plot_scoreboard,
     sanitize_channel_name,
     setup_logger,
     truncate,
@@ -255,6 +254,23 @@ class Eruditus(discord.Client):
             await creds_channel.purge()
             await creds_channel.send(message)
 
+    @classmethod
+    async def add_event_roles_to_members_and_register(
+        cls,
+        guild: discord.Guild,
+        ctf: dict,
+        users: list[discord.User],
+        event: discord.ScheduledEvent,
+    ) -> discord.Role:
+        role = discord.utils.get(guild.roles, id=ctf["guild_role"])
+        for user in users:
+            member = await guild.fetch_member(user.id)
+            await member.add_roles(role)
+
+        # Register to the CTF.
+        await cls._do_ctf_registration(ctf=ctf, guild=guild, event=event)
+        return role
+
     async def on_scheduled_event_update(
         self, before: discord.ScheduledEvent, after: discord.ScheduledEvent
     ) -> None:
@@ -274,14 +290,9 @@ class Eruditus(discord.Client):
                 return
             ctf = await self.create_ctf(after.name, live=True, return_if_exists=True)
 
-            # Give the CTF role to the interested people if they didn't get it yet.
-            role = discord.utils.get(guild.roles, id=ctf["guild_role"])
-            for user in users:
-                member = await guild.fetch_member(user.id)
-                await member.add_roles(role)
-
-            # Register to the CTF.
-            await self._do_ctf_registration(ctf=ctf, guild=guild, event=after)
+            role = await self.add_event_roles_to_members_and_register(
+                guild, ctf, users, after
+            )
 
             # Substitute the ⏰ in the category channel name with a 🔴 to say that
             # we're live.
@@ -403,14 +414,9 @@ class Eruditus(discord.Client):
             # If a CTF is starting soon, we create it if it wasn't created yet.
             ctf = await self.create_ctf(event_name, live=False, return_if_exists=True)
 
-            # Give the CTF role to the interested people if they didn't get it yet.
-            role = discord.utils.get(guild.roles, id=ctf["guild_role"])
-            for user in users:
-                member = await guild.fetch_member(user.id)
-                await member.add_roles(role)
-
-            # Register to the CTF.
-            await self._do_ctf_registration(ctf=ctf, guild=guild, event=scheduled_event)
+            await self.add_event_roles_to_members_and_register(
+                guild, ctf, users, scheduled_event
+            )
 
             # Send a reminder that the CTF is starting soon.
             if reminder_channel:
@@ -755,82 +761,15 @@ class Eruditus(discord.Client):
 
     @tasks.loop(minutes=1, reconnect=True)
     async def scoreboard_updater(self) -> None:
-        """Periodically update scoreboard for all running CTFs."""
-        # Wait until the bot's internal cache is ready.
+        """Periodically update the scoreboard for all running CTFs."""
+        # Wait until the bot internal cache is ready.
         await self.wait_until_ready()
 
         # The bot is supposed to be part of a single guild.
         guild = self.get_guild(GUILD_ID)
 
         for ctf in MONGO[DBNAME][CTF_COLLECTION].find({"ended": False}):
-            if ctf["credentials"]["url"] is None:
-                continue
-
-            # Match the platform
-            ctx = PlatformCTX.from_credentials(ctf["credentials"])
-            try:
-                platform = await match_platform(ctx)
-            except aiohttp.ClientError:
-                continue
-
-            if platform is None:
-                # Unsupported platform
-                return
-
-            try:
-                teams = [x async for x in platform.pull_scoreboard(ctx)]
-            except aiohttp.InvalidURL:
-                continue
-
-            if not teams:
-                continue
-
-            me = await platform.get_me(ctx)
-            our_team_name: str = me.name if me is not None else TEAM_NAME
-
-            name_field_width = max(len(team.name) for team in teams) + 10
-            message = (
-                f"**Scoreboard as of "
-                f"<t:{datetime.now().timestamp():.0f}>**"
-                "```diff\n"
-                f"  {'Rank':<10}{'Team':<{name_field_width}}{'Score'}\n"
-                "{}"
-                "```"
-            )
-            scoreboard = ""
-            for rank, team in enumerate(teams, start=1):
-                line = (
-                    f"{['-', '+'][team.name == our_team_name]} "
-                    f"{rank:<10}{team.name:<{name_field_width}}"
-                    f"{round(team.score, 4)}\n"
-                )
-                if len(message) + len(scoreboard) + len(line) - 2 > MAX_CONTENT_SIZE:
-                    break
-                scoreboard += line
-
-            if scoreboard:
-                message = message.format(scoreboard)
-            else:
-                message = "No solves yet, or platform isn't supported."
-
-            graph_data = await platform.pull_scoreboard_datapoints(ctx)
-            graph = (
-                None
-                if graph_data is None
-                else discord.File(
-                    plot_scoreboard(graph_data), filename="scoreboard.png"
-                )
-            )
-
-            # Update scoreboard in the scoreboard channel.
-            scoreboard_channel = discord.utils.get(
-                guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
-            )
-            async for last_message in scoreboard_channel.history(limit=1):
-                await last_message.edit(content=message, attachments=[graph])
-                break
-            else:
-                await scoreboard_channel.send(content=message, file=graph)
+            await send_scoreboard(ctf, guild=guild)
 
     @create_upcoming_events.error
     async def create_upcoming_events_err_handler(self, _: Exception) -> None:

@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 import discord
 
-from config import CTF_COLLECTION, DBNAME, MONGO
+from lib.discord_util import save_credentials
 from lib.platforms import Platform, PlatformCTX
 from lib.util import (
     extract_rctf_team_token,
@@ -117,19 +117,7 @@ async def add_credentials_callback(
             msg += f" Authorized as `{me.name}`"
 
     # Add credentials.
-    ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-        {"guild_category": interaction.channel.category_id}
-    )
-    MONGO[DBNAME][CTF_COLLECTION].update_one(
-        {"_id": ctf["_id"]},
-        {"$set": {"credentials": credentials}},
-    )
-
-    creds_channel = discord.utils.get(
-        interaction.guild.text_channels, id=ctf["guild_channels"]["credentials"]
-    )
-    await creds_channel.purge()
-    await creds_channel.send(credentials["_message"], suppress_embeds=True)
+    await save_credentials(interaction, credentials)
     await interaction.followup.send(msg)
 
 
@@ -198,19 +186,7 @@ async def register_account_callback(
             return
 
     # Add credentials.
-    ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-        {"guild_category": interaction.channel.category_id}
-    )
-    MONGO[DBNAME][CTF_COLLECTION].update_one(
-        {"_id": ctf["_id"]},
-        {"$set": {"credentials": credentials}},
-    )
-
-    creds_channel = discord.utils.get(
-        interaction.guild.text_channels, id=ctf["guild_channels"]["credentials"]
-    )
-    await creds_channel.purge()
-    await creds_channel.send(credentials["_message"], suppress_embeds=True)
+    await save_credentials(interaction, credentials)
     await interaction.followup.send(
         result.message or "✅ Registration successful.", ephemeral=True
     )

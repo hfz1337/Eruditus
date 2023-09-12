@@ -15,11 +15,18 @@ from config import (
     DBNAME,
     MAX_CONTENT_SIZE,
     MONGO,
-    TEAM_NAME,
+)
+from lib.discord_util import (
+    add_challenge_solver,
+    get_challenge_solvers,
+    get_ctf_info,
+    mark_if_maxed,
+    remove_challenge_solver,
+    send_scoreboard,
 )
 from lib.platforms import PlatformCTX, match_platform
 from lib.types import CTFStatusMode, Permissions
-from lib.util import plot_scoreboard, sanitize_channel_name, strip_url_components
+from lib.util import sanitize_channel_name, strip_url_components
 from msg_components.buttons.workon import WorkonButton
 from msg_components.forms.credentials import create_credentials_modal_for_platform
 from msg_components.forms.flag import FlagSubmissionForm
@@ -183,25 +190,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        if name is None:
-            ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-                {"guild_category": interaction.channel.category_id}
-            )
-            if ctf is None:
-                await interaction.followup.send(
-                    (
-                        "Run this command from within a CTF channel, or provide the "
-                        "name of the CTF you wish to delete."
-                    )
-                )
-                return
-        else:
-            ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
-                {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
-            )
-            if ctf is None:
-                await interaction.followup.send("No such CTF.")
-                return
+        ctf = await get_ctf_info(interaction, name)
 
         # In case CTF was already archived.
         if ctf["archived"]:
@@ -333,25 +322,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        if name is None:
-            ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-                {"guild_category": interaction.channel.category_id}
-            )
-            if ctf is None:
-                await interaction.followup.send(
-                    (
-                        "Run this command from within a CTF channel, or provide the "
-                        "name of the CTF you wish to delete."
-                    )
-                )
-                return
-        else:
-            ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
-                {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
-            )
-            if ctf is None:
-                await interaction.followup.send("No such CTF.")
-                return
+        ctf = await get_ctf_info(interaction, name)
 
         category_channel = discord.utils.get(
             interaction.guild.categories, id=ctf["guild_category"]
@@ -811,20 +782,7 @@ class CTF(app_commands.Group):
             # by spamming solve and unsolve.
             pass
 
-        # Add the user who triggered this interaction to the list of players, useful
-        # in case the one who triggered the interaction is an admin.
-        if interaction.user.name not in challenge["players"]:
-            challenge["players"].append(interaction.user.name)
-
-        solvers = [interaction.user.name] + (
-            []
-            if members is None
-            else [
-                member.name
-                for member_id in re.findall(r"<@!?([0-9]{15,20})>", members)
-                if (member := await interaction.guild.fetch_member(int(member_id)))
-            ]
-        )
+        solvers = await get_challenge_solvers(interaction, challenge, members)
 
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
@@ -868,20 +826,7 @@ class CTF(app_commands.Group):
         )
 
         await interaction.followup.send("✅ Challenge solved.")
-
-        # Mark the CTF category maxed if all its challenges were solved.
-        solved_states = MONGO[DBNAME][CHALLENGE_COLLECTION].aggregate(
-            [
-                {"$match": {"category": challenge["category"]}},
-                {"$project": {"_id": 0, "solved": 1}},
-            ]
-        )
-        if any(not state["solved"] for state in solved_states):
-            return
-
-        text_channel = interaction.channel.parent
-        if text_channel.name.startswith("🔄"):
-            await text_channel.edit(name=text_channel.name.replace("🔄", "🎯"))
+        await mark_if_maxed(interaction, challenge)
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
@@ -996,18 +941,7 @@ class CTF(app_commands.Group):
             )
             return
 
-        challenge["players"].append(interaction.user.name)
-
-        challenge_thread = discord.utils.get(
-            interaction.guild.threads, id=challenge["thread"]
-        )
-
-        await challenge_thread.add_user(interaction.user)
-
-        MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
-            {"_id": challenge["_id"]},
-            {"$set": {"players": challenge["players"]}},
-        )
+        challenge_thread = await add_challenge_solver(interaction, challenge)
 
         await interaction.response.send_message(
             f"✅ Added to the `{challenge['name']}` challenge."
@@ -1061,25 +995,10 @@ class CTF(app_commands.Group):
             )
             return
 
-        challenge["players"].remove(interaction.user.name)
-
-        challenge_thread = discord.utils.get(
-            interaction.guild.threads, id=challenge["thread"]
-        )
-
-        MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
-            {"_id": challenge["_id"]},
-            {"$set": {"players": challenge["players"]}},
-        )
-
+        await remove_challenge_solver(interaction, challenge)
         await interaction.response.send_message(
             f"✅ Removed from the `{challenge['name']}` challenge.", ephemeral=True
         )
-        await challenge_thread.send(
-            f"{interaction.user.mention} left you alone, what a chicken! 🐥"
-        )
-
-        await challenge_thread.remove_user(interaction.user)
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
@@ -1317,87 +1236,8 @@ class CTF(app_commands.Group):
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
-        if ctf["credentials"]["url"] is None:
-            await interaction.followup.send("No credentials set for this CTF.")
-            return
 
-        ctx: PlatformCTX = PlatformCTX.from_credentials(ctf["credentials"])
-        platform = await match_platform(ctx)
-        if not platform:
-            await interaction.followup.send(
-                "Invalid URL set for this CTF, or platform isn't supported."
-            )
-            return
-
-        try:
-            teams = [x async for x in platform.pull_scoreboard(ctx)]
-        except aiohttp.client_exceptions.InvalidURL:
-            await interaction.followup.send(
-                "Invalid URL set for this CTF.",
-                ephemeral=True,
-            )
-            return
-        except ClientError:
-            await interaction.followup.send(
-                "Could not communicate with the CTF platform, please try again.",
-                ephemeral=True,
-            )
-            return
-
-        if not teams:
-            await interaction.followup.send(
-                "Failed to fetch the scoreboard.", ephemeral=True
-            )
-            return
-
-        me = await platform.get_me(ctx)
-        our_team_name: str = me.name if me is not None else TEAM_NAME
-
-        name_field_width = max(len(team.name) for team in teams) + 10
-        message = (
-            f"**Scoreboard as of "
-            f"<t:{datetime.now().timestamp():.0f}>**"
-            "```diff\n"
-            f"  {'Rank':<10}{'Team':<{name_field_width}}{'Score'}\n"
-            "{}"
-            "```"
-        )
-        scoreboard = ""
-        for rank, team in enumerate(teams, start=1):
-            line = (
-                f"{['-', '+'][team.name == our_team_name]} "
-                f"{rank:<10}{team.name:<{name_field_width}}"
-                f"{round(team.score or 0, 4)}\n"
-            )
-            if len(message) + len(scoreboard) + len(line) - 2 > MAX_CONTENT_SIZE:
-                break
-            scoreboard += line
-
-        if scoreboard:
-            message = message.format(scoreboard)
-        else:
-            message = "No solves yet, or platform isn't supported."
-
-        graph_data = await platform.pull_scoreboard_datapoints(ctx)
-        graph = (
-            None
-            if graph_data is None
-            else discord.File(plot_scoreboard(graph_data), filename="scoreboard.png")
-        )
-
-        # Update scoreboard in the scoreboard channel.
-        scoreboard_channel = discord.utils.get(
-            interaction.guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
-        )
-        async for last_message in scoreboard_channel.history(limit=1):
-            await last_message.edit(content=message, attachments=[graph])
-            break
-        else:
-            await scoreboard_channel.send(message, file=graph)
-
-        if graph:
-            graph.fp.seek(0)
-        await interaction.followup.send(message, file=graph)
+        await send_scoreboard(ctf, interaction=interaction)
 
     @app_commands.command()
     @_in_ctf_channel()

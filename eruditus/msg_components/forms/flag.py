@@ -1,10 +1,10 @@
-import re
 from datetime import datetime
 
 import discord
 from discord import HTTPException
 
 from config import CHALLENGE_COLLECTION, CTF_COLLECTION, DBNAME, MONGO
+from lib.discord_util import get_challenge_solvers, mark_if_maxed
 from lib.platforms import PlatformCTX, match_platform
 from lib.platforms.abc import SubmittedFlagState
 from msg_components.buttons.workon import WorkonButton
@@ -70,6 +70,9 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             return
 
         if result.state != SubmittedFlagState.CORRECT:
+            await interaction.followup.send(
+                f"UNKNOWN STATE: {result.state.name} {result.state.value}"
+            )
             return
 
         # Announce that the challenge was solved.
@@ -78,21 +81,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         challenge["flag"] = self.flag.value
 
         solves_channel = interaction.client.get_channel(ctf["guild_channels"]["solves"])
-
-        # Add the user who triggered this interaction to the list of players, useful
-        # in case the one who triggered the interaction is an admin.
-        if interaction.user.name not in challenge["players"]:
-            challenge["players"].append(interaction.user.name)
-
-        solvers = [interaction.user.name] + (
-            []
-            if members is None
-            else [
-                member.name
-                for member_id in re.findall(r"<@!?([0-9]{15,20})>", members)
-                if (member := await interaction.guild.fetch_member(int(member_id)))
-            ]
-        )
+        solvers = await get_challenge_solvers(interaction, challenge, members)
 
         if result.is_first_blood:
             challenge["blooded"] = True
@@ -166,15 +155,4 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         )
 
         # Mark the CTF category maxed if all its challenges were solved.
-        solved_states = MONGO[DBNAME][CHALLENGE_COLLECTION].aggregate(
-            [
-                {"$match": {"category": challenge["category"]}},
-                {"$project": {"_id": 0, "solved": 1}},
-            ]
-        )
-        if any(not state["solved"] for state in solved_states):
-            return
-
-        text_channel = interaction.channel.parent
-        if text_channel.name.startswith("🔄"):
-            await text_channel.edit(name=text_channel.name.replace("🔄", "🎯"))
+        await mark_if_maxed(interaction, challenge)
