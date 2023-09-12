@@ -6,7 +6,6 @@ from lib.discord_util import Interaction
 from lib.platforms import Platform
 
 
-# noinspection PyMethodMayBeStatic
 class Help(app_commands.Command):
     def __init__(self) -> None:
         super().__init__(

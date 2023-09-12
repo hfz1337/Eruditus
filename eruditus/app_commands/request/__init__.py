@@ -4,7 +4,6 @@ from lib.discord_util import Interaction
 from msg_components.forms.contact import FeatureRequestForm
 
 
-# noinspection PyMethodMayBeStatic
 class Request(app_commands.Command):
     def __init__(self) -> None:
         super().__init__(

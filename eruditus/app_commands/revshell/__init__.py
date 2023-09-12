@@ -10,7 +10,6 @@ from lib.discord_util import Interaction
 from lib.types import OSType
 
 
-# noinspection PyMethodMayBeStatic
 class Revshell(app_commands.Command):
     # https://github.com/0dayCTF/reverse-shell-generator/blob/main/js/data.js
     with open(

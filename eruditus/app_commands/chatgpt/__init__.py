@@ -7,7 +7,6 @@ from lib.types import PromptPrivacy
 from msg_components.forms.chatgpt import ChatGPTForm
 
 
-# noinspection PyMethodMayBeStatic
 class ChatGPT(app_commands.Command):
     def __init__(self) -> None:
         super().__init__(

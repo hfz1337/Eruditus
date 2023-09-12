@@ -39,7 +39,6 @@ class SyscallTable:
         return self.syscalls.get(name) if name in self.syscalls else None
 
 
-# noinspection PyMethodMayBeStatic
 class Syscalls(app_commands.Command[Any, Any, Any]):
     architectures = {
         arch.value: SyscallTable(

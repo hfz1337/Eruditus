@@ -5,7 +5,6 @@ from config import CTF_COLLECTION, DBNAME, MONGO
 from lib.discord_util import Interaction
 
 
-# noinspection PyMethodMayBeStatic
 class TakeNote(app_commands.ContextMenu):
     def __init__(self) -> None:
         super().__init__(

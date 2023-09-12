@@ -33,7 +33,6 @@ from msg_components.forms.credentials import create_credentials_modal_for_platfo
 from msg_components.forms.flag import FlagSubmissionForm
 
 
-# noinspection PyMethodMayBeStatic
 class CTF(app_commands.Group):
     """Manage a CTF competition."""
 

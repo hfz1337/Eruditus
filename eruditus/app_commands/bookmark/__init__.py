@@ -5,7 +5,6 @@ from config import BOOKMARK_CHANNEL
 from lib.discord_util import Interaction
 
 
-# noinspection PyMethodMayBeStatic
 class Bookmark(app_commands.ContextMenu):
     def __init__(self) -> None:
         super().__init__(

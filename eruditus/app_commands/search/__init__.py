@@ -8,7 +8,6 @@ from config import WRITEUP_INDEX_API
 from lib.discord_util import Interaction
 
 
-# noinspection PyMethodMayBeStatic
 class Search(app_commands.Command):
     def __init__(self) -> None:
         super().__init__(
