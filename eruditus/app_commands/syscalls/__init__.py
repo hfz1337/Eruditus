@@ -6,6 +6,7 @@ import discord
 from discord import app_commands
 from discord.app_commands import Choice
 
+from lib.discord_util import Interaction
 from lib.types import CPUArchitecture
 
 
@@ -38,6 +39,7 @@ class SyscallTable:
         return self.syscalls.get(name) if name in self.syscalls else None
 
 
+# noinspection PyMethodMayBeStatic
 class Syscalls(app_commands.Command[Any, Any, Any]):
     architectures = {
         arch.value: SyscallTable(
@@ -80,7 +82,7 @@ class Syscalls(app_commands.Command[Any, Any, Any]):
             return suggestions
 
     async def cmd_callback(
-        self, interaction: discord.Interaction, arch: CPUArchitecture, syscall: str
+        self, interaction: Interaction, arch: CPUArchitecture, syscall: str
     ):
         """Show information for a syscall from a specific architecture.
 

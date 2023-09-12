@@ -2,8 +2,10 @@ import discord
 from discord import app_commands
 
 from config import BOOKMARK_CHANNEL
+from lib.discord_util import Interaction
 
 
+# noinspection PyMethodMayBeStatic
 class Bookmark(app_commands.ContextMenu):
     def __init__(self) -> None:
         super().__init__(
@@ -12,7 +14,7 @@ class Bookmark(app_commands.ContextMenu):
         )
 
     async def context_callback(
-        self, interaction: discord.Interaction, message: discord.Message
+        self, interaction: Interaction, message: discord.Message
     ) -> None:
         """Bookmark a message.
 

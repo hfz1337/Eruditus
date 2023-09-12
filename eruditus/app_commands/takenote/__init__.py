@@ -2,8 +2,10 @@ import discord
 from discord import app_commands
 
 from config import CTF_COLLECTION, DBNAME, MONGO
+from lib.discord_util import Interaction
 
 
+# noinspection PyMethodMayBeStatic
 class TakeNote(app_commands.ContextMenu):
     def __init__(self) -> None:
         super().__init__(
@@ -12,7 +14,7 @@ class TakeNote(app_commands.ContextMenu):
         )
 
     async def context_callback(
-        self, interaction: discord.Interaction, message: discord.Message
+        self, interaction: Interaction, message: discord.Message
     ) -> None:
         """Copy a message into the current CTF's note channel.
 

@@ -1,10 +1,10 @@
-from typing import Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import discord
 
-from lib.discord_util import save_credentials
-from lib.platforms import Platform, PlatformCTX
+from lib.discord_util import Interaction, save_credentials
+from lib.platforms import Platform, PlatformABC, PlatformCTX
 from lib.util import (
     extract_rctf_team_token,
     make_form_field_config,
@@ -13,6 +13,12 @@ from lib.util import (
 
 
 class CredentialsForm(discord.ui.Modal, title="Add CTF credentials"):
+    username: Any
+    email: Any
+    invite: Any
+    password: Any
+    token: Any
+
     def __init__(
         self,
         url: str,
@@ -35,7 +41,7 @@ class CredentialsForm(discord.ui.Modal, title="Add CTF credentials"):
 
 
 async def add_credentials_callback(
-    self: CredentialsForm, interaction: discord.Interaction
+    self: CredentialsForm, interaction: Interaction
 ) -> None:
     await interaction.response.defer()
     match Platform(self.platform):
@@ -122,7 +128,7 @@ async def add_credentials_callback(
 
 
 async def register_account_callback(
-    self: CredentialsForm, interaction: discord.Interaction
+    self: CredentialsForm, interaction: Interaction
 ) -> None:
     await interaction.response.defer()
     match Platform(self.platform):
@@ -194,7 +200,7 @@ async def register_account_callback(
 
 async def create_credentials_modal_for_platform(
     url: str,
-    platform: Platform,
+    platform: Optional[PlatformABC],
     interaction: discord.Interaction,
     is_registration: bool = False,
 ) -> Optional[CredentialsForm]:
@@ -244,14 +250,13 @@ async def create_credentials_modal_for_platform(
 
             # Don't send the form if the URL already contains the token and we're just
             # adding credentials, not doing registration.
-            if (
-                not is_registration
-                and (parsed_url := urlparse(url))
-                and parsed_url.path.endswith("/login")
-                and "token" in parse_qs(parsed_url.query)
-            ):
-                await add_credentials_callback(form, interaction)
-                return None
+            if not is_registration:
+                parsed_url = urlparse(url)
+                if parsed_url.path.endswith("/login") and "token" in parse_qs(
+                    parsed_url.query
+                ):
+                    await add_credentials_callback(form, interaction)
+                    return None
 
             return form
 

@@ -6,9 +6,11 @@ import discord
 from discord import app_commands
 from discord.app_commands import Choice
 
+from lib.discord_util import Interaction
 from lib.types import OSType
 
 
+# noinspection PyMethodMayBeStatic
 class Revshell(app_commands.Command):
     # https://github.com/0dayCTF/reverse-shell-generator/blob/main/js/data.js
     with open(
@@ -44,12 +46,12 @@ class Revshell(app_commands.Command):
 
         @self.autocomplete("shell")
         async def _shell_autocompletion_func(
-            interaction: discord.Interaction, current: str
+            _interaction: discord.Interaction, current: str
         ) -> list[Choice[str]]:
             """Autocomplete shell name.
 
             Args:
-                interaction: The interaction that triggered this command.
+                _interaction: The interaction that triggered this command.
                 current: The shell name typed so far.
 
             Returns:
@@ -87,7 +89,7 @@ class Revshell(app_commands.Command):
 
     async def cmd_callback(
         self,
-        interaction: discord.Interaction,
+        interaction: Interaction,
         platform: OSType,
         name: str,
         ip: str,

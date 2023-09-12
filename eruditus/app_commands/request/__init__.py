@@ -1,9 +1,10 @@
-import discord
 from discord import app_commands
 
+from lib.discord_util import Interaction
 from msg_components.forms.contact import FeatureRequestForm
 
 
+# noinspection PyMethodMayBeStatic
 class Request(app_commands.Command):
     def __init__(self) -> None:
         super().__init__(
@@ -12,7 +13,7 @@ class Request(app_commands.Command):
             callback=self.cmd_callback,  # type: ignore
         )
 
-    async def cmd_callback(self, interaction: discord.Interaction) -> None:
+    async def cmd_callback(self, interaction: Interaction) -> None:
         """Send a feature request to the developer.
 
         Args:

@@ -5,8 +5,10 @@ import discord
 from discord import app_commands
 
 from config import WRITEUP_INDEX_API
+from lib.discord_util import Interaction
 
 
+# noinspection PyMethodMayBeStatic
 class Search(app_commands.Command):
     def __init__(self) -> None:
         super().__init__(
@@ -16,7 +18,7 @@ class Search(app_commands.Command):
         )
 
     async def cmd_callback(
-        self, interaction: discord.Interaction, query: str, limit: Optional[int] = 3
+        self, interaction: Interaction, query: str, limit: Optional[int] = 3
     ) -> None:
         """Search for a topic in the CTF write-ups index.
 

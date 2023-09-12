@@ -1,11 +1,11 @@
 import binascii
-import urllib
 from base64 import b32decode, b32encode, b64decode, b64encode
 from binascii import hexlify, unhexlify
+from urllib.parse import quote, unquote
 
-import discord
 from discord import app_commands
 
+from lib.discord_util import Interaction
 from lib.types import EncodingOperationMode
 
 
@@ -14,7 +14,7 @@ class Encoding(app_commands.Group):
 
     @app_commands.command()
     async def base64(
-        self, interaction: discord.Interaction, mode: EncodingOperationMode, data: str
+        self, interaction: Interaction, mode: EncodingOperationMode, data: str
     ) -> None:
         """Base64 encoding/decoding.
 
@@ -43,7 +43,7 @@ class Encoding(app_commands.Group):
 
     @app_commands.command()
     async def base32(
-        self, interaction: discord.Interaction, mode: EncodingOperationMode, data: str
+        self, interaction: Interaction, mode: EncodingOperationMode, data: str
     ) -> None:
         """Base32 encoding/decoding.
 
@@ -72,7 +72,7 @@ class Encoding(app_commands.Group):
 
     @app_commands.command()
     async def binary(
-        self, interaction: discord.Interaction, mode: EncodingOperationMode, data: str
+        self, interaction: Interaction, mode: EncodingOperationMode, data: str
     ) -> None:
         """Binary encoding/decoding.
 
@@ -103,7 +103,7 @@ class Encoding(app_commands.Group):
 
     @app_commands.command()
     async def hex(
-        self, interaction: discord.Interaction, mode: EncodingOperationMode, data: str
+        self, interaction: Interaction, mode: EncodingOperationMode, data: str
     ) -> None:
         """Hex encoding/decoding.
 
@@ -119,7 +119,7 @@ class Encoding(app_commands.Group):
             try:
                 data = unhexlify(data)
                 data = data.decode()
-            except binascii.BinasciiError as error:
+            except binascii.Error as error:
                 await interaction.response.send_message(
                     f"Error: {error}", ephemeral=True
                 )
@@ -131,7 +131,7 @@ class Encoding(app_commands.Group):
 
     @app_commands.command()
     async def url(
-        self, interaction: discord.Interaction, mode: EncodingOperationMode, data: str
+        self, interaction: Interaction, mode: EncodingOperationMode, data: str
     ) -> None:
         """URL encoding/decoding.
 
@@ -141,8 +141,8 @@ class Encoding(app_commands.Group):
             data: The data to encode or decode.
         """
         if mode.value == 1:
-            data = urllib.parse.quote(data)
+            data = quote(data)
         else:
-            data = urllib.parse.unquote(data)
+            data = unquote(data)
 
         await interaction.response.send_message(f"```\n{data}\n```")

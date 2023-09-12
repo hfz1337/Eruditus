@@ -470,7 +470,7 @@ class Eruditus(discord.Client):
                     # Note: this only works for events added at least 7 days prior to
                     # their start date in CTFtime, the other case should be rare.
                     #
-                    #                            .-> e.g., events happening in this
+                    #                            .-> E.g., events happening in this
                     #                            |   window won't be recreated in the
                     #                            |   second iteration.
                     #              ,-------------`---------,

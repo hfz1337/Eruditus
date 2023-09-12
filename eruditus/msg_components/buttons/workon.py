@@ -1,7 +1,7 @@
 import discord
 
 from config import CHALLENGE_COLLECTION, DBNAME, MONGO
-from lib.discord_util import add_challenge_solver, remove_challenge_solver
+from lib.discord_util import Interaction, add_challenge_solver, remove_challenge_solver
 
 
 class WorkonButton(discord.ui.View):
@@ -10,15 +10,13 @@ class WorkonButton(discord.ui.View):
         self.name = name
         super().__init__(timeout=None)
 
-        self.children[0].disabled = disabled
-        self.children[0].label = (
+        self.children[0].disabled = disabled  # type: ignore
+        self.children[0].label = (  # type: ignore
             "Already solved." if disabled else "Work on this challenge!"
         )
 
     @discord.ui.button(style=discord.ButtonStyle.green)
-    async def workon(
-        self, interaction: discord.Interaction, _: discord.ui.Button
-    ) -> None:
+    async def workon(self, interaction: Interaction, _: discord.ui.Button) -> None:
         challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": self.name})
         if interaction.user.name in challenge["players"]:
             await interaction.response.send_message(
@@ -47,9 +45,7 @@ class UnworkonButton(discord.ui.View):
     @discord.ui.button(
         label="Stop working on this challenge.", style=discord.ButtonStyle.red
     )
-    async def unworkon(
-        self, interaction: discord.Interaction, _: discord.ui.Button
-    ) -> None:
+    async def unworkon(self, interaction: Interaction, _: discord.ui.Button) -> None:
         challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": self.name})
         if challenge is None:
             await interaction.response.edit_message(

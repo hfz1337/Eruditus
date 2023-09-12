@@ -2,9 +2,11 @@ import discord
 from discord import app_commands
 
 from config import COMMIT_HASH, GUILD_ID
+from lib.discord_util import Interaction
 from lib.platforms import Platform
 
 
+# noinspection PyMethodMayBeStatic
 class Help(app_commands.Command):
     def __init__(self) -> None:
         super().__init__(
@@ -13,7 +15,7 @@ class Help(app_commands.Command):
             callback=self.cmd_callback,  # type: ignore
         )
 
-    async def cmd_callback(self, interaction: discord.Interaction) -> None:
+    async def cmd_callback(self, interaction: Interaction) -> None:
         """Show help about the bot usage."""
         embed = (
             discord.Embed(

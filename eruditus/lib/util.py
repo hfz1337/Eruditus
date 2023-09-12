@@ -76,14 +76,14 @@ def sanitize_channel_name(name: str) -> str:
 
 
 def derive_colour(role_name: str) -> int:
-    """Derive a colour for the CTF role by taking its MD5 hash and using the first 3
-    bytes as the colour.
+    """Derive a color for the CTF role by taking its MD5 hash and using the first three
+    bytes as the color.
 
     Args:
-        role_name: Name of the role we wish to set a colour for.
+        role_name: Name of the role we wish to set a color for.
 
     Returns:
-        An integer representing an RGB colour.
+        An integer representing an RGB color.
     """
     return int(md5(role_name.encode()).hexdigest()[:6], 16)
 
@@ -260,7 +260,7 @@ def strip_url_components(url: str) -> str:
 
 
 def extract_rctf_team_token(invite_url: str) -> Optional[str]:
-    """Extract the rCTF team token from an invite URL.
+    """Extract the rCTF team token from an invitation URL.
 
     Args:
         The rCTF invite URL (e.g., https://rctf.example.com/login?token=<token>).
@@ -307,6 +307,8 @@ def make_form_field_config(name: str, config: dict) -> dict:
                 "Enter your team token...",
                 256,
             )
+        case _:
+            label, placeholder, max_length = ("Unknown field", "Unknown field", 128)
 
     return {
         "label": config.get("label", label),
