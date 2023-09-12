@@ -608,7 +608,7 @@ class Eruditus(discord.Client):
                 tags = ", ".join(challenge.tags or []) or "No tags."
 
                 # Format file information.
-                files: list[str] = list()
+                files = []
                 for file in challenge.files:
                     if file.name is not None:
                         hyperlink = f"[{file.name}]({file.url})"

@@ -332,7 +332,7 @@ class CTFd(PlatformABC):
             if not data or not data.data:
                 return
 
-            graphs: list[TeamScoreHistory] = list()
+            graphs: list[TeamScoreHistory] = []
 
             for standing in data.data.values():
                 item = TeamScoreHistory(
