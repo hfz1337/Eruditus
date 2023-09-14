@@ -1,7 +1,7 @@
 import discord
 
 from config import CHALLENGE_COLLECTION, DBNAME, MONGO
-from lib.discord_util import add_challenge_solver, remove_challenge_solver
+from lib.discord_util import add_challenge_worker, remove_challenge_worker
 
 
 class WorkonButton(discord.ui.View):
@@ -26,7 +26,12 @@ class WorkonButton(discord.ui.View):
             )
             return
 
-        challenge_thread = await add_challenge_solver(interaction, challenge)
+        challenge_thread = discord.utils.get(
+            interaction.guild.threads, id=challenge["thread"]
+        )
+        challenge_thread = await add_challenge_worker(
+            challenge_thread, challenge, interaction.user
+        )
 
         await interaction.response.send_message(
             f"✅ Added to the `{challenge['name']}` challenge.",
@@ -64,7 +69,11 @@ class UnworkonButton(discord.ui.View):
             )
             return
 
-        await remove_challenge_solver(interaction, challenge)
+        challenge_thread = discord.utils.get(
+            interaction.guild.threads, id=challenge["thread"]
+        )
+        await remove_challenge_worker(challenge_thread, challenge, interaction.user)
+
         await interaction.response.edit_message(
             content=f"✅ Removed from the `{challenge['name']}` challenge.", view=None
         )

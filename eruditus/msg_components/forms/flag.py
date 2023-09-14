@@ -4,7 +4,7 @@ import discord
 from discord import HTTPException
 
 from config import CHALLENGE_COLLECTION, CTF_COLLECTION, DBNAME, MONGO
-from lib.discord_util import get_challenge_solvers, mark_if_maxed
+from lib.discord_util import get_challenge_workers, mark_if_maxed
 from lib.platforms import PlatformCTX, match_platform
 from lib.platforms.abc import SubmittedFlagState
 from msg_components.buttons.workon import WorkonButton
@@ -81,7 +81,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         challenge["flag"] = self.flag.value
 
         solves_channel = interaction.client.get_channel(ctf["guild_channels"]["solves"])
-        solvers = await get_challenge_solvers(interaction, challenge, members)
+        solvers = await get_challenge_workers(interaction, challenge, members)
 
         if result.is_first_blood:
             challenge["blooded"] = True

@@ -22,33 +22,17 @@ async def get_ctf_info(
 ) -> Optional[dict]:
     # Attempt to find the CTF by its channel category.
     if name is None:
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
+        return MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
         )
 
-        if ctf is None:
-            await interaction.followup.send(
-                (
-                    "Run this command from within a CTF channel, or provide the "
-                    "name of the CTF you wish to delete."
-                )
-            )
-            return None
-
-        return ctf
-
     # Attempt to find the CTF by the provided name.
-    ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
+    return MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
         {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
     )
-    if ctf is None:
-        await interaction.followup.send("No such CTF.")
-        return None
-
-    return ctf
 
 
-async def get_challenge_solvers(
+async def get_challenge_workers(
     interaction: discord.Interaction, challenge: dict, members: Optional[str] = None
 ) -> list[str]:
     if interaction.user.name not in challenge["players"]:
@@ -92,46 +76,36 @@ async def mark_if_maxed(interaction: discord.Interaction, challenge: dict) -> No
         await text_channel.edit(name=text_channel.name.replace("🔄", "🎯"))
 
 
-async def add_challenge_solver(
-    interaction: discord.Interaction, challenge: dict
-) -> discord.Thread:
-    challenge["players"].append(interaction.user.name)
+async def add_challenge_worker(
+    challenge_thread: discord.Thread, challenge: dict, user: discord.User
+) -> None:
+    challenge["players"].append(user.name)
 
-    challenge_thread = discord.utils.get(
-        interaction.guild.threads, id=challenge["thread"]
-    )
-
-    await challenge_thread.add_user(interaction.user)
+    await challenge_thread.add_user(user)
 
     MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
         {"_id": challenge["_id"]},
         {"$set": {"players": challenge["players"]}},
     )
 
-    return challenge_thread
 
-
-async def remove_challenge_solver(
-    interaction: discord.Interaction, challenge: dict, send_msg: bool = True
-) -> discord.Thread:
-    challenge["players"].remove(interaction.user.name)
+async def remove_challenge_worker(
+    challenge_thread: discord.Thread,
+    challenge: dict,
+    user: discord.User,
+    send_msg: bool = True,
+) -> None:
+    challenge["players"].remove(user.name)
 
     MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
         {"_id": challenge["_id"]},
         {"$set": {"players": challenge["players"]}},
-    )
-
-    challenge_thread = discord.utils.get(
-        interaction.guild.threads, id=challenge["thread"]
     )
 
     if send_msg:
-        await challenge_thread.send(
-            f"{interaction.user.mention} left you alone, what a chicken! 🐥"
-        )
+        await challenge_thread.send(f"{user.mention} left you alone, what a chicken! 🐥")
 
-    await challenge_thread.remove_user(interaction.user)
-    return challenge_thread
+    await challenge_thread.remove_user(user)
 
 
 async def send_scoreboard(

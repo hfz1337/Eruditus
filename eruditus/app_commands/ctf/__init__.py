@@ -17,11 +17,11 @@ from config import (
     MONGO,
 )
 from lib.discord_util import (
-    add_challenge_solver,
-    get_challenge_solvers,
+    add_challenge_worker,
+    get_challenge_workers,
     get_ctf_info,
     mark_if_maxed,
-    remove_challenge_solver,
+    remove_challenge_worker,
     send_scoreboard,
 )
 from lib.platforms import PlatformCTX, match_platform
@@ -191,6 +191,14 @@ class CTF(app_commands.Group):
         await interaction.response.defer()
 
         ctf = await get_ctf_info(interaction, name)
+        if not ctf:
+            await interaction.followup.send(
+                (
+                    "Run this command from within a CTF channel, or provide the "
+                    "name of the CTF you wish to archive."
+                )
+            )
+            return
 
         # In case CTF was already archived.
         if ctf["archived"]:
@@ -323,6 +331,14 @@ class CTF(app_commands.Group):
         await interaction.response.defer()
 
         ctf = await get_ctf_info(interaction, name)
+        if not ctf:
+            await interaction.followup.send(
+                (
+                    "Run this command from within a CTF channel, or provide the "
+                    "name of the CTF you wish to delete."
+                )
+            )
+            return
 
         category_channel = discord.utils.get(
             interaction.guild.categories, id=ctf["guild_category"]
@@ -782,7 +798,7 @@ class CTF(app_commands.Group):
             # by spamming solve and unsolve.
             pass
 
-        solvers = await get_challenge_solvers(interaction, challenge, members)
+        solvers = await get_challenge_workers(interaction, challenge, members)
 
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
@@ -941,7 +957,10 @@ class CTF(app_commands.Group):
             )
             return
 
-        challenge_thread = await add_challenge_solver(interaction, challenge)
+        challenge_thread = discord.utils.get(
+            interaction.guild.threads, id=challenge["thread"]
+        )
+        await add_challenge_worker(challenge_thread, challenge, interaction.user)
 
         await interaction.response.send_message(
             f"✅ Added to the `{challenge['name']}` challenge."
@@ -995,7 +1014,11 @@ class CTF(app_commands.Group):
             )
             return
 
-        await remove_challenge_solver(interaction, challenge)
+        challenge_thread = discord.utils.get(
+            interaction.guild.threads, id=challenge["thread"]
+        )
+        await remove_challenge_worker(challenge_thread, challenge, interaction.user)
+
         await interaction.response.send_message(
             f"✅ Removed from the `{challenge['name']}` challenge.", ephemeral=True
         )
