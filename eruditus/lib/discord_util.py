@@ -38,27 +38,15 @@ async def get_challenge_workers(
     if interaction.user.name not in challenge["players"]:
         challenge["players"].append(interaction.user.name)
 
-    result: list[str] = [interaction.user.name]
-
-    if members is None:
-        return result
-
-    for mention in re.split(r"<@!?([0-9]{15,20})>", members):
-        if mention == "":
-            continue
-
-        # If id and we can fetch the user
-        if re.match(r"^[0-9]{15,20}$", mention):
-            member_info = await interaction.guild.fetch_member(int(mention))
-
-            if member_info:
-                result.append(member_info.name)
-                continue
-
-        # Otherwise, adding as a plain text
-        result.extend(mention.split())
-
-    return result
+    return [interaction.user.name] + (
+        []
+        if members is None
+        else [
+            member.name
+            for member_id in re.findall(r"<@!?([0-9]{15,20})>", members)
+            if (member := await interaction.guild.fetch_member(int(member_id)))
+        ]
+    )
 
 
 async def mark_if_maxed(interaction: discord.Interaction, challenge: dict) -> None:
