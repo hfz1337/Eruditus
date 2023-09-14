@@ -6,7 +6,6 @@ import discord
 from discord import app_commands
 from discord.app_commands import Choice
 
-from lib.discord_util import Interaction
 from lib.types import OSType
 
 
@@ -88,7 +87,7 @@ class Revshell(app_commands.Command):
 
     async def cmd_callback(
         self,
-        interaction: Interaction,
+        interaction: discord.Interaction,
         platform: OSType,
         name: str,
         ip: str,

@@ -4,7 +4,6 @@ import aiohttp
 import discord
 
 from config import MAX_CONTENT_SIZE, OPENAI_API_KEY, OPENAI_GPT_MODEL, OPENAI_URL
-from lib.discord_util import Interaction
 
 
 class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):
@@ -21,7 +20,7 @@ class ChatGPTForm(discord.ui.Modal, title="ChatGPT"):
         self.ephemeral = bool(private)
         self.temperature = temperature
 
-    async def on_submit(self, interaction: Interaction) -> None:
+    async def on_submit(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer()
 
         async with aiohttp.request(

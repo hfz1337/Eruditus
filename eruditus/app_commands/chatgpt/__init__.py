@@ -1,8 +1,8 @@
 from typing import Optional
 
+import discord
 from discord import app_commands
 
-from lib.discord_util import Interaction
 from lib.types import PromptPrivacy
 from msg_components.forms.chatgpt import ChatGPTForm
 
@@ -17,7 +17,7 @@ class ChatGPT(app_commands.Command):
 
     async def cmd_callback(
         self,
-        interaction: Interaction,
+        interaction: discord.Interaction,
         privacy: Optional[PromptPrivacy] = PromptPrivacy.public,
         temperature: Optional[float] = 0.9,
     ) -> None:

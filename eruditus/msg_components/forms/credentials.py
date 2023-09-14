@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 import discord
 
-from lib.discord_util import Interaction, save_credentials
+from lib.discord_util import save_credentials
 from lib.platforms import Platform, PlatformABC, PlatformCTX
 from lib.util import (
     extract_rctf_team_token,
@@ -41,7 +41,7 @@ class CredentialsForm(discord.ui.Modal, title="Add CTF credentials"):
 
 
 async def add_credentials_callback(
-    self: CredentialsForm, interaction: Interaction
+    self: CredentialsForm, interaction: discord.Interaction
 ) -> None:
     await interaction.response.defer()
     match Platform(self.platform):
@@ -128,7 +128,7 @@ async def add_credentials_callback(
 
 
 async def register_account_callback(
-    self: CredentialsForm, interaction: Interaction
+    self: CredentialsForm, interaction: discord.Interaction
 ) -> None:
     await interaction.response.defer()
     match Platform(self.platform):

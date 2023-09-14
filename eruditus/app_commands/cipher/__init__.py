@@ -1,9 +1,7 @@
 from string import ascii_lowercase, ascii_uppercase
 from typing import Optional
 
-from discord import app_commands
-
-from lib.discord_util import Interaction
+from discord import Interaction, app_commands
 
 
 class ClassicCiphers:

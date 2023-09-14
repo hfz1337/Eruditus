@@ -14,7 +14,6 @@ from lib.ctftime import (
     scrape_current_events,
     scrape_event_info,
 )
-from lib.discord_util import Interaction
 from lib.util import get_local_time, truncate
 
 
@@ -27,7 +26,7 @@ class CTFTime(app_commands.Group):
         super().__init__(name="ctftime")
 
     @app_commands.command()
-    async def current(self, interaction: Interaction) -> None:
+    async def current(self, interaction: discord.Interaction) -> None:
         """Show ongoing CTF competitions.
 
         Args:
@@ -77,7 +76,7 @@ class CTFTime(app_commands.Group):
 
     @app_commands.command()
     async def upcoming(
-        self, interaction: Interaction, limit: Optional[int] = 3
+        self, interaction: discord.Interaction, limit: Optional[int] = 3
     ) -> None:
         """Show upcoming events.
 
@@ -144,7 +143,7 @@ class CTFTime(app_commands.Group):
                     await interaction.followup.send("No upcoming CTFs.")
 
     @app_commands.command()
-    async def top(self, interaction: Interaction, year: Optional[int]) -> None:
+    async def top(self, interaction: discord.Interaction, year: Optional[int]) -> None:
         """Shows CTFtime's leaderboard for a specific year (default: current year).
 
         Args:
@@ -179,7 +178,7 @@ class CTFTime(app_commands.Group):
 
     @app_commands.checks.has_permissions(manage_events=True)
     @app_commands.command()
-    async def pull(self, interaction: Interaction) -> None:
+    async def pull(self, interaction: discord.Interaction) -> None:
         """Pull events starting in less than a week."""
         await interaction.response.defer()
 
@@ -258,7 +257,7 @@ class CTFTime(app_commands.Group):
     @app_commands.checks.has_permissions(manage_channels=True)
     @app_commands.command()
     async def setchannel(
-        self, interaction: Interaction, channel_id: Optional[str]
+        self, interaction: discord.Interaction, channel_id: Optional[str]
     ) -> None:
         """Set the text channel where CTF reminders will be sent.
 

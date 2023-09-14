@@ -6,7 +6,6 @@ import discord
 from discord import app_commands
 from discord.app_commands import Choice
 
-from lib.discord_util import Interaction
 from lib.types import CPUArchitecture
 
 
@@ -81,7 +80,7 @@ class Syscalls(app_commands.Command[Any, Any, Any]):
             return suggestions
 
     async def cmd_callback(
-        self, interaction: Interaction, arch: CPUArchitecture, syscall: str
+        self, interaction: discord.Interaction, arch: CPUArchitecture, syscall: str
     ):
         """Show information for a syscall from a specific architecture.
 

@@ -17,7 +17,6 @@ from config import (
     MONGO,
 )
 from lib.discord_util import (
-    Interaction,
     add_challenge_solver,
     get_challenge_solvers,
     get_ctf_info,
@@ -40,7 +39,7 @@ class CTF(app_commands.Group):
         super().__init__(name="ctf")
 
     async def on_error(
-        self, interaction: Interaction, error: app_commands.AppCommandError
+        self, interaction: discord.Interaction, error: app_commands.AppCommandError
     ) -> None:
         await interaction.response.send_message(error, ephemeral=True)
 
@@ -48,7 +47,7 @@ class CTF(app_commands.Group):
     def _in_ctf_channel() -> Callable[..., bool]:
         """Wrapper function to check if a command was issued from a CTF channel."""
 
-        async def predicate(interaction: Interaction) -> bool:
+        async def predicate(interaction: discord.Interaction) -> bool:
             if MONGO[DBNAME][CTF_COLLECTION].find_one(
                 {"guild_category": interaction.channel.category_id}
             ):
@@ -62,7 +61,7 @@ class CTF(app_commands.Group):
         return app_commands.check(predicate)
 
     async def _ctf_autocompletion_func(
-        self, _: discord.Interaction, current: str
+        self, _: discord.discord.Interaction, current: str
     ) -> list[Choice[str]]:
         """Autocomplete CTF name.
         This function is inefficient, might improve it later.
@@ -85,7 +84,7 @@ class CTF(app_commands.Group):
         return suggestions
 
     async def _challenge_autocompletion_func(
-        self, interaction: discord.Interaction, current: str
+        self, interaction: discord.discord.Interaction, current: str
     ) -> list[Choice[str]]:
         """Autocomplete challenge name.
         This function is inefficient, might improve it later.
@@ -119,7 +118,7 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.checks.has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.command()
-    async def createctf(self, interaction: Interaction, name: str) -> None:
+    async def createctf(self, interaction: discord.Interaction, name: str) -> None:
         """Create a new CTF.
 
         Args:
@@ -141,7 +140,7 @@ class CTF(app_commands.Group):
     @app_commands.checks.has_permissions(manage_channels=True)
     @app_commands.command()
     @_in_ctf_channel()
-    async def renamectf(self, interaction: Interaction, new_name: str) -> None:
+    async def renamectf(self, interaction: discord.Interaction, new_name: str) -> None:
         """Rename a previously created CTF.
 
         Args:
@@ -177,7 +176,7 @@ class CTF(app_commands.Group):
     @app_commands.autocomplete(name=_ctf_autocompletion_func)  # type: ignore
     async def archivectf(
         self,
-        interaction: Interaction,
+        interaction: discord.Interaction,
         permissions: Optional[Permissions] = Permissions.RDONLY,
         name: Optional[str] = None,
     ):
@@ -312,7 +311,7 @@ class CTF(app_commands.Group):
     @app_commands.command()
     @app_commands.autocomplete(name=_ctf_autocompletion_func)  # type: ignore
     async def deletectf(
-        self, interaction: Interaction, name: Optional[str] = None
+        self, interaction: discord.Interaction, name: Optional[str] = None
     ) -> None:
         """Delete a CTF.
 
@@ -358,7 +357,7 @@ class CTF(app_commands.Group):
     @app_commands.command()
     @app_commands.autocomplete(name=_ctf_autocompletion_func)  # type: ignore
     async def addplayers(
-        self, interaction: Interaction, name: str, members: Optional[str] = None
+        self, interaction: discord.Interaction, name: str, members: Optional[str] = None
     ) -> None:
         """Add members to a CTF.
 
@@ -418,7 +417,7 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_roles=True)
     @app_commands.command()
     @app_commands.autocomplete(name=_ctf_autocompletion_func)  # type: ignore
-    async def join(self, interaction: Interaction, name: str) -> None:
+    async def join(self, interaction: discord.Interaction, name: str) -> None:
         """Join and ongoing CTF competition.
 
         Args:
@@ -454,7 +453,7 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_roles=True)
     @app_commands.command()
     @_in_ctf_channel()
-    async def leave(self, interaction: Interaction) -> None:
+    async def leave(self, interaction: discord.Interaction) -> None:
         """Leave the current CTF.
 
         Args:
@@ -498,7 +497,7 @@ class CTF(app_commands.Group):
     @_in_ctf_channel()
     async def createchallenge(
         self,
-        interaction: Interaction,
+        interaction: discord.Interaction,
         name: str,
         category: str,
     ) -> None:
@@ -621,7 +620,7 @@ class CTF(app_commands.Group):
     @_in_ctf_channel()
     async def renamechallenge(
         self,
-        interaction: Interaction,
+        interaction: discord.Interaction,
         new_name: str,
     ) -> None:
         """Rename a challenge.
@@ -664,7 +663,7 @@ class CTF(app_commands.Group):
     @app_commands.autocomplete(name=_challenge_autocompletion_func)  # type: ignore
     @_in_ctf_channel()
     async def deletechallenge(
-        self, interaction: Interaction, name: Optional[str] = None
+        self, interaction: discord.Interaction, name: Optional[str] = None
     ) -> None:
         """Delete a challenge from the CTF.
 
@@ -743,7 +742,7 @@ class CTF(app_commands.Group):
     @app_commands.command()
     @_in_ctf_channel()
     async def solve(
-        self, interaction: Interaction, members: Optional[str] = None
+        self, interaction: discord.Interaction, members: Optional[str] = None
     ) -> None:
         """Mark the challenge as solved.
 
@@ -832,7 +831,7 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
     @_in_ctf_channel()
-    async def unsolve(self, interaction: Interaction) -> None:
+    async def unsolve(self, interaction: discord.Interaction) -> None:
         """Mark the challenge as not solved.
 
         Args:
@@ -914,7 +913,7 @@ class CTF(app_commands.Group):
     @app_commands.command()
     @app_commands.autocomplete(name=_challenge_autocompletion_func)  # type: ignore
     @_in_ctf_channel()
-    async def workon(self, interaction: Interaction, name: str) -> None:
+    async def workon(self, interaction: discord.Interaction, name: str) -> None:
         """Start working on a challenge and join its thread.
 
         Args:
@@ -956,7 +955,7 @@ class CTF(app_commands.Group):
     @app_commands.autocomplete(name=_challenge_autocompletion_func)  # type: ignore
     @_in_ctf_channel()
     async def unworkon(
-        self, interaction: Interaction, name: Optional[str] = None
+        self, interaction: discord.Interaction, name: Optional[str] = None
     ) -> None:
         """Stop working on a challenge and leave its thread (default: current
         thread's challenge).
@@ -1006,7 +1005,7 @@ class CTF(app_commands.Group):
     @app_commands.autocomplete(name=_ctf_autocompletion_func)  # type: ignore
     async def status(
         self,
-        interaction: Interaction,
+        interaction: discord.Interaction,
         name: str = None,
         mode: Optional[CTFStatusMode] = CTFStatusMode.active,
     ) -> None:
@@ -1147,7 +1146,7 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
     @_in_ctf_channel()
-    async def addcreds(self, interaction: Interaction, url: str) -> None:
+    async def addcreds(self, interaction: discord.Interaction, url: str) -> None:
         """Add credentials for the current CTF.
 
         Args:
@@ -1177,7 +1176,7 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
     @_in_ctf_channel()
-    async def showcreds(self, interaction: Interaction) -> None:
+    async def showcreds(self, interaction: discord.Interaction) -> None:
         """Show credentials for the current CTF.
 
         Args:
@@ -1196,7 +1195,7 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()
     @_in_ctf_channel()
-    async def pull(self, interaction: Interaction) -> None:
+    async def pull(self, interaction: discord.Interaction) -> None:
         """Pull challenges from the platform.
 
         Args:
@@ -1214,7 +1213,7 @@ class CTF(app_commands.Group):
     @app_commands.command()
     @_in_ctf_channel()
     async def submit(
-        self, interaction: Interaction, members: Optional[str] = None
+        self, interaction: discord.Interaction, members: Optional[str] = None
     ) -> None:
         """Submit a flag to the platform.
 
@@ -1226,7 +1225,7 @@ class CTF(app_commands.Group):
 
     @app_commands.command()
     @_in_ctf_channel()
-    async def scoreboard(self, interaction: Interaction) -> None:
+    async def scoreboard(self, interaction: discord.Interaction) -> None:
         """Display scoreboard for the current CTF.
 
         Args:
@@ -1247,7 +1246,7 @@ class CTF(app_commands.Group):
 
     @app_commands.command()
     @_in_ctf_channel()
-    async def remaining(self, interaction: Interaction) -> None:
+    async def remaining(self, interaction: discord.Interaction) -> None:
         """Show remaining time for the CTF.
 
         Args:
@@ -1276,7 +1275,7 @@ class CTF(app_commands.Group):
     @_in_ctf_channel()
     async def register(
         self,
-        interaction: Interaction,
+        interaction: discord.Interaction,
         url: str,
     ) -> None:
         """Register a team account in the platform.

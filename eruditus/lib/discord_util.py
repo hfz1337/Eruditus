@@ -17,19 +17,6 @@ from lib.platforms import PlatformCTX, match_platform
 from lib.util import plot_scoreboard
 
 
-class Interaction(discord.Interaction):
-    """Custom interaction class that would be used only within the typehints
-
-    Notes:
-        - This is needed because PyCharm can't resolve the response property
-            as a property :shrug:
-    """
-
-    @property
-    def response(self) -> discord.InteractionResponse:
-        return None  # type: ignore
-
-
 async def get_ctf_info(
     interaction: discord.Interaction, name: Optional[str] = None
 ) -> Optional[dict]:

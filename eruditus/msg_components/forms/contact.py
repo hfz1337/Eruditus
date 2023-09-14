@@ -3,7 +3,6 @@ from datetime import datetime
 import discord
 
 from config import DEVELOPER_USER_ID
-from lib.discord_util import Interaction
 
 
 class FeatureRequestForm(discord.ui.Modal, title="Contact form"):
@@ -15,7 +14,7 @@ class FeatureRequestForm(discord.ui.Modal, title="Contact form"):
         max_length=1000,
     )
 
-    async def on_submit(self, interaction: Interaction) -> None:
+    async def on_submit(self, interaction: discord.Interaction) -> None:
         developer = await interaction.client.fetch_user(DEVELOPER_USER_ID)
         embed = (
             discord.Embed(
@@ -44,7 +43,7 @@ class BugReportForm(discord.ui.Modal, title="Contact form"):
         max_length=1000,
     )
 
-    async def on_submit(self, interaction: Interaction) -> None:
+    async def on_submit(self, interaction: discord.Interaction) -> None:
         developer = await interaction.client.fetch_user(DEVELOPER_USER_ID)
         embed = (
             discord.Embed(

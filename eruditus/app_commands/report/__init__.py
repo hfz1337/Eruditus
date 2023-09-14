@@ -1,6 +1,5 @@
-from discord import app_commands
+from discord import Interaction, app_commands
 
-from lib.discord_util import Interaction
 from msg_components.forms.contact import BugReportForm
 
 

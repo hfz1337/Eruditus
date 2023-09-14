@@ -2,7 +2,6 @@ import discord
 from discord import app_commands
 
 from config import BOOKMARK_CHANNEL
-from lib.discord_util import Interaction
 
 
 class Bookmark(app_commands.ContextMenu):
@@ -13,7 +12,7 @@ class Bookmark(app_commands.ContextMenu):
         )
 
     async def context_callback(
-        self, interaction: Interaction, message: discord.Message
+        self, interaction: discord.Interaction, message: discord.Message
     ) -> None:
         """Bookmark a message.
 

@@ -2,7 +2,6 @@ import discord
 from discord import app_commands
 
 from config import CTF_COLLECTION, DBNAME, MONGO
-from lib.discord_util import Interaction
 
 
 class TakeNote(app_commands.ContextMenu):
@@ -13,7 +12,7 @@ class TakeNote(app_commands.ContextMenu):
         )
 
     async def context_callback(
-        self, interaction: Interaction, message: discord.Message
+        self, interaction: discord.Interaction, message: discord.Message
     ) -> None:
         """Copy a message into the current CTF's note channel.
 
