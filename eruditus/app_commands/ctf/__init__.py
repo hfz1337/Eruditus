@@ -61,7 +61,7 @@ class CTF(app_commands.Group):
         return app_commands.check(predicate)
 
     async def _ctf_autocompletion_func(
-        self, _: discord.discord.Interaction, current: str
+        self, _: discord.Interaction, current: str
     ) -> list[Choice[str]]:
         """Autocomplete CTF name.
         This function is inefficient, might improve it later.
@@ -84,7 +84,7 @@ class CTF(app_commands.Group):
         return suggestions
 
     async def _challenge_autocompletion_func(
-        self, interaction: discord.discord.Interaction, current: str
+        self, interaction: discord.Interaction, current: str
     ) -> list[Choice[str]]:
         """Autocomplete challenge name.
         This function is inefficient, might improve it later.
