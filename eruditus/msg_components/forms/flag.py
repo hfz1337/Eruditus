@@ -71,7 +71,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
 
         if result.state != SubmittedFlagState.CORRECT:
             await interaction.followup.send(
-                f"UNKNOWN STATE: {result.state.name} {result.state.value}"
+                f"Unknown state: {result.state.name} {result.state.value}"
             )
             return
 

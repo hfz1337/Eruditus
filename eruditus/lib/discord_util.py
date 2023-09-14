@@ -20,7 +20,7 @@ from lib.util import plot_scoreboard
 async def get_ctf_info(
     interaction: discord.Interaction, name: Optional[str] = None
 ) -> Optional[dict]:
-    # Trying to find ctf by channel category
+    # Attempt to find the CTF by its channel category.
     if name is None:
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}
@@ -37,7 +37,7 @@ async def get_ctf_info(
 
         return ctf
 
-    # Trying to find ctf by provided name
+    # Attempt to find the CTF by the provided name.
     ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
         {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
     )
