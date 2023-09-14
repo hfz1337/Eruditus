@@ -1231,11 +1231,6 @@ class CTF(app_commands.Group):
         Args:
             interaction: The interaction that triggered this command.
         """
-        print(
-            type(interaction),
-            type(interaction.response),
-            type(interaction.response.defer),
-        )
         await interaction.response.defer()
 
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
