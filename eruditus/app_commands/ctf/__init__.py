@@ -544,6 +544,12 @@ class CTF(app_commands.Group):
             {"guild_category": interaction.channel.category_id}
         )
 
+        if ctf["archived"]:
+            await interaction.response.send_message(
+                "This CTF is archived.", ephemeral=True
+            )
+            return
+
         category_channel = discord.utils.get(
             interaction.guild.categories, id=interaction.channel.category_id
         )
