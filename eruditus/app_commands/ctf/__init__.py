@@ -18,9 +18,9 @@ from config import (
 )
 from lib.discord_util import (
     add_challenge_worker,
-    get_challenge_workers,
     get_ctf_info,
     mark_if_maxed,
+    parse_challenge_solvers,
     remove_challenge_worker,
     send_scoreboard,
 )
@@ -804,7 +804,7 @@ class CTF(app_commands.Group):
             # by spamming solve and unsolve.
             pass
 
-        solvers = await get_challenge_workers(interaction, challenge, members)
+        solvers = await parse_challenge_solvers(interaction, challenge, members)
 
         ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
             {"guild_category": interaction.channel.category_id}

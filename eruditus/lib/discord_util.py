@@ -32,21 +32,42 @@ async def get_ctf_info(
     )
 
 
-async def get_challenge_workers(
+async def parse_challenge_solvers(
     interaction: discord.Interaction, challenge: dict, members: Optional[str] = None
 ) -> list[str]:
     if interaction.user.name not in challenge["players"]:
         challenge["players"].append(interaction.user.name)
 
-    return [interaction.user.name] + (
-        []
-        if members is None
-        else [
-            member.name
-            for member_id in re.findall(r"<@!?([0-9]{15,20})>", members)
-            if (member := await interaction.guild.fetch_member(int(member_id)))
-        ]
+    return list(
+        {interaction.user.name}
+        | (
+            {}
+            if members is None
+            else {
+                member.name
+                for member in await parse_member_mentions(interaction, members)
+            }
+        )
     )
+
+
+async def parse_member_mentions(
+    interaction: discord.Interaction, members: str
+) -> list[discord.Member]:
+    """Extract Discord members mentioned in a string.
+
+    Args:
+        interaction: The Discord interaction.
+        members: A string containing member mentions.
+
+    Returns:
+        A list of Discord member objects.
+    """
+    return [
+        member
+        for member_id in re.findall(r"<@!?([0-9]{15,20})>", members)
+        if (member := await interaction.guild.fetch_member(int(member_id)))
+    ]
 
 
 async def mark_if_maxed(interaction: discord.Interaction, challenge: dict) -> None:
