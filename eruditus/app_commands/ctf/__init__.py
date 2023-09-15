@@ -1,4 +1,3 @@
-import re
 from datetime import datetime
 from typing import Callable, Optional
 
@@ -21,6 +20,7 @@ from lib.discord_util import (
     get_challenge_category_channel,
     mark_if_maxed,
     parse_challenge_solvers,
+    parse_member_mentions,
     remove_challenge_worker,
     send_scoreboard,
 )
@@ -431,10 +431,7 @@ class CTF(app_commands.Group):
                 member = await interaction.guild.fetch_member(user.id)
                 await member.add_roles(role)
         else:
-            for member_id in re.findall(r"<@!?([0-9]{15,20})>", members):
-                member = await interaction.guild.fetch_member(int(member_id))
-                if member is None:
-                    continue
+            for member in await parse_member_mentions(interaction, members):
                 await member.add_roles(role)
                 await ctf_general_channel.send(
                     f"{member.mention} was added by {interaction.user.mention} 🔫"
