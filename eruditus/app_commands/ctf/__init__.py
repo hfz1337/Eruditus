@@ -132,7 +132,8 @@ class CTF(app_commands.Group):
         if ctf is None:
             await interaction.followup.send(
                 "Another CTF with similar name already exists, please choose "
-                "another name."
+                "another name.",
+                ephemeral=True,
             )
         else:
             await interaction.followup.send(f"✅ CTF `{name}` has been created.")
@@ -201,7 +202,8 @@ class CTF(app_commands.Group):
                     "name of the CTF you wish to archive."
                 )
                 if name is None
-                else "No such CTF."
+                else "No such CTF.",
+                ephemeral=True,
             )
             return
 
@@ -346,7 +348,8 @@ class CTF(app_commands.Group):
                     "name of the CTF you wish to delete."
                 )
                 if name is None
-                else "No such CTF."
+                else "No such CTF.",
+                ephemeral=True,
             )
             return
 
@@ -396,13 +399,14 @@ class CTF(app_commands.Group):
 
         ctf = get_ctf_info(name=name)
         if ctf is None:
-            await interaction.followup.send("No such CTF.")
+            await interaction.followup.send("No such CTF.", ephemeral=True)
             return
 
         role = discord.utils.get(interaction.guild.roles, id=ctf["guild_role"])
         if role is None:
             await interaction.followup.send(
-                "CTF role was (accidentally?) deleted by an admin, aborting."
+                "CTF role was (accidentally?) deleted by an admin, aborting.",
+                ephemeral=True,
             )
             return
 
@@ -436,7 +440,9 @@ class CTF(app_commands.Group):
                     f"{member.mention} was added by {interaction.user.mention} 🔫"
                 )
 
-        await interaction.followup.send(f"✅ Added players to `{ctf['name']}`.")
+        await interaction.followup.send(
+            f"✅ Added players to `{ctf['name']}`.", ephemeral=True
+        )
 
     @app_commands.checks.bot_has_permissions(manage_roles=True)
     @app_commands.command()
@@ -748,13 +754,16 @@ class CTF(app_commands.Group):
             # the command was run, then we're probably in the wrong thread.
             await interaction.followup.send(
                 "You may only run this command in the thread associated to the "
-                "challenge."
+                "challenge.",
+                ephemeral=True,
             )
             return
 
         # If the challenge was already solved.
         if challenge["solved"]:
-            await interaction.followup.send("This challenge was already solved.")
+            await interaction.followup.send(
+                "This challenge was already solved.", ephemeral=True
+            )
             return
 
         challenge["solved"] = True
@@ -831,13 +840,14 @@ class CTF(app_commands.Group):
             # the command was run, then we're probably in a non-challenge channel.
             await interaction.followup.send(
                 "You may only run this command in the thread associated to the "
-                "challenge."
+                "challenge.",
+                ephemeral=True,
             )
 
         # Check if challenge is already not solved.
         if not challenge["solved"]:
             await interaction.followup.send(
-                "This challenge is already marked as not solved."
+                "This challenge is already marked as not solved.", ephemeral=True
             )
             return
 
@@ -1025,7 +1035,7 @@ class CTF(app_commands.Group):
         else:
             ctfs = get_ctf_info(name=name, archived=False, ended=False)
             if ctfs is None:
-                await interaction.followup.send("No such CTF.")
+                await interaction.followup.send("No such CTF.", ephemeral=True)
                 return
             ctfs = [ctfs]
 
@@ -1117,9 +1127,9 @@ class CTF(app_commands.Group):
 
         if no_running_ctfs:
             if name is None:
-                await interaction.followup.send("No running CTFs.")
+                await interaction.followup.send("No running CTFs.", ephemeral=True)
             else:
-                await interaction.followup.send("No such CTF.")
+                await interaction.followup.send("No such CTF.", ephemeral=True)
 
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command()

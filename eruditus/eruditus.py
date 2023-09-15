@@ -12,7 +12,6 @@ from discord.ext import tasks
 
 import config
 from app_commands.bookmark import Bookmark
-from app_commands.chatgpt import ChatGPT
 from app_commands.cipher import Cipher
 from app_commands.ctf import CTF
 from app_commands.ctftime import CTFTime
@@ -176,7 +175,6 @@ class Eruditus(discord.Client):
         self.tree.add_command(Search())
         self.tree.add_command(Bookmark(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(TakeNote(), guild=discord.Object(GUILD_ID))
-        self.tree.add_command(ChatGPT(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(CTF(), guild=discord.Object(GUILD_ID))
 
         self.create_upcoming_events.start()

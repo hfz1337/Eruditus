@@ -28,7 +28,8 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         challenge = get_challenge_info(thread=interaction.channel_id)
         if challenge is None:
             await interaction.followup.send(
-                "❌ This command may only be used from within a challenge thread."
+                "❌ This command may only be used from within a challenge thread.",
+                ephemeral=True,
             )
             return
 
@@ -38,7 +39,8 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         platform = await match_platform(ctx)
         if platform is None:
             await interaction.followup.send(
-                "❌ Failed to submit the flag (unsupported platform)."
+                "❌ Failed to submit the flag (unsupported platform).",
+                ephemeral=True,
             )
             return
 

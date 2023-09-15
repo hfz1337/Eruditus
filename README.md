@@ -78,8 +78,6 @@ Here's a list of the currently supported commands:
 
 /syscalls                                            (Show information for a specific syscall)
 
-/chatgpt                                             (Ask OpenAI's ChatGPT a question)
-
 /ctftime upcoming                                    (Show upcoming CTF competitions)
 /ctftime current                                     (Show ongoing CTF competitions)
 /ctftime top                                         (Show leaderboard for a specific year)

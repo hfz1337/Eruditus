@@ -124,7 +124,7 @@ async def add_credentials_callback(
 
     # Add credentials.
     await update_credentials(interaction, credentials)
-    await interaction.followup.send(msg)
+    await interaction.followup.send(msg, ephemeral=True)
 
 
 async def register_account_callback(
@@ -139,7 +139,7 @@ async def register_account_callback(
             )
             result = await self.platform.value.register(ctx)
             if not result.success:
-                await interaction.followup.send(result.message)
+                await interaction.followup.send(result.message, ephemeral=True)
                 return
 
             invite_url = f"{ctx.url_stripped}/login?" + urlencode(
@@ -171,7 +171,7 @@ async def register_account_callback(
             )
             result = await self.platform.value.register(ctx)
             if not result.success:
-                await interaction.followup.send(result.message)
+                await interaction.followup.send(result.message, ephemeral=True)
                 return
 
             credentials = {

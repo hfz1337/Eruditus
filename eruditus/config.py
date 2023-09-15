@@ -50,9 +50,6 @@ COMMIT_HASH = load_revision()
 REMINDER_CHANNEL = (
     int(os.getenv("REMINDER_CHANNEL")) if os.getenv("REMINDER_CHANNEL") else None
 )
-OPENAI_URL = os.getenv("OPENAI_URL")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_GPT_MODEL = os.getenv("OPENAI_GPT_MODEL")
 BOOKMARK_CHANNEL = int(os.getenv("BOOKMARK_CHANNEL"))
 
 MONGO = MongoClient(MONGODB_URI)
