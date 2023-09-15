@@ -18,8 +18,6 @@ from config import (
 )
 from lib.discord_util import (
     add_challenge_worker,
-    get_challenge_info,
-    get_ctf_info,
     mark_if_maxed,
     parse_challenge_solvers,
     remove_challenge_worker,
@@ -27,7 +25,12 @@ from lib.discord_util import (
 )
 from lib.platforms import PlatformCTX, match_platform
 from lib.types import CTFStatusMode, Permissions
-from lib.util import sanitize_channel_name, strip_url_components
+from lib.util import (
+    get_challenge_info,
+    get_ctf_info,
+    sanitize_channel_name,
+    strip_url_components,
+)
 from msg_components.buttons.workon import WorkonButton
 from msg_components.forms.credentials import create_credentials_modal_for_platform
 from msg_components.forms.flag import FlagSubmissionForm
@@ -49,7 +52,7 @@ class CTF(app_commands.Group):
         """Wrapper function to check if a command was issued from a CTF channel."""
 
         async def predicate(interaction: discord.Interaction) -> bool:
-            if get_ctf_info(interaction=interaction):
+            if get_ctf_info(channel_category_id=interaction.channel.category_id):
                 return True
 
             await interaction.response.send_message(
@@ -95,7 +98,7 @@ class CTF(app_commands.Group):
         Returns:
             A list of suggestions.
         """
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
         if ctf is None:
             return []
 
@@ -144,7 +147,7 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             new_name: New CTF name (case insensitive).
         """
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
         old_name = ctf["name"]
         ctf["name"] = new_name
 
@@ -465,7 +468,7 @@ class CTF(app_commands.Group):
         Args:
             interaction: The interaction that triggered this command.
         """
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
         if not ctf:
             return
 
@@ -524,7 +527,7 @@ class CTF(app_commands.Group):
             )
             return
 
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
 
         if ctf["archived"]:
             await interaction.response.send_message(
@@ -693,7 +696,7 @@ class CTF(app_commands.Group):
                 return
 
         # Get CTF to which the challenge is associated.
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
 
         # Delete challenge from the database.
         MONGO[DBNAME][CHALLENGE_COLLECTION].delete_one(challenge)
@@ -777,7 +780,7 @@ class CTF(app_commands.Group):
 
         solvers = await parse_challenge_solvers(interaction, challenge, members)
 
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
         solves_channel = interaction.client.get_channel(ctf["guild_channels"]["solves"])
         embed = discord.Embed(
             title="🎉 Challenge solved!",
@@ -856,7 +859,7 @@ class CTF(app_commands.Group):
             # by spamming solve and unsolve.
             pass
 
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
         # Delete the challenge solved announcement we made.
         solves_channel = discord.utils.get(
             interaction.guild.text_channels, id=ctf["guild_channels"]["solves"]
@@ -1010,7 +1013,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
 
         # CTF name wasn't provided, and we're outside a CTF category channel, so
         # we display statuses of all running CTFs.
@@ -1165,7 +1168,7 @@ class CTF(app_commands.Group):
         Args:
             interaction: The interaction that triggered this command.
         """
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
         if (message := ctf["credentials"].get("_message")) is None:
             await interaction.response.send_message(
                 "No credentials set for this CTF.", ephemeral=True
@@ -1214,7 +1217,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
 
         await send_scoreboard(ctf, interaction=interaction)
 
@@ -1228,7 +1231,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
 
         for scheduled_event in interaction.guild.scheduled_events:
             if scheduled_event.name == ctf["name"]:

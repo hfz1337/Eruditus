@@ -4,14 +4,10 @@ import discord
 from discord import HTTPException
 
 from config import CHALLENGE_COLLECTION, DBNAME, MONGO
-from lib.discord_util import (
-    get_challenge_info,
-    get_ctf_info,
-    mark_if_maxed,
-    parse_challenge_solvers,
-)
+from lib.discord_util import mark_if_maxed, parse_challenge_solvers
 from lib.platforms import PlatformCTX, match_platform
 from lib.platforms.abc import SubmittedFlagState
+from lib.util import get_challenge_info, get_ctf_info
 from msg_components.buttons.workon import WorkonButton
 
 
@@ -36,7 +32,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             )
             return
 
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
 
         ctx = PlatformCTX.from_credentials(ctf["credentials"])
         platform = await match_platform(ctx)

@@ -18,6 +18,7 @@ from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from markdownify import markdownify as html2md
 from pydantic import TypeAdapter, ValidationError
 
+from config import CHALLENGE_COLLECTION, CTF_COLLECTION, DBNAME, MONGO
 from lib.platforms.abc import ChallengeFile, TeamScoreHistory
 
 T = TypeVar("T")
@@ -274,6 +275,60 @@ def extract_rctf_team_token(invite_url: str) -> Optional[str]:
         return None
 
     return team_token[0]
+
+
+async def get_ctf_info(
+    channel_category_id: Optional[int] = None,
+    name: Optional[str] = None,
+    **extra_search_fields: dict[str, Any],
+) -> Optional[dict]:
+    """Retrieve information for a CTF.
+
+    Args:
+        interaction: The Discord interaction.
+        name: The CTF name.
+
+    Returns:
+        The CTF document, or None if no such CTF exists.
+
+    Notes:
+        If the CTF name is not provided, the function will attempt to retrieve the CTF
+        associated to the category channel from which the interaction was initiated.
+    """
+    if channel_category_id is None and name is None:
+        return
+
+    # Attempt to find the CTF by its channel category.
+    if channel_category_id and name is None:
+        return MONGO[DBNAME][CTF_COLLECTION].find_one(
+            {"guild_category": channel_category_id, **extra_search_fields}
+        )
+
+    # Attempt to find the CTF by the provided name.
+    return MONGO[DBNAME][CTF_COLLECTION].find_one(
+        {
+            "name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE),
+            **extra_search_fields,
+        }
+    )
+
+
+def get_challenge_info(**search_fields: dict[str, Any]) -> Optional[dict]:
+    """Retrieve a challenge from the database.
+
+    Returns:
+        The challenge document.
+
+    Notes:
+        The challenge name and category name are case insensitive.
+    """
+    query = {}
+    for field, value in search_fields.items():
+        if field in ("name", "category"):
+            query[field] = re.compile(f"^{re.escape(value.strip())}$", re.IGNORECASE)
+            continue
+        query[field] = value
+    return MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(query)
 
 
 def make_form_field_config(name: str, config: dict) -> dict:

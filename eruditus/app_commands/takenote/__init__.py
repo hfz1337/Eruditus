@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 
-from lib.discord_util import get_ctf_info
+from lib.util import get_ctf_info
 
 
 class TakeNote(app_commands.ContextMenu):
@@ -20,7 +20,7 @@ class TakeNote(app_commands.ContextMenu):
             interaction: The interaction that triggered this command.
             message: The message to copy.
         """
-        ctf = get_ctf_info(interaction=interaction)
+        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
         if ctf is None:
             await interaction.response.send_message(
                 "This command can only be used from within a CTF channel.",

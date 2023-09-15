@@ -1,10 +1,7 @@
 import discord
 
-from lib.discord_util import (
-    add_challenge_worker,
-    get_challenge_info,
-    remove_challenge_worker,
-)
+from lib.discord_util import add_challenge_worker, remove_challenge_worker
+from lib.util import get_challenge_info
 
 
 class WorkonButton(discord.ui.View):

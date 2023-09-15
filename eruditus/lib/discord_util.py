@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
 import aiohttp
 import discord
@@ -14,58 +14,7 @@ from config import (
     TEAM_NAME,
 )
 from lib.platforms import PlatformCTX, match_platform
-from lib.util import plot_scoreboard
-
-
-async def get_ctf_info(
-    interaction: Optional[discord.Interaction] = None,
-    name: Optional[str] = None,
-    **extra_search_fields: dict[str, Any],
-) -> Optional[dict]:
-    """Retrieve information for a CTF.
-
-    Args:
-        interaction: The Discord interaction.
-        name: The CTF name.
-
-    Returns:
-        The CTF document, or None if no such CTF exists.
-
-    Notes:
-        If the CTF name is not provided, the function will attempt to retrieve the CTF
-        associated to the category channel from which the interaction was initiated.
-    """
-    # Attempt to find the CTF by its channel category.
-    if interaction and name is None:
-        return MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id, **extra_search_fields}
-        )
-
-    # Attempt to find the CTF by the provided name.
-    return MONGO[DBNAME][CTF_COLLECTION].find_one(
-        {
-            "name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE),
-            **extra_search_fields,
-        }
-    )
-
-
-def get_challenge_info(**search_fields: dict[str, Any]) -> Optional[dict]:
-    """Retrieve a challenge from the database.
-
-    Returns:
-        The challenge document.
-
-    Notes:
-        The challenge name and category name are case insensitive.
-    """
-    query = {}
-    for field, value in search_fields.items():
-        if field in ("name", "category"):
-            query[field] = re.compile(f"^{re.escape(value.strip())}$", re.IGNORECASE)
-            continue
-        query[field] = value
-    return MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(query)
+from lib.util import get_ctf_info, plot_scoreboard
 
 
 async def parse_challenge_solvers(
@@ -300,7 +249,7 @@ async def update_credentials(
         interaction: The Discord interaction.
         credentials: The credentials dictionary.
     """
-    ctf = get_ctf_info(interaction=interaction)
+    ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
     MONGO[DBNAME][CTF_COLLECTION].update_one(
         {"_id": ctf["_id"]},
         {"$set": {"credentials": credentials}},

@@ -37,10 +37,12 @@ from config import (
     USER_AGENT,
 )
 from lib.ctftime import ctftime_date_to_datetime, scrape_event_info
-from lib.discord_util import get_challenge_info, get_ctf_info, send_scoreboard
+from lib.discord_util import send_scoreboard
 from lib.platforms import PlatformCTX, match_platform
 from lib.util import (
     derive_colour,
+    get_challenge_info,
+    get_ctf_info,
     get_local_time,
     sanitize_channel_name,
     setup_logger,
