@@ -37,7 +37,7 @@ from config import (
     USER_AGENT,
 )
 from lib.ctftime import ctftime_date_to_datetime, scrape_event_info
-from lib.discord_util import send_scoreboard
+from lib.discord_util import get_challenge_category_channel, send_scoreboard
 from lib.platforms import PlatformCTX, match_platform
 from lib.util import (
     derive_colour,
@@ -648,28 +648,8 @@ class Eruditus(discord.Client):
                     embed.set_image(url=img_urls.pop(0))
 
                 # Create a channel for the challenge category if it doesn't exist.
-                channel_name = sanitize_channel_name(challenge.category)
-                text_channel = (
-                    discord.utils.get(
-                        guild.text_channels,
-                        category=category_channel,
-                        name=f"💤-{channel_name}",
-                    )
-                    or discord.utils.get(
-                        guild.text_channels,
-                        category=category_channel,
-                        name=f"🔄-{channel_name}",
-                    )
-                    or discord.utils.get(
-                        guild.text_channels,
-                        category=category_channel,
-                        name=f"🎯-{channel_name}",
-                    )
-                    or await guild.create_text_channel(
-                        name=f"🔄-{channel_name}",
-                        category=category_channel,
-                        default_auto_archive_duration=10080,
-                    )
+                text_channel = get_challenge_category_channel(
+                    guild, category_channel, challenge.category
                 )
 
                 # Create a private thread for the challenge.

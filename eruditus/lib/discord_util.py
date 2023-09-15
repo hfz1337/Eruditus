@@ -14,7 +14,7 @@ from config import (
     TEAM_NAME,
 )
 from lib.platforms import PlatformCTX, match_platform
-from lib.util import get_ctf_info, plot_scoreboard
+from lib.util import get_ctf_info, plot_scoreboard, sanitize_channel_name
 
 
 async def parse_challenge_solvers(
@@ -64,6 +64,37 @@ async def parse_member_mentions(
         for member_id in re.findall(r"<@!?([0-9]{15,20})>", members)
         if (member := await interaction.guild.fetch_member(int(member_id)))
     ]
+
+
+async def get_challenge_category_channel(
+    guild: discord.Guild, ctf_category_channel: discord.CategoryChannel, category: str
+) -> discord.TextChannel:
+    """Retrieve the text channel associated to a challenge category or create it if it
+    didn't exist.
+
+    Args:
+        guild: The Discord guild object.
+        ctf_category_channel: The CTF category channel.
+        category: The challenge category.
+
+    Returns:
+        The text channel associated to the CTF category.
+    """
+    channel_name = sanitize_channel_name(category)
+
+    for prefix in ("💤", "🔄", "🎯"):
+        if text_channel := discord.utils.get(
+            guild.text_channels,
+            category=ctf_category_channel,
+            name=f"{prefix}-{channel_name}",
+        ):
+            return text_channel
+
+    return await guild.create_text_channel(
+        name=f"🔄-{channel_name}",
+        category=ctf_category_channel,
+        default_auto_archive_duration=10080,
+    )
 
 
 async def mark_if_maxed(text_channel: discord.TextChannel, category: str) -> None:

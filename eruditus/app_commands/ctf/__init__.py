@@ -18,6 +18,7 @@ from config import (
 )
 from lib.discord_util import (
     add_challenge_worker,
+    get_challenge_category_channel,
     mark_if_maxed,
     parse_challenge_solvers,
     remove_challenge_worker,
@@ -552,28 +553,8 @@ class CTF(app_commands.Group):
         )
 
         # Create a channel for the challenge category if it doesn't exist.
-        channel_name = sanitize_channel_name(category)
-        text_channel = (
-            discord.utils.get(
-                interaction.guild.text_channels,
-                category=category_channel,
-                name=f"💤-{channel_name}",
-            )
-            or discord.utils.get(
-                interaction.guild.text_channels,
-                category=category_channel,
-                name=f"🔄-{channel_name}",
-            )
-            or discord.utils.get(
-                interaction.guild.text_channels,
-                category=category_channel,
-                name=f"🎯-{channel_name}",
-            )
-            or await interaction.guild.create_text_channel(
-                name=f"🔄-{channel_name}",
-                category=category_channel,
-                default_auto_archive_duration=10080,
-            )
+        text_channel = get_challenge_category_channel(
+            interaction.guild, category_channel, category
         )
 
         # Create a private thread for the challenge.
