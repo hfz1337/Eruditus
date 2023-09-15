@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 import discord
 
-from lib.discord_util import save_credentials
+from lib.discord_util import update_credentials
 from lib.platforms import Platform, PlatformABC, PlatformCTX
 from lib.util import (
     extract_rctf_team_token,
@@ -123,7 +123,7 @@ async def add_credentials_callback(
             msg += f" Authorized as `{me.name}`"
 
     # Add credentials.
-    await save_credentials(interaction, credentials)
+    await update_credentials(interaction, credentials)
     await interaction.followup.send(msg)
 
 
@@ -192,7 +192,7 @@ async def register_account_callback(
             return
 
     # Add credentials.
-    await save_credentials(interaction, credentials)
+    await update_credentials(interaction, credentials)
     await interaction.followup.send(
         result.message or "✅ Registration successful.", ephemeral=True
     )

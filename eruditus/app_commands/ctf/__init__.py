@@ -18,6 +18,7 @@ from config import (
 )
 from lib.discord_util import (
     add_challenge_worker,
+    get_challenge_info,
     get_ctf_info,
     mark_if_maxed,
     parse_challenge_solvers,
@@ -48,9 +49,7 @@ class CTF(app_commands.Group):
         """Wrapper function to check if a command was issued from a CTF channel."""
 
         async def predicate(interaction: discord.Interaction) -> bool:
-            if MONGO[DBNAME][CTF_COLLECTION].find_one(
-                {"guild_category": interaction.channel.category_id}
-            ):
+            if get_ctf_info(interaction=interaction):
                 return True
 
             await interaction.response.send_message(
@@ -96,15 +95,13 @@ class CTF(app_commands.Group):
         Returns:
             A list of suggestions.
         """
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
         if ctf is None:
             return []
 
         suggestions = []
         for challenge_id in ctf["challenges"]:
-            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(challenge_id)
+            challenge = get_challenge_info(_id=challenge_id)
             if challenge is None or challenge["solved"]:
                 continue
 
@@ -147,9 +144,7 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             new_name: New CTF name (case insensitive).
         """
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
         old_name = ctf["name"]
         ctf["name"] = new_name
 
@@ -214,8 +209,7 @@ class CTF(app_commands.Group):
 
         # Get all challenges for the CTF.
         challenges = [
-            MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(challenge_id)
-            for challenge_id in ctf["challenges"]
+            get_challenge_info(_id=challenge_id) for challenge_id in ctf["challenges"]
         ]
 
         # Sort by category, then by name.
@@ -384,9 +378,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
-            {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
-        )
+        ctf = get_ctf_info(name=name)
         if ctf is None:
             await interaction.followup.send("No such CTF.")
             return
@@ -440,9 +432,7 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             name: Name of the CTF to join (case insensitive).
         """
-        ctf = MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
-            {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
-        )
+        ctf = get_ctf_info(name=name)
         if ctf is None:
             await interaction.response.send_message("No such CTF.", ephemeral=True)
             return
@@ -475,9 +465,7 @@ class CTF(app_commands.Group):
         Args:
             interaction: The interaction that triggered this command.
         """
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
         if not ctf:
             return
 
@@ -529,20 +517,14 @@ class CTF(app_commands.Group):
         category = category.title().strip()
 
         # Check if challenge already exists.
-        if MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-            {
-                "name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE),
-                "category": re.compile(f"^{re.escape(category)}$", re.IGNORECASE),
-            }
-        ):
+
+        if get_challenge_info(name=name, category=category):
             await interaction.response.send_message(
                 "This challenge already exists.", ephemeral=True
             )
             return
 
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
 
         if ctf["archived"]:
             await interaction.response.send_message(
@@ -651,10 +633,7 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             new_name: New challenge name.
         """
-        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-            {"thread": interaction.channel_id}
-        )
-
+        challenge = get_challenge_info(thread=interaction.channel_id)
         if challenge is None:
             await interaction.response.send_message(
                 "Run this command from within a challenge thread.",
@@ -695,9 +674,7 @@ class CTF(app_commands.Group):
                 challenge).
         """
         if name is None:
-            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-                {"thread": interaction.channel_id}
-            )
+            challenge = get_challenge_info(thread=interaction.channel_id)
             if challenge is None:
                 await interaction.response.send_message(
                     (
@@ -708,9 +685,7 @@ class CTF(app_commands.Group):
                 )
                 return
         else:
-            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-                {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
-            )
+            challenge = get_challenge_info(name=name)
             if challenge is None:
                 await interaction.response.send_message(
                     "No such challenge.", ephemeral=True
@@ -718,9 +693,7 @@ class CTF(app_commands.Group):
                 return
 
         # Get CTF to which the challenge is associated.
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
 
         # Delete challenge from the database.
         MONGO[DBNAME][CHALLENGE_COLLECTION].delete_one(challenge)
@@ -774,9 +747,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-            {"thread": interaction.channel_id}
-        )
+        challenge = get_challenge_info(thread=interaction.channel_id)
         if challenge is None:
             # If we didn't find any challenge that corresponds to the thread from which
             # the command was run, then we're probably in the wrong thread.
@@ -806,9 +777,7 @@ class CTF(app_commands.Group):
 
         solvers = await parse_challenge_solvers(interaction, challenge, members)
 
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
         solves_channel = interaction.client.get_channel(ctf["guild_channels"]["solves"])
         embed = discord.Embed(
             title="🎉 Challenge solved!",
@@ -848,7 +817,7 @@ class CTF(app_commands.Group):
         )
 
         await interaction.followup.send("✅ Challenge solved.")
-        await mark_if_maxed(interaction, challenge)
+        await mark_if_maxed(interaction, challenge["category"])
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
@@ -861,9 +830,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-            {"thread": interaction.channel_id}
-        )
+        challenge = get_challenge_info(thread=interaction.channel_id)
         if challenge is None:
             # If we didn't find any challenge that corresponds to the channel from which
             # the command was run, then we're probably in a non-challenge channel.
@@ -889,9 +856,7 @@ class CTF(app_commands.Group):
             # by spamming solve and unsolve.
             pass
 
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
         # Delete the challenge solved announcement we made.
         solves_channel = discord.utils.get(
             interaction.guild.text_channels, id=ctf["guild_channels"]["solves"]
@@ -942,9 +907,7 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             name: Challenge name (case insensitive).
         """
-        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-            {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
-        )
+        challenge = get_challenge_info(name=name)
         if challenge is None:
             await interaction.response.send_message(
                 "No such challenge.", ephemeral=True
@@ -990,9 +953,7 @@ class CTF(app_commands.Group):
             name: Challenge name (case insensitive).
         """
         if name is None:
-            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-                {"thread": interaction.channel_id}
-            )
+            challenge = get_challenge_info(thread=interaction.channel_id)
             if challenge is None:
                 await interaction.response.send_message(
                     (
@@ -1004,9 +965,7 @@ class CTF(app_commands.Group):
                 )
                 return
         else:
-            challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-                {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
-            )
+            challenge = get_challenge_info(name=name)
             if challenge is None:
                 await interaction.response.send_message(
                     "No such challenge.", ephemeral=True
@@ -1024,6 +983,9 @@ class CTF(app_commands.Group):
             interaction.guild.threads, id=challenge["thread"]
         )
         await remove_challenge_worker(challenge_thread, challenge, interaction.user)
+        await challenge_thread.send(
+            f"{interaction.user.mention} left you alone, what a chicken! 🐥"
+        )
 
         await interaction.response.send_message(
             f"✅ Removed from the `{challenge['name']}` challenge.", ephemeral=True
@@ -1048,9 +1010,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
 
         # CTF name wasn't provided, and we're outside a CTF category channel, so
         # we display statuses of all running CTFs.
@@ -1068,13 +1028,7 @@ class CTF(app_commands.Group):
         # CTF name was provided, and we're outside a CTF category channel, so
         # we display status of the requested CTF only.
         else:
-            ctfs = MONGO[DBNAME][CTF_COLLECTION].find_one(
-                {
-                    "name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE),
-                    "archived": False,
-                    "ended": False,
-                }
-            )
+            ctfs = get_ctf_info(name=name, archived=False, ended=False)
             if ctfs is None:
                 await interaction.followup.send("No such CTF.")
                 return
@@ -1124,7 +1078,7 @@ class CTF(app_commands.Group):
                             colour=discord.Colour.blue(),
                         )
 
-                challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(challenge_id)
+                challenge = get_challenge_info(_id=challenge_id)
                 if challenge["solved"] and mode == CTFStatusMode.all:
                     icon = "🩸" if challenge["blooded"] else "✅"
                     solve_time = datetime.utcfromtimestamp(
@@ -1211,9 +1165,7 @@ class CTF(app_commands.Group):
         Args:
             interaction: The interaction that triggered this command.
         """
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
         if (message := ctf["credentials"].get("_message")) is None:
             await interaction.response.send_message(
                 "No credentials set for this CTF.", ephemeral=True
@@ -1262,9 +1214,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
 
         await send_scoreboard(ctf, interaction=interaction)
 
@@ -1278,9 +1228,7 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
 
         for scheduled_event in interaction.guild.scheduled_events:
             if scheduled_event.name == ctf["name"]:

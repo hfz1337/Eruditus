@@ -1,7 +1,6 @@
 import io
 import logging
 import os
-import re
 import traceback
 from binascii import hexlify
 from datetime import datetime, timedelta
@@ -38,7 +37,7 @@ from config import (
     USER_AGENT,
 )
 from lib.ctftime import ctftime_date_to_datetime, scrape_event_info
-from lib.discord_util import send_scoreboard
+from lib.discord_util import get_challenge_info, get_ctf_info, send_scoreboard
 from lib.platforms import PlatformCTX, match_platform
 from lib.util import (
     derive_colour,
@@ -77,9 +76,7 @@ class Eruditus(discord.Client):
             CTF already exists.
         """
         # Check if the CTF already exists (case insensitive).
-        if ctf := MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
-        ):
+        if ctf := get_ctf_info(name=name):
             if return_if_exists:
                 return ctf
             return None
@@ -320,13 +317,7 @@ class Eruditus(discord.Client):
             and after.status == discord.EventStatus.ended
         ):
             # Ping players that the CTF ended.
-            ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-                {
-                    "name": re.compile(
-                        f"^{re.escape(event_name.strip())}$", re.IGNORECASE
-                    )
-                }
-            )
+            ctf = get_ctf_info(name=event_name)
             if ctf is None:
                 return
 
@@ -586,16 +577,8 @@ class Eruditus(discord.Client):
                 challenge.category = challenge.category.title().strip()
 
                 # Check if challenge was already created.
-                if MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-                    {
-                        "id": challenge.id,
-                        "name": re.compile(
-                            f"^{re.escape(challenge.name)}$", re.IGNORECASE
-                        ),
-                        "category": re.compile(
-                            f"^{re.escape(challenge.category)}$", re.IGNORECASE
-                        ),
-                    }
+                if get_challenge_info(
+                    id=challenge.id, name=challenge.name, category=challenge.category
                 ):
                     continue
 

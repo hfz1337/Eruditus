@@ -3,8 +3,13 @@ from datetime import datetime
 import discord
 from discord import HTTPException
 
-from config import CHALLENGE_COLLECTION, CTF_COLLECTION, DBNAME, MONGO
-from lib.discord_util import mark_if_maxed, parse_challenge_solvers
+from config import CHALLENGE_COLLECTION, DBNAME, MONGO
+from lib.discord_util import (
+    get_challenge_info,
+    get_ctf_info,
+    mark_if_maxed,
+    parse_challenge_solvers,
+)
 from lib.platforms import PlatformCTX, match_platform
 from lib.platforms.abc import SubmittedFlagState
 from msg_components.buttons.workon import WorkonButton
@@ -24,18 +29,14 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         await interaction.response.defer()
         members = self.members
 
-        challenge = MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].find_one(
-            {"thread": interaction.channel_id}
-        )
+        challenge = get_challenge_info(thread=interaction.channel_id)
         if challenge is None:
             await interaction.followup.send(
                 "❌ This command may only be used from within a challenge thread."
             )
             return
 
-        ctf = MONGO[f"{DBNAME}"][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
 
         ctx = PlatformCTX.from_credentials(ctf["credentials"])
         platform = await match_platform(ctx)
@@ -128,7 +129,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
 
         challenge["solve_announcement"] = announcement.id
 
-        MONGO[f"{DBNAME}"][CHALLENGE_COLLECTION].update_one(
+        MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {
                 "$set": {
@@ -155,4 +156,4 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         )
 
         # Mark the CTF category maxed if all its challenges were solved.
-        await mark_if_maxed(interaction, challenge)
+        await mark_if_maxed(interaction, challenge["category"])

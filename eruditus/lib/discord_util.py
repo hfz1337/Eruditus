@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 import aiohttp
 import discord
@@ -18,23 +18,70 @@ from lib.util import plot_scoreboard
 
 
 async def get_ctf_info(
-    interaction: discord.Interaction, name: Optional[str] = None
+    interaction: Optional[discord.Interaction] = None,
+    name: Optional[str] = None,
+    **extra_search_fields: dict[str, Any],
 ) -> Optional[dict]:
+    """Retrieve information for a CTF.
+
+    Args:
+        interaction: The Discord interaction.
+        name: The CTF name.
+
+    Returns:
+        The CTF document, or None if no such CTF exists.
+
+    Notes:
+        If the CTF name is not provided, the function will attempt to retrieve the CTF
+        associated to the category channel from which the interaction was initiated.
+    """
     # Attempt to find the CTF by its channel category.
-    if name is None:
+    if interaction and name is None:
         return MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
+            {"guild_category": interaction.channel.category_id, **extra_search_fields}
         )
 
     # Attempt to find the CTF by the provided name.
-    return MONGO[DBNAME][f"{CTF_COLLECTION}"].find_one(
-        {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
+    return MONGO[DBNAME][CTF_COLLECTION].find_one(
+        {
+            "name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE),
+            **extra_search_fields,
+        }
     )
+
+
+def get_challenge_info(**search_fields: dict[str, Any]) -> Optional[dict]:
+    """Retrieve a challenge from the database.
+
+    Returns:
+        The challenge document.
+
+    Notes:
+        The challenge name and category name are case insensitive.
+    """
+    query = {}
+    for field, value in search_fields.items():
+        if field in ("name", "category"):
+            query[field] = re.compile(f"^{re.escape(value.strip())}$", re.IGNORECASE)
+            continue
+        query[field] = value
+    return MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(query)
 
 
 async def parse_challenge_solvers(
     interaction: discord.Interaction, challenge: dict, members: Optional[str] = None
 ) -> list[str]:
+    """Return a list of users who contributed in solving a challenge.
+
+    Args:
+        interaction: The Discord interaction.
+        challenge: The challenge document.
+        members: A string containing member mentions of those who contributed in solving
+            the challenge (in addition to the member who triggered this interaction).
+
+    Returns:
+        A list of user names.
+    """
     if interaction.user.name not in challenge["players"]:
         challenge["players"].append(interaction.user.name)
 
@@ -70,10 +117,16 @@ async def parse_member_mentions(
     ]
 
 
-async def mark_if_maxed(interaction: discord.Interaction, challenge: dict) -> None:
+async def mark_if_maxed(interaction: discord.Interaction, category: str) -> None:
+    """Indicate that a CTF category is maxed in case all its challenges are solved.
+
+    Args:
+        interaction: The Discord interaction.
+        category: The CTF category.
+    """
     solved_states = MONGO[DBNAME][CHALLENGE_COLLECTION].aggregate(
         [
-            {"$match": {"category": challenge["category"]}},
+            {"$match": {"category": category}},
             {"$project": {"_id": 0, "solved": 1}},
         ]
     )
@@ -86,35 +139,41 @@ async def mark_if_maxed(interaction: discord.Interaction, challenge: dict) -> No
 
 
 async def add_challenge_worker(
-    challenge_thread: discord.Thread, challenge: dict, user: discord.User
+    challenge_thread: discord.Thread, challenge: dict, member: discord.member
 ) -> None:
-    challenge["players"].append(user.name)
+    """Add a member to the list of people currently working on a challenge.
 
-    await challenge_thread.add_user(user)
-
+    Args:
+        challenge_thread: The thread associated to the CTF challenge.
+        challenge: The challenge document.
+        member: The member to be added.
+    """
+    challenge["players"].append(member.name)
     MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
         {"_id": challenge["_id"]},
         {"$set": {"players": challenge["players"]}},
     )
+    await challenge_thread.add_user(member)
 
 
 async def remove_challenge_worker(
     challenge_thread: discord.Thread,
     challenge: dict,
-    user: discord.User,
-    send_msg: bool = True,
+    member: discord.Member,
 ) -> None:
-    challenge["players"].remove(user.name)
+    """Remove a member from the list of people currently working on a challenge.
 
+    Args:
+        challenge_thread: The thread associated to the CTF challenge.
+        challenge: The challenge document.
+        member: The member to be removed.
+    """
+    challenge["players"].remove(member.name)
     MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
         {"_id": challenge["_id"]},
         {"$set": {"players": challenge["players"]}},
     )
-
-    if send_msg:
-        await challenge_thread.send(f"{user.mention} left you alone, what a chicken! 🐥")
-
-    await challenge_thread.remove_user(user)
+    await challenge_thread.remove_user(member)
 
 
 async def send_scoreboard(
@@ -122,15 +181,24 @@ async def send_scoreboard(
     interaction: Optional[discord.Interaction] = None,
     guild: Optional[discord.Guild] = None,
 ) -> None:
+    """Send or update the scoreboard in the scoreboard channel and eventually send it
+    as a reply for the interaction if present.
+
+    Args:
+        ctf: The CTF document.
+        interaction: The Discord interaction.
+        guild: The Discord guild object.
+
+    Raises:
+        AssertionError: if both `guild` and `interaction` are not provided.
+    """
     assert interaction or guild
+    guild = guild or interaction.guild
 
-    guild = guild if guild else interaction.guild
-
-    async def followup(text: str, ephemeral: bool = False) -> None:
+    async def followup(text: str, ephemeral=True, **kwargs) -> None:
         if not interaction:
             return
-
-        await interaction.followup.send(text, ephemeral=ephemeral)
+        await interaction.followup.send(text, **kwargs)
 
     if ctf["credentials"]["url"] is None:
         await followup("No credentials set for this CTF.")
@@ -145,20 +213,14 @@ async def send_scoreboard(
     try:
         teams = [x async for x in platform.pull_scoreboard(ctx)]
     except aiohttp.InvalidURL:
-        await followup(
-            "Invalid URL set for this CTF.",
-            ephemeral=True,
-        )
+        await followup("Invalid URL set for this CTF.")
         return
     except aiohttp.ClientError:
-        await followup(
-            "Could not communicate with the CTF platform, please try again.",
-            ephemeral=True,
-        )
+        await followup("Could not communicate with the CTF platform, please try again.")
         return
 
     if not teams:
-        await followup("Failed to fetch the scoreboard.", ephemeral=True)
+        await followup("Failed to fetch the scoreboard.")
         return
 
     me = await platform.get_me(ctx)
@@ -196,10 +258,28 @@ async def send_scoreboard(
         else discord.File(plot_scoreboard(graph_data), filename="scoreboard.png")
     )
 
-    # Update scoreboard in the scoreboard channel.
     scoreboard_channel = discord.utils.get(
         guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
     )
+    await update_scoreboard(scoreboard_channel, message, graph)
+    await followup(message, ephemeral=False, file=graph)
+
+
+async def update_scoreboard(
+    scoreboard_channel: discord.TextChannel,
+    message: str,
+    graph: Optional[discord.File] = None,
+) -> None:
+    """Update scoreboard in the scoreboard channel.
+
+    Args:
+        guild: The Discord guild object.
+        message: The scoreboard message.
+        graph: The score graph to send along the message as a file attachment.
+
+    Notes:
+        This function resets the stream position after consuming the graph buffer.
+    """
     async for last_message in scoreboard_channel.history(limit=1):
         await last_message.edit(content=message, attachments=[graph])
         break
@@ -209,14 +289,18 @@ async def send_scoreboard(
     if graph:
         graph.fp.seek(0)
 
-    if interaction:
-        await interaction.followup.send(message, file=graph)
 
+async def update_credentials(
+    interaction: discord.Interaction, credentials: dict
+) -> None:
+    """Save CTF credentials in the database and update the message in the credentials
+    channel.
 
-async def save_credentials(interaction: discord.Interaction, credentials: dict) -> None:
-    ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-        {"guild_category": interaction.channel.category_id}
-    )
+    Args:
+        interaction: The Discord interaction.
+        credentials: The credentials dictionary.
+    """
+    ctf = get_ctf_info(interaction=interaction)
     MONGO[DBNAME][CTF_COLLECTION].update_one(
         {"_id": ctf["_id"]},
         {"$set": {"credentials": credentials}},

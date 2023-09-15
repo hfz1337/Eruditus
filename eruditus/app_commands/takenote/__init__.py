@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 
-from config import CTF_COLLECTION, DBNAME, MONGO
+from lib.discord_util import get_ctf_info
 
 
 class TakeNote(app_commands.ContextMenu):
@@ -20,9 +20,7 @@ class TakeNote(app_commands.ContextMenu):
             interaction: The interaction that triggered this command.
             message: The message to copy.
         """
-        ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"guild_category": interaction.channel.category_id}
-        )
+        ctf = get_ctf_info(interaction=interaction)
         if ctf is None:
             await interaction.response.send_message(
                 "This command can only be used from within a CTF channel.",

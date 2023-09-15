@@ -1,7 +1,10 @@
 import discord
 
-from config import CHALLENGE_COLLECTION, DBNAME, MONGO
-from lib.discord_util import add_challenge_worker, remove_challenge_worker
+from lib.discord_util import (
+    add_challenge_worker,
+    get_challenge_info,
+    remove_challenge_worker,
+)
 
 
 class WorkonButton(discord.ui.View):
@@ -19,7 +22,7 @@ class WorkonButton(discord.ui.View):
     async def workon(
         self, interaction: discord.Interaction, _: discord.ui.Button
     ) -> None:
-        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": self.name})
+        challenge = get_challenge_info(name=self.name)
         if interaction.user.name in challenge["players"]:
             await interaction.response.send_message(
                 "You're already working on this challenge.", ephemeral=True
@@ -55,7 +58,7 @@ class UnworkonButton(discord.ui.View):
     async def unworkon(
         self, interaction: discord.Interaction, _: discord.ui.Button
     ) -> None:
-        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].find_one({"name": self.name})
+        challenge = get_challenge_info(name=self.name)
         if challenge is None:
             await interaction.response.edit_message(
                 content="No such challenge.", view=None
@@ -73,6 +76,9 @@ class UnworkonButton(discord.ui.View):
             interaction.guild.threads, id=challenge["thread"]
         )
         await remove_challenge_worker(challenge_thread, challenge, interaction.user)
+        await challenge_thread.send(
+            f"{interaction.user.mention} left you alone, what a chicken! 🐥"
+        )
 
         await interaction.response.edit_message(
             content=f"✅ Removed from the `{challenge['name']}` challenge.", view=None
