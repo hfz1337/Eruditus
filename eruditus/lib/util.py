@@ -277,9 +277,7 @@ def extract_rctf_team_token(invite_url: str) -> Optional[str]:
     return team_token[0]
 
 
-def get_ctf_info(
-    **search_fields: dict[str, Any],
-) -> Optional[dict]:
+def get_ctf_info(**search_fields: dict[str, Any]) -> Optional[dict]:
     """Retrieve information for a CTF.
 
     Returns:
