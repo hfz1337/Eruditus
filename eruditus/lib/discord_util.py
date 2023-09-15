@@ -249,7 +249,7 @@ async def update_credentials(
         interaction: The Discord interaction.
         credentials: The credentials dictionary.
     """
-    ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
+    ctf = get_ctf_info(guild_category=interaction.channel.category_id)
     MONGO[DBNAME][CTF_COLLECTION].update_one(
         {"_id": ctf["_id"]},
         {"$set": {"credentials": credentials}},

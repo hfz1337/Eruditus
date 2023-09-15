@@ -32,7 +32,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             )
             return
 
-        ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
+        ctf = get_ctf_info(guild_category=interaction.channel.category_id)
 
         ctx = PlatformCTX.from_credentials(ctf["credentials"])
         platform = await match_platform(ctx)
