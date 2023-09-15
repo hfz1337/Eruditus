@@ -533,7 +533,6 @@ class CTF(app_commands.Group):
         category = category.title().strip()
 
         # Check if challenge already exists.
-
         if get_challenge_info(name=name, category=category):
             await interaction.response.send_message(
                 "This challenge already exists.", ephemeral=True
