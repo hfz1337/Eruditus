@@ -174,10 +174,10 @@ async def send_scoreboard(
     assert interaction or guild
     guild = guild or interaction.guild
 
-    async def followup(text: str, ephemeral=True, **kwargs) -> None:
+    async def followup(content: str, ephemeral=True, **kwargs) -> None:
         if not interaction:
             return
-        await interaction.followup.send(text, **kwargs)
+        await interaction.followup.send(content, **kwargs)
 
     if ctf["credentials"]["url"] is None:
         await followup("No credentials set for this CTF.")
