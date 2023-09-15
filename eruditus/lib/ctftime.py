@@ -19,7 +19,7 @@ def ctftime_date_to_datetime(ctftime_date: str) -> datetime:
     """
     return datetime.strptime(
         ctftime_date.replace("Sept", "Sep"),
-        r"%a, %d {} %Y, %H:%M UTC".format(r"%b." if "." in ctftime_date else r"%B"),
+        f"%a, %d {'%b.' if '.' in ctftime_date else '%B'} %Y, %H:%M UTC",
     ).replace(tzinfo=timezone.utc)
 
 
