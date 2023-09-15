@@ -66,11 +66,11 @@ async def parse_member_mentions(
     ]
 
 
-async def mark_if_maxed(interaction: discord.Interaction, category: str) -> None:
+async def mark_if_maxed(text_channel: discord.TextChannel, category: str) -> None:
     """Indicate that a CTF category is maxed in case all its challenges are solved.
 
     Args:
-        interaction: The Discord interaction.
+        text_channel: The text channel associated to the CTF category.
         category: The CTF category.
     """
     solved_states = MONGO[DBNAME][CHALLENGE_COLLECTION].aggregate(
@@ -82,7 +82,6 @@ async def mark_if_maxed(interaction: discord.Interaction, category: str) -> None
     if any(not state["solved"] for state in solved_states):
         return
 
-    text_channel = interaction.channel.parent
     if text_channel.name.startswith("🔄"):
         await text_channel.edit(name=text_channel.name.replace("🔄", "🎯"))
 

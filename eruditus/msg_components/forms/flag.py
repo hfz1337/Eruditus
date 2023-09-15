@@ -152,4 +152,4 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         )
 
         # Mark the CTF category maxed if all its challenges were solved.
-        await mark_if_maxed(interaction, challenge["category"])
+        await mark_if_maxed(interaction.channel.parent, challenge["category"])

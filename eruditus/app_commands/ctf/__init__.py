@@ -832,7 +832,7 @@ class CTF(app_commands.Group):
         )
 
         await interaction.followup.send("✅ Challenge solved.")
-        await mark_if_maxed(interaction, challenge["category"])
+        await mark_if_maxed(interaction.channel.parent, challenge["category"])
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
