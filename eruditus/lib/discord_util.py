@@ -37,7 +37,7 @@ async def parse_challenge_solvers(
     return list(
         {interaction.user.name}
         | (
-            {}
+            set()
             if members is None
             else {
                 member.name
