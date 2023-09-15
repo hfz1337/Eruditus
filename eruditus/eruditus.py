@@ -646,7 +646,7 @@ class Eruditus(discord.Client):
                     embed.set_image(url=img_urls.pop(0))
 
                 # Create a channel for the challenge category if it doesn't exist.
-                text_channel = get_challenge_category_channel(
+                text_channel = await get_challenge_category_channel(
                     guild, category_channel, challenge.category
                 )
 

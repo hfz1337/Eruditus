@@ -555,7 +555,7 @@ class CTF(app_commands.Group):
         )
 
         # Create a channel for the challenge category if it doesn't exist.
-        text_channel = get_challenge_category_channel(
+        text_channel = await get_challenge_category_channel(
             interaction.guild, category_channel, category
         )
 
