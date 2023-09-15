@@ -188,13 +188,19 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = await get_ctf_info(interaction, name)
+        if name is not None:
+            ctf = get_ctf_info(name=name)
+        else:
+            ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
+
         if not ctf:
             await interaction.followup.send(
                 (
                     "Run this command from within a CTF channel, or provide the "
                     "name of the CTF you wish to archive."
                 )
+                if name is None
+                else "No such CTF."
             )
             return
 
@@ -327,13 +333,19 @@ class CTF(app_commands.Group):
         """
         await interaction.response.defer()
 
-        ctf = await get_ctf_info(interaction, name)
+        if name is not None:
+            ctf = get_ctf_info(name=name)
+        else:
+            ctf = get_ctf_info(channel_category_id=interaction.channel.category_id)
+
         if not ctf:
             await interaction.followup.send(
                 (
                     "Run this command from within a CTF channel, or provide the "
                     "name of the CTF you wish to delete."
                 )
+                if name is None
+                else "No such CTF."
             )
             return
 
