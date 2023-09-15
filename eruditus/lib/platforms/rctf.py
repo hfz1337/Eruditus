@@ -48,6 +48,10 @@ class RCTF(PlatformABC):
 
         Returns:
             True if the platform is using rCTF, else False.
+
+        Raises:
+            aiohttp.ClientError: if something goes wrong while communicating with the
+                platform.
         """
         async with aiohttp.request(
             method="get",

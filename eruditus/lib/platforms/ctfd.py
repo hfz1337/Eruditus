@@ -48,6 +48,10 @@ class CTFd(PlatformABC):
 
         Returns:
             True if the platform is using CTFd, else False.
+
+        Raises:
+            aiohttp.ClientError: if something goes wrong while communicating with the
+                platform.
         """
         async with aiohttp.request(
             method="get",
