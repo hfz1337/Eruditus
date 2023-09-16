@@ -276,12 +276,12 @@ async def update_scoreboard(
         This function resets the stream position after consuming the graph buffer.
     """
     async for last_message in scoreboard_channel.history(limit=1):
-        kw = {"attachments": [graph]} if graph is not None else None
-        await last_message.edit(content=message, **kw)
+        kwargs = {"attachments": [graph]} if graph else {}
+        await last_message.edit(content=message, **kwargs)
         break
     else:
-        kw = {"file": graph} if graph is not None else None
-        await scoreboard_channel.send(message, **kw)
+        kwargs = {"file": graph} if graph else {}
+        await scoreboard_channel.send(message, **kwargs)
 
     if graph:
         graph.fp.seek(0)
