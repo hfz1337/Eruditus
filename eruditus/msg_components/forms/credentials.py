@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, Optional
+from typing import Awaitable, Callable, Optional
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import discord
@@ -13,12 +13,6 @@ from lib.util import (
 
 
 class CredentialsForm(discord.ui.Modal, title="Add CTF credentials"):
-    username: Any
-    email: Any
-    invite: Any
-    password: Any
-    token: Any
-
     def __init__(
         self,
         url: str,
@@ -32,8 +26,8 @@ class CredentialsForm(discord.ui.Modal, title="Add CTF credentials"):
         self.platform = platform
         self.callback = callback
 
-        for key in kwargs:
-            setattr(self, key, discord.ui.TextInput(**kwargs[key]))
+        for key, value in kwargs.items():
+            setattr(self, key, discord.ui.TextInput(**value))
             self.add_item(getattr(self, key))
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
