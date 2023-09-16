@@ -1,7 +1,6 @@
 import io
 import logging
 import os
-import re
 import traceback
 from binascii import hexlify
 from datetime import datetime, timedelta
@@ -10,10 +9,10 @@ from typing import Any, Union
 import aiohttp
 import discord
 from discord.ext import tasks
+from discord.utils import setup_logging
 
 import config
 from app_commands.bookmark import Bookmark
-from app_commands.chatgpt import ChatGPT
 from app_commands.cipher import Cipher
 from app_commands.ctf import CTF
 from app_commands.ctftime import CTFTime
@@ -31,7 +30,6 @@ from config import (
     CTFTIME_URL,
     DBNAME,
     GUILD_ID,
-    MAX_CONTENT_SIZE,
     MIN_PLAYERS,
     MONGO,
     TEAM_EMAIL,
@@ -39,18 +37,17 @@ from config import (
     USER_AGENT,
 )
 from lib.ctftime import ctftime_date_to_datetime, scrape_event_info
+from lib.discord_util import get_challenge_category_channel, send_scoreboard
 from lib.platforms import PlatformCTX, match_platform
 from lib.util import (
     derive_colour,
+    get_challenge_info,
+    get_ctf_info,
     get_local_time,
-    plot_scoreboard,
     sanitize_channel_name,
-    setup_logger,
     truncate,
 )
 from msg_components.buttons.workon import WorkonButton
-
-logger = setup_logger("eruditus", logging.INFO)
 
 
 class Eruditus(discord.Client):
@@ -78,9 +75,7 @@ class Eruditus(discord.Client):
             CTF already exists.
         """
         # Check if the CTF already exists (case insensitive).
-        if ctf := MONGO[DBNAME][CTF_COLLECTION].find_one(
-            {"name": re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)}
-        ):
+        if ctf := get_ctf_info(name=name):
             if return_if_exists:
                 return ctf
             return None
@@ -178,7 +173,6 @@ class Eruditus(discord.Client):
         self.tree.add_command(Search())
         self.tree.add_command(Bookmark(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(TakeNote(), guild=discord.Object(GUILD_ID))
-        self.tree.add_command(ChatGPT(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(CTF(), guild=discord.Object(GUILD_ID))
 
         self.create_upcoming_events.start()
@@ -255,6 +249,23 @@ class Eruditus(discord.Client):
             await creds_channel.purge()
             await creds_channel.send(message)
 
+    @classmethod
+    async def add_event_roles_to_members_and_register(
+        cls,
+        guild: discord.Guild,
+        ctf: dict,
+        users: list[discord.User],
+        event: discord.ScheduledEvent,
+    ) -> discord.Role:
+        role = discord.utils.get(guild.roles, id=ctf["guild_role"])
+        for user in users:
+            member = await guild.fetch_member(user.id)
+            await member.add_roles(role)
+
+        # Register to the CTF.
+        await cls._do_ctf_registration(ctf=ctf, guild=guild, event=event)
+        return role
+
     async def on_scheduled_event_update(
         self, before: discord.ScheduledEvent, after: discord.ScheduledEvent
     ) -> None:
@@ -274,21 +285,9 @@ class Eruditus(discord.Client):
                 return
             ctf = await self.create_ctf(after.name, live=True, return_if_exists=True)
 
-            # Give the CTF role to the interested people if they didn't get it yet.
-            role = discord.utils.get(guild.roles, id=ctf["guild_role"])
-            for user in users:
-                member = await guild.fetch_member(user.id)
-                await member.add_roles(role)
-
-            # Register to the CTF.
-            await self._do_ctf_registration(ctf=ctf, guild=guild, event=after)
-
-            # Substitute the ⏰ in the category channel name with a 🔴 to say that
-            # we're live.
-            category_channel = discord.utils.get(
-                guild.categories, id=ctf["guild_category"]
+            role = await self.add_event_roles_to_members_and_register(
+                guild, ctf, users, after
             )
-            await category_channel.edit(name=category_channel.name.replace("⏰", "🔴"))
 
             # Ping all participants.
             ctf_general_channel = discord.utils.get(
@@ -303,28 +302,22 @@ class Eruditus(discord.Client):
             # Pull challenges without waiting for scheduled task to execute.
             self.challenge_puller.restart()
 
+            # Substitute the ⏰ in the category channel name with a 🔴 to say that
+            # we're live.
+            category_channel = discord.utils.get(
+                guild.categories, id=ctf["guild_category"]
+            )
+            await category_channel.edit(name=category_channel.name.replace("⏰", "🔴"))
+
         # If an event ended (status changes from active to ended/completed).
         elif (
             before.status == discord.EventStatus.active
             and after.status == discord.EventStatus.ended
         ):
             # Ping players that the CTF ended.
-            ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-                {
-                    "name": re.compile(
-                        f"^{re.escape(event_name.strip())}$", re.IGNORECASE
-                    )
-                }
-            )
+            ctf = get_ctf_info(name=event_name)
             if ctf is None:
                 return
-
-            # Substitue the 🔴 in the category channel name with a 🏁 to say that
-            # the CTF ended.
-            category_channel = discord.utils.get(
-                guild.categories, id=ctf["guild_category"]
-            )
-            await category_channel.edit(name=category_channel.name.replace("🔴", "🏁"))
 
             # Ping all participants.
             role = discord.utils.get(guild.roles, id=ctf["guild_role"])
@@ -341,6 +334,13 @@ class Eruditus(discord.Client):
             MONGO[DBNAME][CTF_COLLECTION].update_one(
                 {"_id": ctf["_id"]}, {"$set": {"ended": True}}
             )
+
+            # Substitue the 🔴 in the category channel name with a 🏁 to say that
+            # the CTF ended.
+            category_channel = discord.utils.get(
+                guild.categories, id=ctf["guild_category"]
+            )
+            await category_channel.edit(name=category_channel.name.replace("🔴", "🏁"))
 
     @tasks.loop(minutes=5, reconnect=True)
     async def ctf_reminder(self) -> None:
@@ -403,14 +403,9 @@ class Eruditus(discord.Client):
             # If a CTF is starting soon, we create it if it wasn't created yet.
             ctf = await self.create_ctf(event_name, live=False, return_if_exists=True)
 
-            # Give the CTF role to the interested people if they didn't get it yet.
-            role = discord.utils.get(guild.roles, id=ctf["guild_role"])
-            for user in users:
-                member = await guild.fetch_member(user.id)
-                await member.add_roles(role)
-
-            # Register to the CTF.
-            await self._do_ctf_registration(ctf=ctf, guild=guild, event=scheduled_event)
+            await self.add_event_roles_to_members_and_register(
+                guild, ctf, users, scheduled_event
+            )
 
             # Send a reminder that the CTF is starting soon.
             if reminder_channel:
@@ -464,7 +459,7 @@ class Eruditus(discord.Client):
                     # Note: this only works for events added at least 7 days prior to
                     # their start date in CTFtime, the other case should be rare.
                     #
-                    #                            .-> e.g., events happening in this
+                    #                            .-> E.g., events happening in this
                     #                            |   window won't be recreated in the
                     #                            |   second iteration.
                     #              ,-------------`---------,
@@ -580,16 +575,8 @@ class Eruditus(discord.Client):
                 challenge.category = challenge.category.title().strip()
 
                 # Check if challenge was already created.
-                if MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(
-                    {
-                        "id": challenge.id,
-                        "name": re.compile(
-                            f"^{re.escape(challenge.name)}$", re.IGNORECASE
-                        ),
-                        "category": re.compile(
-                            f"^{re.escape(challenge.category)}$", re.IGNORECASE
-                        ),
-                    }
+                if get_challenge_info(
+                    id=challenge.id, name=challenge.name, category=challenge.category
                 ):
                     continue
 
@@ -657,28 +644,8 @@ class Eruditus(discord.Client):
                     embed.set_image(url=img_urls.pop(0))
 
                 # Create a channel for the challenge category if it doesn't exist.
-                channel_name = sanitize_channel_name(challenge.category)
-                text_channel = (
-                    discord.utils.get(
-                        guild.text_channels,
-                        category=category_channel,
-                        name=f"💤-{channel_name}",
-                    )
-                    or discord.utils.get(
-                        guild.text_channels,
-                        category=category_channel,
-                        name=f"🔄-{channel_name}",
-                    )
-                    or discord.utils.get(
-                        guild.text_channels,
-                        category=category_channel,
-                        name=f"🎯-{channel_name}",
-                    )
-                    or await guild.create_text_channel(
-                        name=f"🔄-{channel_name}",
-                        category=category_channel,
-                        default_auto_archive_duration=10080,
-                    )
+                text_channel = await get_challenge_category_channel(
+                    guild, category_channel, challenge.category
                 )
 
                 # Create a private thread for the challenge.
@@ -755,82 +722,15 @@ class Eruditus(discord.Client):
 
     @tasks.loop(minutes=1, reconnect=True)
     async def scoreboard_updater(self) -> None:
-        """Periodically update scoreboard for all running CTFs."""
-        # Wait until the bot's internal cache is ready.
+        """Periodically update the scoreboard for all running CTFs."""
+        # Wait until the bot internal cache is ready.
         await self.wait_until_ready()
 
         # The bot is supposed to be part of a single guild.
         guild = self.get_guild(GUILD_ID)
 
         for ctf in MONGO[DBNAME][CTF_COLLECTION].find({"ended": False}):
-            if ctf["credentials"]["url"] is None:
-                continue
-
-            # Match the platform
-            ctx = PlatformCTX.from_credentials(ctf["credentials"])
-            try:
-                platform = await match_platform(ctx)
-            except aiohttp.ClientError:
-                continue
-
-            if platform is None:
-                # Unsupported platform
-                return
-
-            try:
-                teams = [x async for x in platform.pull_scoreboard(ctx)]
-            except aiohttp.InvalidURL:
-                continue
-
-            if not teams:
-                continue
-
-            me = await platform.get_me(ctx)
-            our_team_name: str = me.name if me is not None else TEAM_NAME
-
-            name_field_width = max(len(team.name) for team in teams) + 10
-            message = (
-                f"**Scoreboard as of "
-                f"<t:{datetime.now().timestamp():.0f}>**"
-                "```diff\n"
-                f"  {'Rank':<10}{'Team':<{name_field_width}}{'Score'}\n"
-                "{}"
-                "```"
-            )
-            scoreboard = ""
-            for rank, team in enumerate(teams, start=1):
-                line = (
-                    f"{['-', '+'][team.name == our_team_name]} "
-                    f"{rank:<10}{team.name:<{name_field_width}}"
-                    f"{round(team.score, 4)}\n"
-                )
-                if len(message) + len(scoreboard) + len(line) - 2 > MAX_CONTENT_SIZE:
-                    break
-                scoreboard += line
-
-            if scoreboard:
-                message = message.format(scoreboard)
-            else:
-                message = "No solves yet, or platform isn't supported."
-
-            graph_data = await platform.pull_scoreboard_datapoints(ctx)
-            graph = (
-                None
-                if graph_data is None
-                else discord.File(
-                    plot_scoreboard(graph_data), filename="scoreboard.png"
-                )
-            )
-
-            # Update scoreboard in the scoreboard channel.
-            scoreboard_channel = discord.utils.get(
-                guild.text_channels, id=ctf["guild_channels"]["scoreboard"]
-            )
-            async for last_message in scoreboard_channel.history(limit=1):
-                await last_message.edit(content=message, attachments=[graph])
-                break
-            else:
-                await scoreboard_channel.send(content=message, file=graph)
+            await send_scoreboard(ctf, guild=guild)
 
     @create_upcoming_events.error
     async def create_upcoming_events_err_handler(self, _: Exception) -> None:
@@ -854,5 +754,7 @@ class Eruditus(discord.Client):
 
 
 if __name__ == "__main__":
+    setup_logging()
+    logger = logging.getLogger("eruditus")
     client = Eruditus()
     client.run(os.getenv("DISCORD_TOKEN"))

@@ -1,8 +1,7 @@
 from string import ascii_lowercase, ascii_uppercase
 from typing import Optional
 
-import discord
-from discord import app_commands
+from discord import Interaction, app_commands
 
 
 class ClassicCiphers:
@@ -36,7 +35,7 @@ class Cipher(app_commands.Group):
 
     @app_commands.command()
     async def caesar(
-        self, interaction: discord.Interaction, message: str, key: Optional[int]
+        self, interaction: Interaction, message: str, key: Optional[int]
     ) -> None:
         """Caesar cipher
 
@@ -56,7 +55,7 @@ class Cipher(app_commands.Group):
         await interaction.response.send_message(f"```\n{result}\n```")
 
     @app_commands.command()
-    async def rot13(self, interaction: discord.Interaction, message: str) -> None:
+    async def rot13(self, interaction: Interaction, message: str) -> None:
         """Rot13 cipher
 
         Args:
@@ -68,7 +67,7 @@ class Cipher(app_commands.Group):
         )
 
     @app_commands.command()
-    async def atbash(self, interaction: discord.Interaction, message: str) -> None:
+    async def atbash(self, interaction: Interaction, message: str) -> None:
         """Atbash cipher
 
         Args:

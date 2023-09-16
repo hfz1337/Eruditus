@@ -44,12 +44,12 @@ class Revshell(app_commands.Command):
 
         @self.autocomplete("shell")
         async def _shell_autocompletion_func(
-            interaction: discord.Interaction, current: str
+            _interaction: discord.Interaction, current: str
         ) -> list[Choice[str]]:
             """Autocomplete shell name.
 
             Args:
-                interaction: The interaction that triggered this command.
+                _interaction: The interaction that triggered this command.
                 current: The shell name typed so far.
 
             Returns:

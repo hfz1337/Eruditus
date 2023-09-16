@@ -1,7 +1,7 @@
 import binascii
-import urllib
 from base64 import b32decode, b32encode, b64decode, b64encode
 from binascii import hexlify, unhexlify
+from urllib.parse import quote, unquote
 
 import discord
 from discord import app_commands
@@ -86,7 +86,7 @@ class Encoding(app_commands.Group):
             data = "0" * (8 - len(data) % 8) + data
         else:
             data = data.strip().replace(" ", "")
-            if all(digit in ("0", "1") for digit in data):
+            if all(digit in {"0", "1"} for digit in data):
                 data = int(data, 2)
                 data = data.to_bytes(data.bit_length() // 8 + 1, "big")
                 try:
@@ -119,7 +119,7 @@ class Encoding(app_commands.Group):
             try:
                 data = unhexlify(data)
                 data = data.decode()
-            except binascii.BinasciiError as error:
+            except binascii.Error as error:
                 await interaction.response.send_message(
                     f"Error: {error}", ephemeral=True
                 )
@@ -141,8 +141,8 @@ class Encoding(app_commands.Group):
             data: The data to encode or decode.
         """
         if mode.value == 1:
-            data = urllib.parse.quote(data)
+            data = quote(data)
         else:
-            data = urllib.parse.unquote(data)
+            data = unquote(data)
 
         await interaction.response.send_message(f"```\n{data}\n```")

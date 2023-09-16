@@ -37,11 +37,7 @@ def generate_headers(ctx: PlatformCTX) -> dict[str, str]:
 
 
 class RCTF(PlatformABC):
-    @classmethod
-    @property
-    def name(cls) -> str:
-        """Get the platform display name."""
-        return "rCTF"
+    name = "rCTF"
 
     @classmethod
     async def match_platform(cls, ctx: PlatformCTX) -> bool:
@@ -52,6 +48,10 @@ class RCTF(PlatformABC):
 
         Returns:
             True if the platform is using rCTF, else False.
+
+        Raises:
+            aiohttp.ClientError: if something goes wrong while communicating with the
+                platform.
         """
         async with aiohttp.request(
             method="get",

@@ -7,7 +7,6 @@ import urllib.parse
 import warnings
 from datetime import datetime, timezone
 from hashlib import md5
-from logging import Logger
 from string import ascii_lowercase, digits
 from typing import Any, Optional, Type, TypeVar
 
@@ -18,10 +17,11 @@ from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from markdownify import markdownify as html2md
 from pydantic import TypeAdapter, ValidationError
 
+from config import CHALLENGE_COLLECTION, CTF_COLLECTION, DBNAME, MONGO
 from lib.platforms.abc import ChallengeFile, TeamScoreHistory
 
 T = TypeVar("T")
-logger = logging.getLogger("eruditus.util")
+_log = logging.getLogger(__name__)
 
 # "The input looks more like a filename than a markup" warnings
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
@@ -76,40 +76,16 @@ def sanitize_channel_name(name: str) -> str:
 
 
 def derive_colour(role_name: str) -> int:
-    """Derive a colour for the CTF role by taking its MD5 hash and using the first 3
-    bytes as the colour.
+    """Derive a color for the CTF role by taking its MD5 hash and using the first three
+    bytes as the color.
 
     Args:
-        role_name: Name of the role we wish to set a colour for.
+        role_name: Name of the role we wish to set a color for.
 
     Returns:
-        An integer representing an RGB colour.
+        An integer representing an RGB color.
     """
     return int(md5(role_name.encode()).hexdigest()[:6], 16)
-
-
-def setup_logger(name: str, level: int) -> Logger:
-    """Set up logging.
-
-    Args:
-        name: Logger name.
-        level: Logging level.
-
-    Returns:
-        The logger.
-    """
-    log_formatter = logging.Formatter(
-        "[{asctime}] [{levelname:<8}] {name}: {message}", "%Y-%m-%d %H:%M:%S", style="{"
-    )
-
-    result = logging.getLogger(name)
-    result.setLevel(level)
-
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(log_formatter)
-
-    result.addHandler(stream_handler)
-    return result
 
 
 def in_range(value: int, minimal: int, maximum: int) -> bool:
@@ -260,7 +236,7 @@ def strip_url_components(url: str) -> str:
 
 
 def extract_rctf_team_token(invite_url: str) -> Optional[str]:
-    """Extract the rCTF team token from an invite URL.
+    """Extract the rCTF team token from an invitation URL.
 
     Args:
         The rCTF invite URL (e.g., https://rctf.example.com/login?token=<token>).
@@ -274,6 +250,42 @@ def extract_rctf_team_token(invite_url: str) -> Optional[str]:
         return None
 
     return team_token[0]
+
+
+def get_ctf_info(**search_fields: dict[str, Any]) -> Optional[dict]:
+    """Retrieve information for a CTF.
+
+    Returns:
+        The CTF document, or None if no such CTF exists.
+
+    Notes:
+        The CTF name is case insensitive.
+    """
+    query = {}
+    for field, value in search_fields.items():
+        if field == "name":
+            query[field] = re.compile(f"^{re.escape(value.strip())}$", re.IGNORECASE)
+            continue
+        query[field] = value
+    return MONGO[DBNAME][CTF_COLLECTION].find_one(query)
+
+
+def get_challenge_info(**search_fields: dict[str, Any]) -> Optional[dict]:
+    """Retrieve a challenge from the database.
+
+    Returns:
+        The challenge document.
+
+    Notes:
+        The challenge name and category name are case insensitive.
+    """
+    query = {}
+    for field, value in search_fields.items():
+        if field in {"name", "category"}:
+            query[field] = re.compile(f"^{re.escape(value.strip())}$", re.IGNORECASE)
+            continue
+        query[field] = value
+    return MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(query)
 
 
 def make_form_field_config(name: str, config: dict) -> dict:
@@ -307,6 +319,8 @@ def make_form_field_config(name: str, config: dict) -> dict:
                 "Enter your team token...",
                 256,
             )
+        case _:
+            label, placeholder, max_length = ("Unknown field", "Unknown field", 128)
 
     return {
         "label": config.get("label", label),
@@ -348,7 +362,7 @@ async def deserialize_response(
         return TypeAdapter(model).validate_python(response_json)
     except ValidationError as e:
         if not suppress_warnings:
-            logger.warning(
+            _log.warning(
                 "Could not validate response data using the %s model:\n%s\nErrors - %s",
                 model.__name__,
                 json.dumps(response_json, indent=2),
@@ -374,21 +388,21 @@ def plot_scoreboard(
         A BytesIO buffer containing the saved figure data in bytes.
     """
 
-    # Using an actual color instead of a transparent background in order for the text
-    # to be visible in light theme as well.
+    # We're using an actual color instead of a transparent background in order for the
+    # text to be visible in light theme as well.
     background_color: str = "#313338"
 
-    # Creating the new figure
+    # Create a new figure.
     fig: plt.Figure = plt.figure(
         figsize=fig_size, facecolor=background_color, layout="tight"
     )
 
-    # Applying background color to the axes
+    # Apply background color to the axes.
     axes = fig.subplots()
     for axe in [axes] if not isinstance(axes, list) else axes:
         axe.set_facecolor(background_color)
 
-    # Obtaining current axes and applying the title
+    # Obtain current axes and set the figure title.
     gca: plt.Subplot = fig.gca()
     gca.set_title(
         label=f"Top {len(data)} Teams", fontdict={"weight": "bold", "color": "white"}
@@ -397,10 +411,10 @@ def plot_scoreboard(
     for team in data:
         kw = {}
         if team.is_me:
-            kw["zorder"] = len(data) + 1  # bring our team to the front
+            kw["zorder"] = len(data) + 1  # Bring our team to the front
 
-        # Creating a new plot item with the X axis set to time
-        # and the Y axis set to score
+        # Create a new plot item with the X axis set to time and the Y axis set to
+        # score.
         gca.plot(
             [x.time for x in team.history],
             [x.score for x in team.history],
@@ -408,31 +422,31 @@ def plot_scoreboard(
             **kw,
         )
 
-    # Applying grid and legend style
+    # Apply grid and legend style.
     gca.grid(color="gray", linestyle="dashed", alpha=0.5)
     gca.legend(loc="best")
 
-    # Applying x tick labels styles
+    # Apply x tick labels styles.
     for label in gca.get_xticklabels(minor=False):
         label.set(rotation=45, color="white")
 
-    # Applying y tick labels style
+    # Apply y tick labels style.
     for label in gca.get_yticklabels(minor=False):
         label.set(color="white")
 
-    # Applying spine colors
+    # Apply spine colors.
     for highlighted_spine in ["bottom", "left"]:
         gca.spines[highlighted_spine].set_color("white")
 
-    # Making the top/right spines invisible
+    # Make the top/right spines invisible.
     for invisible_spine in ["top", "right"]:
         gca.spines[invisible_spine].set_visible(False)
 
-    # Saving the result and closing the figure object
+    # Save the result and close the figure object.
     result = io.BytesIO()
     fig.savefig(result, bbox_inches="tight")
     plt.close(fig)
 
-    # Reset buffer pos and returning it
+    # Reset buffer position and return it.
     result.seek(0)
     return result

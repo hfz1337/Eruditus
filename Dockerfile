@@ -10,8 +10,9 @@ COPY .git/refs/heads/master /eruditus/.revision
 
 WORKDIR /eruditus
 
-RUN chown -R nobody:nogroup .
+RUN useradd -m user && \
+    chown -R user:user .
 
-USER nobody
+USER user
 
 ENTRYPOINT ["python3", "-u", "eruditus.py"]

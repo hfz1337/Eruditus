@@ -3,8 +3,8 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 import discord
 
-from config import CTF_COLLECTION, DBNAME, MONGO
-from lib.platforms import Platform, PlatformCTX
+from lib.discord_util import update_credentials
+from lib.platforms import Platform, PlatformABC, PlatformCTX
 from lib.util import (
     extract_rctf_team_token,
     make_form_field_config,
@@ -26,8 +26,8 @@ class CredentialsForm(discord.ui.Modal, title="Add CTF credentials"):
         self.platform = platform
         self.callback = callback
 
-        for key in kwargs:
-            setattr(self, key, discord.ui.TextInput(**kwargs[key]))
+        for key, value in kwargs.items():
+            setattr(self, key, discord.ui.TextInput(**value))
             self.add_item(getattr(self, key))
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
@@ -102,7 +102,7 @@ async def add_credentials_callback(
     msg = "✅ Credentials added."
 
     # Try to authorize.
-    if self.platform is not None:
+    if self.platform is not None and self.platform.value is not None:
         ctx = PlatformCTX.from_credentials(credentials)
         session = await self.platform.value.login(ctx)
 
@@ -117,20 +117,8 @@ async def add_credentials_callback(
             msg += f" Authorized as `{me.name}`"
 
     # Add credentials.
-    ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-        {"guild_category": interaction.channel.category_id}
-    )
-    MONGO[DBNAME][CTF_COLLECTION].update_one(
-        {"_id": ctf["_id"]},
-        {"$set": {"credentials": credentials}},
-    )
-
-    creds_channel = discord.utils.get(
-        interaction.guild.text_channels, id=ctf["guild_channels"]["credentials"]
-    )
-    await creds_channel.purge()
-    await creds_channel.send(credentials["_message"], suppress_embeds=True)
-    await interaction.followup.send(msg)
+    await update_credentials(interaction, credentials)
+    await interaction.followup.send(msg, ephemeral=True)
 
 
 async def register_account_callback(
@@ -145,7 +133,7 @@ async def register_account_callback(
             )
             result = await self.platform.value.register(ctx)
             if not result.success:
-                await interaction.followup.send(result.message)
+                await interaction.followup.send(result.message, ephemeral=True)
                 return
 
             invite_url = f"{ctx.url_stripped}/login?" + urlencode(
@@ -177,7 +165,7 @@ async def register_account_callback(
             )
             result = await self.platform.value.register(ctx)
             if not result.success:
-                await interaction.followup.send(result.message)
+                await interaction.followup.send(result.message, ephemeral=True)
                 return
 
             credentials = {
@@ -198,19 +186,7 @@ async def register_account_callback(
             return
 
     # Add credentials.
-    ctf = MONGO[DBNAME][CTF_COLLECTION].find_one(
-        {"guild_category": interaction.channel.category_id}
-    )
-    MONGO[DBNAME][CTF_COLLECTION].update_one(
-        {"_id": ctf["_id"]},
-        {"$set": {"credentials": credentials}},
-    )
-
-    creds_channel = discord.utils.get(
-        interaction.guild.text_channels, id=ctf["guild_channels"]["credentials"]
-    )
-    await creds_channel.purge()
-    await creds_channel.send(credentials["_message"], suppress_embeds=True)
+    await update_credentials(interaction, credentials)
     await interaction.followup.send(
         result.message or "✅ Registration successful.", ephemeral=True
     )
@@ -218,7 +194,7 @@ async def register_account_callback(
 
 async def create_credentials_modal_for_platform(
     url: str,
-    platform: Platform,
+    platform: Optional[PlatformABC],
     interaction: discord.Interaction,
     is_registration: bool = False,
 ) -> Optional[CredentialsForm]:
@@ -268,14 +244,13 @@ async def create_credentials_modal_for_platform(
 
             # Don't send the form if the URL already contains the token and we're just
             # adding credentials, not doing registration.
-            if (
-                not is_registration
-                and (parsed_url := urlparse(url))
-                and parsed_url.path.endswith("/login")
-                and "token" in parse_qs(parsed_url.query)
-            ):
-                await add_credentials_callback(form, interaction)
-                return None
+            if not is_registration:
+                parsed_url = urlparse(url)
+                if parsed_url.path.endswith("/login") and "token" in parse_qs(
+                    parsed_url.query
+                ):
+                    await add_credentials_callback(form, interaction)
+                    return None
 
             return form
 

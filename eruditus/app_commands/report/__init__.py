@@ -1,5 +1,4 @@
-import discord
-from discord import app_commands
+from discord import Interaction, app_commands
 
 from msg_components.forms.contact import BugReportForm
 
@@ -12,7 +11,7 @@ class Report(app_commands.Command):
             callback=self.cmd_callback,  # type: ignore
         )
 
-    async def cmd_callback(self, interaction: discord.Interaction) -> None:
+    async def cmd_callback(self, interaction: Interaction) -> None:
         """Report a bug to the developer.
 
         Args:
