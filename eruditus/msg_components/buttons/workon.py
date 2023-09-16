@@ -29,9 +29,7 @@ class WorkonButton(discord.ui.View):
         challenge_thread = discord.utils.get(
             interaction.guild.threads, id=challenge["thread"]
         )
-        challenge_thread = await add_challenge_worker(
-            challenge_thread, challenge, interaction.user
-        )
+        await add_challenge_worker(challenge_thread, challenge, interaction.user)
 
         await interaction.response.send_message(
             f"✅ Added to the `{challenge['name']}` challenge.",
