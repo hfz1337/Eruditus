@@ -268,5 +268,6 @@ async def create_credentials_modal_for_platform(
             password={"required": False},
             invite={"required": False},
             token={"required": False},
+            email={"required": False},
         ),
     )
