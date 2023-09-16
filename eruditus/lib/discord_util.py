@@ -177,7 +177,7 @@ async def send_scoreboard(
     async def followup(content: str, ephemeral=True, **kwargs) -> None:
         if not interaction:
             return
-        await interaction.followup.send(content, **kwargs)
+        await interaction.followup.send(content, ephemeral=ephemeral, **kwargs)
 
     if ctf["credentials"]["url"] is None:
         await followup("No credentials set for this CTF.")
@@ -252,7 +252,7 @@ async def update_scoreboard(
     """Update scoreboard in the scoreboard channel.
 
     Args:
-        guild: The Discord guild object.
+        scoreboard_channel: The Discord scoreboard channel.
         message: The scoreboard message.
         graph: The score graph to send along the message as a file attachment.
 
