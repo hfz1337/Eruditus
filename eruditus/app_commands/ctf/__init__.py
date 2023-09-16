@@ -19,6 +19,7 @@ from config import (
 from lib.discord_util import (
     add_challenge_worker,
     get_challenge_category_channel,
+    is_deferred,
     mark_if_maxed,
     parse_challenge_solvers,
     parse_member_mentions,
@@ -49,7 +50,17 @@ class CTF(app_commands.Group):
     async def on_error(
         self, interaction: discord.Interaction, error: app_commands.AppCommandError
     ) -> None:
-        await interaction.response.send_message(error, ephemeral=True)
+        _log.exception(
+            "Exception occurred due to `/%s %s`",
+            interaction.command.parent.name,
+            interaction.command.name,
+            exc_info=error,
+        )
+        msg = {"content": "An exception has occurred", "ephemeral": True}
+        if is_deferred(interaction):
+            await interaction.followup.send(**msg)
+        elif interaction.response.type is None:
+            await interaction.response.send_message(**msg)
 
     @staticmethod
     def _in_ctf_channel() -> Callable[..., bool]:

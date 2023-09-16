@@ -4,6 +4,7 @@ from typing import Optional
 
 import aiohttp
 import discord
+from discord import InteractionResponseType
 
 from config import (
     CHALLENGE_COLLECTION,
@@ -15,6 +16,21 @@ from config import (
 )
 from lib.platforms import PlatformCTX, match_platform
 from lib.util import get_ctf_info, plot_scoreboard, sanitize_channel_name
+
+
+def is_deferred(interaction: discord.Interaction) -> bool:
+    """Check whether an interaction was deferred previously.
+
+    Args:
+        interaction: The Discord interaction.
+
+    Returns:
+        True if the interaction was deferred.
+    """
+    return interaction.response.type in {
+        InteractionResponseType.deferred_channel_message,
+        InteractionResponseType.deferred_message_update,
+    }
 
 
 async def parse_challenge_solvers(
