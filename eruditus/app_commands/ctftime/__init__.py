@@ -283,7 +283,7 @@ class CTFTime(app_commands.Group):
         # Since integers greater than 2^53 - 1 aren't accepted in JSON, we can't set
         # channel_id to be of type `int`, and let Discord validate the input for us.
         # Instead, we use `str` and do the validation ourselves.
-        # source: https://github.com/discord/discord-api-docs/issues/2448#issuecomment-753820715 # noqa #501
+        # https://github.com/discord/discord-api-docs/issues/2448#issuecomment-753820715
         if not channel_id.isdigit():
             await interaction.response.send_message(
                 "Channel ID must be numeric.", ephemeral=True
