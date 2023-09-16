@@ -86,7 +86,7 @@ class Encoding(app_commands.Group):
             data = "0" * (8 - len(data) % 8) + data
         else:
             data = data.strip().replace(" ", "")
-            if all(digit in ("0", "1") for digit in data):
+            if all(digit in {"0", "1"} for digit in data):
                 data = int(data, 2)
                 data = data.to_bytes(data.bit_length() // 8 + 1, "big")
                 try:

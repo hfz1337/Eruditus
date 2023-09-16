@@ -1,7 +1,7 @@
 import io
+import logging
 import re
 from datetime import datetime
-from logging import getLogger
 from typing import AsyncIterator
 
 import aiohttp
@@ -33,7 +33,7 @@ from lib.validators.ctfd import (
     UserResponse,
 )
 
-logger = getLogger("eruditus.ctfd")
+_log = logging.getLogger(__name__)
 
 
 class CTFd(PlatformABC):
@@ -243,7 +243,7 @@ class CTFd(PlatformABC):
                 response, model=MessageResponse, suppress_warnings=True
             )
             if msg_response:
-                logger.warning(
+                _log.warning(
                     'Suppressing challenge getter warnings because of the "%s"',
                     msg_response.message,
                 )

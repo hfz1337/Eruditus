@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import discord
-from discord import HTTPException
 
 from config import CHALLENGE_COLLECTION, DBNAME, MONGO
 from lib.discord_util import mark_if_maxed, parse_challenge_solvers
@@ -113,18 +112,6 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
             interaction.guild.threads, id=challenge["thread"]
         )
 
-        try:
-            await challenge_thread.edit(
-                name=interaction.channel.name.replace(
-                    "❌", "🩸" if challenge["blooded"] else "✅"
-                )
-            )
-        except HTTPException:
-            # We've exceeded the 2 channel edit per 10 min set by Discord.
-            # This should only happen during testing, or when the users are trolling
-            # by spamming solve and unsolve.
-            pass
-
         challenge["solve_announcement"] = announcement.id
 
         MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
@@ -151,6 +138,14 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         )
         await announcement.edit(
             view=WorkonButton(name=challenge["name"], disabled=True)
+        )
+
+        # We leave editing the channel name till the end since we might get rate
+        # limited, causing a sleep that will block this function call.
+        await challenge_thread.edit(
+            name=interaction.channel.name.replace(
+                "❌", "🩸" if challenge["blooded"] else "✅"
+            )
         )
 
         # Mark the CTF category maxed if all its challenges were solved.

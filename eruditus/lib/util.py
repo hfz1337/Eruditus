@@ -7,7 +7,6 @@ import urllib.parse
 import warnings
 from datetime import datetime, timezone
 from hashlib import md5
-from logging import Logger
 from string import ascii_lowercase, digits
 from typing import Any, Optional, Type, TypeVar
 
@@ -22,7 +21,7 @@ from config import CHALLENGE_COLLECTION, CTF_COLLECTION, DBNAME, MONGO
 from lib.platforms.abc import ChallengeFile, TeamScoreHistory
 
 T = TypeVar("T")
-logger = logging.getLogger("eruditus.util")
+_log = logging.getLogger(__name__)
 
 # "The input looks more like a filename than a markup" warnings
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
@@ -87,30 +86,6 @@ def derive_colour(role_name: str) -> int:
         An integer representing an RGB color.
     """
     return int(md5(role_name.encode()).hexdigest()[:6], 16)
-
-
-def setup_logger(name: str, level: int) -> Logger:
-    """Set up logging.
-
-    Args:
-        name: Logger name.
-        level: Logging level.
-
-    Returns:
-        The logger.
-    """
-    log_formatter = logging.Formatter(
-        "[{asctime}] [{levelname:<8}] {name}: {message}", "%Y-%m-%d %H:%M:%S", style="{"
-    )
-
-    result = logging.getLogger(name)
-    result.setLevel(level)
-
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(log_formatter)
-
-    result.addHandler(stream_handler)
-    return result
 
 
 def in_range(value: int, minimal: int, maximum: int) -> bool:
@@ -306,7 +281,7 @@ def get_challenge_info(**search_fields: dict[str, Any]) -> Optional[dict]:
     """
     query = {}
     for field, value in search_fields.items():
-        if field in ("name", "category"):
+        if field in {"name", "category"}:
             query[field] = re.compile(f"^{re.escape(value.strip())}$", re.IGNORECASE)
             continue
         query[field] = value
@@ -387,7 +362,7 @@ async def deserialize_response(
         return TypeAdapter(model).validate_python(response_json)
     except ValidationError as e:
         if not suppress_warnings:
-            logger.warning(
+            _log.warning(
                 "Could not validate response data using the %s model:\n%s\nErrors - %s",
                 model.__name__,
                 json.dumps(response_json, indent=2),

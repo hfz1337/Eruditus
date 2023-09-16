@@ -9,6 +9,7 @@ from typing import Any, Union
 import aiohttp
 import discord
 from discord.ext import tasks
+from discord.utils import setup_logging
 
 import config
 from app_commands.bookmark import Bookmark
@@ -44,12 +45,9 @@ from lib.util import (
     get_ctf_info,
     get_local_time,
     sanitize_channel_name,
-    setup_logger,
     truncate,
 )
 from msg_components.buttons.workon import WorkonButton
-
-logger = setup_logger("eruditus", logging.INFO)
 
 
 class Eruditus(discord.Client):
@@ -291,13 +289,6 @@ class Eruditus(discord.Client):
                 guild, ctf, users, after
             )
 
-            # Substitute the ⏰ in the category channel name with a 🔴 to say that
-            # we're live.
-            category_channel = discord.utils.get(
-                guild.categories, id=ctf["guild_category"]
-            )
-            await category_channel.edit(name=category_channel.name.replace("⏰", "🔴"))
-
             # Ping all participants.
             ctf_general_channel = discord.utils.get(
                 guild.text_channels,
@@ -311,6 +302,13 @@ class Eruditus(discord.Client):
             # Pull challenges without waiting for scheduled task to execute.
             self.challenge_puller.restart()
 
+            # Substitute the ⏰ in the category channel name with a 🔴 to say that
+            # we're live.
+            category_channel = discord.utils.get(
+                guild.categories, id=ctf["guild_category"]
+            )
+            await category_channel.edit(name=category_channel.name.replace("⏰", "🔴"))
+
         # If an event ended (status changes from active to ended/completed).
         elif (
             before.status == discord.EventStatus.active
@@ -320,13 +318,6 @@ class Eruditus(discord.Client):
             ctf = get_ctf_info(name=event_name)
             if ctf is None:
                 return
-
-            # Substitue the 🔴 in the category channel name with a 🏁 to say that
-            # the CTF ended.
-            category_channel = discord.utils.get(
-                guild.categories, id=ctf["guild_category"]
-            )
-            await category_channel.edit(name=category_channel.name.replace("🔴", "🏁"))
 
             # Ping all participants.
             role = discord.utils.get(guild.roles, id=ctf["guild_role"])
@@ -343,6 +334,13 @@ class Eruditus(discord.Client):
             MONGO[DBNAME][CTF_COLLECTION].update_one(
                 {"_id": ctf["_id"]}, {"$set": {"ended": True}}
             )
+
+            # Substitue the 🔴 in the category channel name with a 🏁 to say that
+            # the CTF ended.
+            category_channel = discord.utils.get(
+                guild.categories, id=ctf["guild_category"]
+            )
+            await category_channel.edit(name=category_channel.name.replace("🔴", "🏁"))
 
     @tasks.loop(minutes=5, reconnect=True)
     async def ctf_reminder(self) -> None:
@@ -756,5 +754,7 @@ class Eruditus(discord.Client):
 
 
 if __name__ == "__main__":
+    setup_logging()
+    logger = logging.getLogger("eruditus")
     client = Eruditus()
     client.run(os.getenv("DISCORD_TOKEN"))

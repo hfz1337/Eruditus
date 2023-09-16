@@ -1,10 +1,11 @@
+import logging
 from datetime import datetime
 from typing import Callable, Optional
 
 import aiohttp
 import discord
 from aiohttp.client_exceptions import ClientError
-from discord import HTTPException, app_commands
+from discord import app_commands
 from discord.app_commands import Choice
 
 from config import (
@@ -35,6 +36,8 @@ from lib.util import (
 from msg_components.buttons.workon import WorkonButton
 from msg_components.forms.credentials import create_credentials_modal_for_platform
 from msg_components.forms.flag import FlagSubmissionForm
+
+_log = logging.getLogger(__name__)
 
 
 class CTF(app_commands.Group):
@@ -157,17 +160,17 @@ class CTF(app_commands.Group):
             interaction.guild.categories, id=interaction.channel.category_id
         )
 
-        # Rename category channel for the CTF.
-        await category_channel.edit(
-            name=category_channel.name.replace(old_name, new_name)
-        )
-
         # Update CTF name in the database.
         MONGO[DBNAME][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]}, {"$set": {"name": ctf["name"]}}
         )
         await interaction.response.send_message(
             f"✅ CTF `{old_name}` has been renamed to `{new_name}`."
+        )
+
+        # Rename category channel for the CTF.
+        await category_channel.edit(
+            name=category_channel.name.replace(old_name, new_name)
         )
 
     @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
@@ -298,7 +301,6 @@ class CTF(app_commands.Group):
             overwrites[member] = (
                 perm_rdonly if permissions == Permissions.RDONLY else perm_rdwr
             )
-        await category_channel.edit(name=f"🔒 {ctf['name']}", overwrites=overwrites)
 
         for ctf_channel in category_channel.channels:
             if ctf_channel.name == "general":
@@ -319,6 +321,7 @@ class CTF(app_commands.Group):
         )
 
         await interaction.followup.send(f"✅ CTF `{ctf['name']}` has been archived.")
+        await category_channel.edit(name=f"🔒 {ctf['name']}", overwrites=overwrites)
 
     @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.checks.has_permissions(manage_channels=True, manage_roles=True)
@@ -609,12 +612,11 @@ class CTF(app_commands.Group):
             {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
         )
 
-        await text_channel.edit(
-            name=text_channel.name.replace("💤", "🔄").replace("🎯", "🔄")
-        )
-
         await interaction.response.send_message(
             f"✅ Challenge `{name}` has been created."
+        )
+        await text_channel.edit(
+            name=text_channel.name.replace("💤", "🔄").replace("🎯", "🔄")
         )
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
@@ -645,17 +647,18 @@ class CTF(app_commands.Group):
         new_thread_name = sanitize_channel_name(new_name)
 
         if challenge["blooded"]:
-            await challenge_thread.edit(name=f"🩸-{new_thread_name}")
-        if challenge["solved"]:
-            await challenge_thread.edit(name=f"✅-{new_thread_name}")
+            new_thread_name = f"🩸-{new_thread_name}"
+        elif challenge["solved"]:
+            new_thread_name = f"✅-{new_thread_name}"
         else:
-            await challenge_thread.edit(name=f"❌-{new_thread_name}")
+            new_thread_name = f"❌-{new_thread_name}"
 
         MONGO[DBNAME][CHALLENGE_COLLECTION].update_one(
             {"_id": challenge["_id"]},
             {"$set": {"name": new_name}},
         )
         await interaction.response.send_message("✅ Challenge renamed.")
+        await challenge_thread.edit(name=new_thread_name)
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
@@ -766,16 +769,6 @@ class CTF(app_commands.Group):
         challenge["solved"] = True
         challenge["solve_time"] = int(datetime.now().timestamp())
 
-        try:
-            await interaction.channel.edit(
-                name=interaction.channel.name.replace("❌", "✅")
-            )
-        except HTTPException:
-            # We've exceeded the 2 channel edit per 10 min set by Discord.
-            # This should only happen during testing, or when the users are trolling
-            # by spamming solve and unsolve.
-            pass
-
         solvers = await parse_challenge_solvers(interaction, challenge, members)
 
         ctf = get_ctf_info(guild_category=interaction.channel.category_id)
@@ -818,6 +811,12 @@ class CTF(app_commands.Group):
         )
 
         await interaction.followup.send("✅ Challenge solved.")
+
+        # We leave editing the channel name till the end since we might get rate
+        # limited, causing a sleep that will block this function call.
+        await interaction.channel.edit(name=interaction.channel.name.replace("❌", "✅"))
+
+        # Mark the CTF category maxed if all its challenges were solved.
         await mark_if_maxed(interaction.channel.parent, challenge["category"])
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
@@ -847,16 +846,6 @@ class CTF(app_commands.Group):
                 "This challenge is already marked as not solved.", ephemeral=True
             )
             return
-
-        try:
-            await interaction.channel.edit(
-                name=interaction.channel.name.replace("✅", "❌").replace("🩸", "❌")
-            )
-        except HTTPException:
-            # We've exceeded the 2 channel edit per 10 min set by Discord.
-            # This should only happen during testing, or when the users are trolling
-            # by spamming solve and unsolve.
-            pass
 
         ctf = get_ctf_info(guild_category=interaction.channel.category_id)
         # Delete the challenge solved announcement we made.
@@ -891,12 +880,18 @@ class CTF(app_commands.Group):
         )
         await announcement.edit(view=WorkonButton(name=challenge["name"]))
 
-        # In case the CTF category was maxed before adding this new challenge.
+        await interaction.followup.send("✅ Challenge unsolved.")
+
+        # We leave editing the channel name till the end since we might get rate
+        # limited, causing a sleep that will block this function call.
+        await interaction.channel.edit(
+            name=interaction.channel.name.replace("✅", "❌").replace("🩸", "❌")
+        )
+
+        # In case the CTF category was maxed.
         text_channel = interaction.channel.parent
         if text_channel.name.startswith("🎯"):
             await text_channel.edit(name=text_channel.name.replace("🎯", "🔄"))
-
-        await interaction.followup.send("✅ Challenge unsolved.")
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
