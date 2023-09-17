@@ -136,9 +136,7 @@ class FlagSubmissionForm(discord.ui.Modal, title="Flag submission form"):
         announcement = await announcements_channel.fetch_message(
             challenge["announcement"]
         )
-        await announcement.edit(
-            view=WorkonButton(name=challenge["name"], disabled=True)
-        )
+        await announcement.edit(view=WorkonButton(oid=challenge["_id"], disabled=True))
 
         # We leave editing the channel name till the end since we might get rate
         # limited, causing a sleep that will block this function call.
