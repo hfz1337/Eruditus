@@ -8,6 +8,7 @@ from typing import Any, Union
 
 import aiohttp
 import discord
+from bson import ObjectId
 from discord.ext import tasks
 from discord.utils import setup_logging
 
@@ -162,6 +163,7 @@ class Eruditus(discord.Client):
         return ctf
 
     async def setup_hook(self) -> None:
+        # Register commands.
         self.tree.add_command(Help())
         self.tree.add_command(Syscalls())
         self.tree.add_command(Revshell())
@@ -174,6 +176,10 @@ class Eruditus(discord.Client):
         self.tree.add_command(Bookmark(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(TakeNote(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(CTF(), guild=discord.Object(GUILD_ID))
+
+        # Restore `workon` buttons.
+        for challenge in MONGO[DBNAME][CHALLENGE_COLLECTION].find({"solved": False}):
+            self.add_view(WorkonButton(oid=challenge["_id"]))
 
         self.create_upcoming_events.start()
         self.ctf_reminder.start()
@@ -666,6 +672,9 @@ class Eruditus(discord.Client):
                 # Pin the challenge info message.
                 await message.pin()
 
+                # Create an ObjectID for the challenge document.
+                challenge_oid = ObjectId()
+
                 # Announce that the challenge was added.
                 announcements_channel = discord.utils.get(
                     guild.text_channels,
@@ -685,31 +694,28 @@ class Eruditus(discord.Client):
                     timestamp=datetime.now(),
                 )
                 announcement = await announcements_channel.send(
-                    embed=embed, view=WorkonButton(name=challenge.name)
+                    embed=embed, view=WorkonButton(oid=challenge_oid)
                 )
 
                 # Add challenge to the database.
-                challenge_object_id = (
-                    MONGO[DBNAME][CHALLENGE_COLLECTION]
-                    .insert_one(
-                        {
-                            "id": challenge.id,
-                            "name": challenge.name,
-                            "category": challenge.category,
-                            "thread": challenge_thread.id,
-                            "solved": False,
-                            "blooded": False,
-                            "players": [],
-                            "announcement": announcement.id,
-                            "solve_time": None,
-                            "solve_announcement": None,
-                        }
-                    )
-                    .inserted_id
+                MONGO[DBNAME][CHALLENGE_COLLECTION].insert_one(
+                    {
+                        "_id": challenge_oid,
+                        "id": challenge.id,
+                        "name": challenge.name,
+                        "category": challenge.category,
+                        "thread": challenge_thread.id,
+                        "solved": False,
+                        "blooded": False,
+                        "players": [],
+                        "announcement": announcement.id,
+                        "solve_time": None,
+                        "solve_announcement": None,
+                    }
                 )
 
                 # Add reference to the newly created challenge.
-                ctf["challenges"].append(challenge_object_id)
+                ctf["challenges"].append(challenge_oid)
                 MONGO[DBNAME][CTF_COLLECTION].update_one(
                     {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
                 )

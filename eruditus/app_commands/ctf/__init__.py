@@ -5,6 +5,7 @@ from typing import Callable, Optional
 import aiohttp
 import discord
 from aiohttp.client_exceptions import ClientError
+from bson import ObjectId
 from discord import app_commands
 from discord.app_commands import Choice
 
@@ -143,14 +144,14 @@ class CTF(app_commands.Group):
         await interaction.response.defer()
 
         ctf = await interaction.client.create_ctf(name)
-        if ctf is None:
-            await interaction.followup.send(
-                "Another CTF with similar name already exists, please choose "
-                "another name.",
-                ephemeral=True,
-            )
-        else:
+        if ctf:
             await interaction.followup.send(f"✅ CTF `{name}` has been created.")
+            return
+
+        await interaction.followup.send(
+            "Another CTF with similar name already exists, please choose another name",
+            ephemeral=True,
+        )
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -212,8 +213,8 @@ class CTF(app_commands.Group):
         if not ctf:
             await interaction.followup.send(
                 (
-                    "Run this command from within a CTF channel, or provide the "
-                    "name of the CTF you wish to archive."
+                    "Run this command from within a CTF channel, or provide the name "
+                    "of the CTF you wish to archive."
                 )
                 if name is None
                 else "No such CTF.",
@@ -358,8 +359,8 @@ class CTF(app_commands.Group):
         if not ctf:
             await interaction.followup.send(
                 (
-                    "Run this command from within a CTF channel, or provide the "
-                    "name of the CTF you wish to delete."
+                    "Run this command from within a CTF channel, or provide the name "
+                    "of the CTF you wish to delete."
                 )
                 if name is None
                 else "No such CTF.",
@@ -579,6 +580,9 @@ class CTF(app_commands.Group):
             name=f"❌-{thread_name}", invitable=False
         )
 
+        # Create an ObjectID for the challenge document.
+        challenge_oid = ObjectId()
+
         # Announce that the challenge was added.
         announcements_channel = discord.utils.get(
             interaction.guild.text_channels, id=ctf["guild_channels"]["announcements"]
@@ -597,12 +601,13 @@ class CTF(app_commands.Group):
             timestamp=datetime.now(),
         )
         announcement = await announcements_channel.send(
-            embed=embed, view=WorkonButton(name=name)
+            embed=embed, view=WorkonButton(oid=challenge_oid)
         )
 
         # Add challenge to the database.
-        challenge = MONGO[DBNAME][CHALLENGE_COLLECTION].insert_one(
+        MONGO[DBNAME][CHALLENGE_COLLECTION].insert_one(
             {
+                "_id": challenge_oid,
                 "id": None,
                 "name": name,
                 "category": category,
@@ -618,7 +623,7 @@ class CTF(app_commands.Group):
         )
 
         # Add reference to the newly created challenge.
-        ctf["challenges"].append(challenge.inserted_id)
+        ctf["challenges"].append(challenge_oid)
         MONGO[DBNAME][CTF_COLLECTION].update_one(
             {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
         )
@@ -817,9 +822,7 @@ class CTF(app_commands.Group):
         announcement = await announcements_channel.fetch_message(
             challenge["announcement"]
         )
-        await announcement.edit(
-            view=WorkonButton(name=challenge["name"], disabled=True)
-        )
+        await announcement.edit(view=WorkonButton(oid=challenge["_id"], disabled=True))
 
         await interaction.followup.send("✅ Challenge solved.")
 
@@ -850,6 +853,7 @@ class CTF(app_commands.Group):
                 "challenge.",
                 ephemeral=True,
             )
+            return
 
         # Check if challenge is already not solved.
         if not challenge["solved"]:
@@ -858,8 +862,8 @@ class CTF(app_commands.Group):
             )
             return
 
-        ctf = get_ctf_info(guild_category=interaction.channel.category_id)
         # Delete the challenge solved announcement we made.
+        ctf = get_ctf_info(guild_category=interaction.channel.category_id)
         solves_channel = discord.utils.get(
             interaction.guild.text_channels, id=ctf["guild_channels"]["solves"]
         )
@@ -889,7 +893,7 @@ class CTF(app_commands.Group):
         announcement = await announcements_channel.fetch_message(
             challenge["announcement"]
         )
-        await announcement.edit(view=WorkonButton(name=challenge["name"]))
+        await announcement.edit(view=WorkonButton(oid=challenge["_id"]))
 
         await interaction.followup.send("✅ Challenge unsolved.")
 
