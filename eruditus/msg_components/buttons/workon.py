@@ -12,7 +12,6 @@ class _WorkonButton(discord.ui.Button):
             custom_id=f"workon::{oid}",  # make button persistent across restarts
             disabled=disabled,
             label="Already solved." if disabled else "Work on this challenge!",
-            emoji=None,
         )
         self.oid = oid
 
@@ -50,7 +49,6 @@ class _UnworkonButton(discord.ui.Button):
         super().__init__(
             style=discord.ButtonStyle.red,
             label="Stop working on this challenge.",
-            emoji=None,
         )
         self.oid = oid
 
