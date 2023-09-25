@@ -314,6 +314,7 @@ class CTF(app_commands.Group):
                 perm_rdonly if permissions == Permissions.RDONLY else perm_rdwr
             )
 
+        await category_channel.edit(name=f"🔒 {ctf['name']}", overwrites=overwrites)
         for ctf_channel in category_channel.channels:
             if ctf_channel.name == "general":
                 continue
@@ -333,7 +334,6 @@ class CTF(app_commands.Group):
         )
 
         await interaction.followup.send(f"✅ CTF `{ctf['name']}` has been archived.")
-        await category_channel.edit(name=f"🔒 {ctf['name']}", overwrites=overwrites)
 
     @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.checks.has_permissions(manage_channels=True, manage_roles=True)
