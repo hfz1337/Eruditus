@@ -7,7 +7,7 @@ from config import CTFTIME_URL, USER_AGENT
 from lib.ctftime.types import CTFTimeParticipatedEvent, CTFTimeTeam
 
 
-async def get_team_info(team_id: int) -> Optional[CTFTimeTeam]:
+async def get_ctftime_team_info(team_id: int) -> Optional[CTFTimeTeam]:
     # Request the team data from ctftime
     async with aiohttp.request(
         method="get",
@@ -47,7 +47,7 @@ async def get_team_info(team_id: int) -> Optional[CTFTimeTeam]:
     # Select the global ranking info
     overall_values = ranking_places[0].select("b")
     result.overall_rating_place = int(overall_values[0].text)
-    result.overall_rating_points = float(overall_values[1].text)
+    result.overall_points = float(overall_values[1].text)
 
     # If there's a country place, we should store it
     if len(ranking_places) >= 2:
@@ -60,15 +60,16 @@ async def get_team_info(team_id: int) -> Optional[CTFTimeTeam]:
     # Start iteration at 1 because the first entry is always a table header
     for i in range(1, len(events_entries)):
         # Select the table cells
-        tds = [x.text for x in events_entries[i].select("td")]
+        tds = [x for x in events_entries[i].select("td")]
 
         # Assemble the scoreboard entry
         result.participated_in.append(
             CTFTimeParticipatedEvent(
-                place=int(tds[1]),
-                event_name=tds[2],
-                ctf_points=float(tds[3]),
-                rating_points=float(tds[4]) if "*" not in tds[4] else None,
+                place=int(tds[1].text),
+                event_name=tds[2].text,
+                event_id=int(tds[2].contents[0].attrs.get("href", "0").split("/")[-1]),
+                ctf_points=float(tds[3].text),
+                rating_points=float(tds[4].text) if "*" not in tds[4].text else None,
             )
         )
 

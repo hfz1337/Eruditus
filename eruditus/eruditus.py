@@ -4,13 +4,12 @@ import os
 import traceback
 from binascii import hexlify
 from datetime import datetime, timedelta
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 import aiohttp
 import discord
 from bson import ObjectId
 from discord.ext import tasks
-from discord.utils import setup_logging
 
 import config
 from app_commands.bookmark import Bookmark
@@ -28,6 +27,8 @@ from app_commands.takenote import TakeNote
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
+    CTFTIME_TEAM_ID,
+    CTFTIME_TRACKING_CHANNEL,
     CTFTIME_URL,
     DBNAME,
     GUILD_ID,
@@ -37,8 +38,11 @@ from config import (
     TEAM_NAME,
     USER_AGENT,
 )
+from lib.ctftime.diff import CTFTimeTeamDiff, diff_ctftime_team
 from lib.ctftime.events import scrape_event_info
 from lib.ctftime.misc import ctftime_date_to_datetime
+from lib.ctftime.teams import get_ctftime_team_info
+from lib.ctftime.types import CTFTimeParticipatedEvent, CTFTimeTeam
 from lib.discord_util import get_challenge_category_channel, send_scoreboard
 from lib.platforms import PlatformCTX, match_platform
 from lib.util import (
@@ -54,12 +58,12 @@ from msg_components.buttons.workon import WorkonButton
 
 class Eruditus(discord.Client):
     def __init__(self) -> None:
-        intents = discord.Intents.default()
-        intents.members = True
-        intents.message_content = True
-        super().__init__(intents=intents)
+        super().__init__(intents=discord.Intents.all())
+
         self.tree = discord.app_commands.CommandTree(self)
+
         self.challenge_puller_is_running = False
+        self.previous_team_info: Optional[CTFTimeTeam] = None
 
     async def create_ctf(
         self, name: str, live: bool = True, return_if_exists: bool = False
@@ -186,6 +190,7 @@ class Eruditus(discord.Client):
         self.ctf_reminder.start()
         self.scoreboard_updater.start()
         self.challenge_puller.start()
+        self.ctftime_tracking.start()
 
     async def on_ready(self) -> None:
         for guild in self.guilds:
@@ -739,6 +744,96 @@ class Eruditus(discord.Client):
         for ctf in MONGO[DBNAME][CTF_COLLECTION].find({"ended": False}):
             await send_scoreboard(ctf, guild=guild)
 
+    @tasks.loop(minutes=15, reconnect=True)
+    async def ctftime_tracking(self) -> None:
+        # Disable the feature if some of the related config vars are missing
+        if not CTFTIME_TRACKING_CHANNEL or not CTFTIME_TEAM_ID:
+            self.ctftime_tracking.stop()
+            return
+
+        # Wait until guild objects are obtained
+        await self.wait_until_ready()
+
+        # Find the channel
+        guild = self.get_guild(GUILD_ID)
+        channel = guild.get_channel(CTFTIME_TRACKING_CHANNEL) if guild else None
+        if not channel:
+            logger.error("Unable to find channel for the tracking notifications")
+            return
+
+        # Request the ctftime team info
+        team_info = await get_ctftime_team_info(CTFTIME_TEAM_ID)
+        if not team_info:
+            return
+
+        # If there's no team cache, we should store it
+        if not self.previous_team_info:
+            self.previous_team_info = team_info
+            return
+
+        # Detect the team changes and iterate over them
+        for change in diff_ctftime_team(self.previous_team_info, team_info):
+            # Message header
+            text = "A new change detected!\n"
+
+            # Add object url
+            if it := (change.previous or change.current):
+                text += 'Object: '
+
+                if isinstance(it, CTFTimeTeam):
+                    text += f"[team]({CTFTIME_URL}/team/{CTFTIME_TEAM_ID})"
+                elif isinstance(it, CTFTimeParticipatedEvent):
+                    text += (
+                        f"[{it.event_name}]({CTFTIME_URL}/event/{it.event_id})"
+                    )
+
+                text += '\n'
+
+            # Add the change type
+            text += f'Change: `{change.type.name.replace("_", " ").capitalize()}`\n'
+
+            # Stringified changes info
+            previous: Optional[Any] = None
+            current: Optional[Any] = None
+
+            def load_attrs(attr_name: str) -> None:
+                nonlocal previous, current
+
+                previous = getattr(change.current, attr_name)
+                current = getattr(change.previous, attr_name)
+
+            # Match the change type and load attributes
+            match change.type:
+                case CTFTimeTeamDiff.Type.RANKING_OVERALL_POINTS_CHANGE:
+                    load_attrs("overall_points")
+                case CTFTimeTeamDiff.Type.RANKING_OVERALL_PLACE_CHANGE:
+                    load_attrs("overall_rating_place")
+                case CTFTimeTeamDiff.Type.RANKING_COUNTRY_PLACE_CHANGE:
+                    load_attrs("country_place")
+                case CTFTimeTeamDiff.Type.EVENT_ADDED:
+                    pass  # nothing should be added to this notification
+                case CTFTimeTeamDiff.Type.EVENT_REMOVED:
+                    pass  # nothing should be added to this notification
+                case CTFTimeTeamDiff.Type.EVENT_PLACE_CHANGE:
+                    load_attrs("place")
+                case CTFTimeTeamDiff.Type.EVENT_CTF_PTS_CHANGE:
+                    load_attrs("ctf_points")
+                case CTFTimeTeamDiff.Type.EVENT_RATING_PTS_CHANGE:
+                    load_attrs("rating_points")
+
+            # Add the diff object if needed
+            if previous or current:
+                text += "```diff\n"
+                text += f"- {previous}\n"
+                text += f"+ {current}\n"
+                text += "```\n"
+
+            # Send the notification
+            await channel.send(content=text, suppress_embeds=True)
+
+        # Backup the previous team info
+        self.previous_team_info = team_info
+
     @create_upcoming_events.error
     async def create_upcoming_events_err_handler(self, _: Exception) -> None:
         traceback.print_exc()
@@ -758,6 +853,11 @@ class Eruditus(discord.Client):
     async def challenge_puller_err_handler(self, _: Exception) -> None:
         traceback.print_exc()
         self.challenge_puller.restart()
+
+    @ctftime_tracking.error
+    async def ctftime_tracking_err_handler(self, _: Exception) -> None:
+        traceback.print_exc()
+        self.ctftime_tracking.restart()
 
 
 if __name__ == "__main__":

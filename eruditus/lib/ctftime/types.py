@@ -11,6 +11,8 @@ class CTFTimeParticipatedEvent:
     """
 
     place: int
+
+    event_id: int
     event_name: str
 
     ctf_points: float
@@ -31,3 +33,20 @@ class CTFTimeTeam:
     country_place: Optional[int]
 
     participated_in: list[CTFTimeParticipatedEvent]
+
+    def find_event_by_id(self, event_id: int) -> Optional[CTFTimeParticipatedEvent]:
+        """Attempt to find the participated event by using its ID.
+
+        Args:
+            event_id: The event ID.
+
+        Returns:
+             Nullable event info.
+        """
+        for event in self.participated_in:
+            if event.event_id != event_id:
+                continue
+
+            return event
+
+        return None
