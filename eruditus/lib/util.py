@@ -252,7 +252,7 @@ def extract_rctf_team_token(invite_url: str) -> Optional[str]:
     return team_token[0]
 
 
-def get_ctf_info(**search_fields: dict[str, Any]) -> Optional[dict]:
+def get_ctf_info(**search_fields: Any) -> Optional[dict]:
     """Retrieve information for a CTF.
 
     Returns:
@@ -270,7 +270,7 @@ def get_ctf_info(**search_fields: dict[str, Any]) -> Optional[dict]:
     return MONGO[DBNAME][CTF_COLLECTION].find_one(query)
 
 
-def get_challenge_info(**search_fields: dict[str, Any]) -> Optional[dict]:
+def get_challenge_info(**search_fields: Any) -> Optional[dict]:
     """Retrieve a challenge from the database.
 
     Returns:
