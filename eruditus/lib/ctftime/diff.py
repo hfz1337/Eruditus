@@ -108,6 +108,9 @@ def diff_ctftime_team(
 
         # Rating pts change
         if (
+            (not current_event.rating_points or not previous_event.rating_points)
+            and (current_event.rating_points or previous_event.rating_points)
+        ) or (
             abs(current_event.rating_points - previous_event.rating_points)
             >= float_info.epsilon
         ):
