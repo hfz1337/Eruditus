@@ -778,16 +778,14 @@ class Eruditus(discord.Client):
 
             # Add object url
             if it := (change.previous or change.current):
-                text += 'Object: '
+                text += "Object: "
 
                 if isinstance(it, CTFTimeTeam):
                     text += f"[team]({CTFTIME_URL}/team/{CTFTIME_TEAM_ID})"
                 elif isinstance(it, CTFTimeParticipatedEvent):
-                    text += (
-                        f"[{it.event_name}]({CTFTIME_URL}/event/{it.event_id})"
-                    )
+                    text += f"[{it.event_name}]({CTFTIME_URL}/event/{it.event_id})"
 
-                text += '\n'
+                text += "\n"
 
             # Add the change type
             text += f'Change: `{change.type.name.replace("_", " ").capitalize()}`\n'
