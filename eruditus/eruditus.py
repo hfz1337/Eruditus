@@ -37,7 +37,8 @@ from config import (
     TEAM_NAME,
     USER_AGENT,
 )
-from lib.ctftime import ctftime_date_to_datetime, scrape_event_info
+from lib.ctftime.events import scrape_event_info
+from lib.ctftime.misc import ctftime_date_to_datetime
 from lib.discord_util import get_challenge_category_channel, send_scoreboard
 from lib.platforms import PlatformCTX, match_platform
 from lib.util import (
