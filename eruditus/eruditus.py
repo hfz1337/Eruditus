@@ -797,8 +797,8 @@ class Eruditus(discord.Client):
             def load_attrs(attr_name: str) -> None:
                 nonlocal previous, current
 
-                previous = getattr(change.current, attr_name)
-                current = getattr(change.previous, attr_name)
+                previous = getattr(change.previous, attr_name)
+                current = getattr(change.current, attr_name)
 
             # Match the change type and load attributes
             match change.type:
