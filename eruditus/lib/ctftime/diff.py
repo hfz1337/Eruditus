@@ -111,7 +111,10 @@ def diff_ctftime_team(
             (not current_event.rating_points or not previous_event.rating_points)
             and (current_event.rating_points or previous_event.rating_points)
         ) or (
-            abs(current_event.rating_points - previous_event.rating_points)
+            abs(
+                (current_event.rating_points or 0.0)
+                - (previous_event.rating_points or 0.0)
+            )
             >= float_info.epsilon
         ):
             push_event_change(CTFTimeTeamDiff.Type.EVENT_RATING_PTS_CHANGE)
