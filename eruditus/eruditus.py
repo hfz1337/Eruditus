@@ -859,17 +859,8 @@ class Eruditus(discord.Client):
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger("eruditus")
+    logger = logging.getLogger("discord.eruditus")
     logger.setLevel(logging.INFO)
-    logging_handler = logging.StreamHandler()
-    logging_handler.setFormatter(
-        logging.Formatter(
-            "[{asctime}] [{levelname:<8}] {name}: {message}",
-            "%Y-%m-%d %H:%M:%S",
-            style="{",
-        )
-    )
-    logger.addHandler(logging_handler)
 
     client = Eruditus()
     client.run(os.getenv("DISCORD_TOKEN"))
