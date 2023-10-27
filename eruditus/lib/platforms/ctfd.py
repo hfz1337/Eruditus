@@ -353,7 +353,10 @@ class CTFd(PlatformABC):
 
                 graphs.append(item)
 
-            return graphs
+            # Make sure that we return only the requested amount of graphs,
+            # because there are some weird ctfs with broken scoreboard
+            # endpoint (yes, i'm looking at you, fe-ctf23)
+            return graphs[:count]
 
     @classmethod
     async def register(cls, ctx: PlatformCTX) -> RegistrationStatus:
