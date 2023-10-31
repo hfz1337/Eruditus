@@ -1100,7 +1100,7 @@ class CTF(app_commands.Group):
                         name=f"{icon} {challenge['name']} ({challenge['category']})",
                         value=(
                             "```diff\n"
-                            f"+ Solver{['', 's'][len(challenge['players'])>1]}:"
+                            f"+ Solver{['', 's'][len(challenge['players']) > 1]}:"
                             f" {', '.join(challenge['players']).strip()}\n"
                             f"+ Date: {solve_time}\n"
                             "```"
@@ -1114,7 +1114,7 @@ class CTF(app_commands.Group):
                         if len(challenge["players"]) == 0
                         else (
                             "```fix\n"
-                            f"! Worker{['', 's'][len(challenge['players'])>1]}:"
+                            f"! Worker{['', 's'][len(challenge['players']) > 1]}:"
                             f" {', '.join(challenge['players']).strip()}\n"
                             "```"
                         )
