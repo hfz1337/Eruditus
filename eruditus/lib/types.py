@@ -21,6 +21,8 @@ class CTFStatusMode(Enum):
 class Permissions(Enum):
     RDONLY = 0
     RDWR = 2
+    RDONLY_EVERYONE = 3
+    RDWR_EVERYONE = 4
 
 
 class OSType(Enum):

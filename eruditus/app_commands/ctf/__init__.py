@@ -279,20 +279,29 @@ class CTF(app_commands.Group):
             for summary in summaries:
                 await scoreboard_channel.send(head.format(summary))
 
-        # Make threads invitable and lock them if needed.
-        locked = permissions == Permissions.RDONLY
-        for thread in interaction.guild.threads:
-            if thread.parent is None or thread.category_id != ctf["guild_category"]:
-                continue
-            await thread.edit(locked=locked, invitable=True)
-
-        # Change channels permissions according to the `permissions` parameter.
+        # Collect all the joined users
         members = [
             member
             async for member in interaction.guild.fetch_members(limit=None)
             if role in member.roles
         ]
 
+        # Make threads invitable and lock them if needed.
+        locked = permissions in [Permissions.RDONLY, Permissions.RDONLY_EVERYONE]
+        unlock_to_everyone = permissions in [
+            Permissions.RDONLY_EVERYONE,
+            Permissions.RDWR_EVERYONE,
+        ]
+        for thread in interaction.guild.threads:
+            if thread.parent is None or thread.category_id != ctf["guild_category"]:
+                continue
+            await thread.edit(locked=locked, invitable=True)
+
+            # Invite everyone if needed
+            if unlock_to_everyone:
+                [await thread.add_user(member) for member in members]
+
+        # Change channels permissions according to the `permissions` parameter.
         perm_rdwr = discord.PermissionOverwrite(read_messages=True, send_messages=True)
         perm_rdonly = discord.PermissionOverwrite(
             read_messages=True, send_messages=False
@@ -310,9 +319,7 @@ class CTF(app_commands.Group):
         await ctf_general_channel.edit(overwrites=overwrites)
 
         for member in members:
-            overwrites[member] = (
-                perm_rdonly if permissions == Permissions.RDONLY else perm_rdwr
-            )
+            overwrites[member] = perm_rdonly if locked else perm_rdwr
 
         await category_channel.edit(name=f"🔒 {ctf['name']}", overwrites=overwrites)
         for ctf_channel in category_channel.channels:
