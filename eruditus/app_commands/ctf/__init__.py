@@ -51,6 +51,7 @@ class CTF(app_commands.Group):
     async def on_error(
         self, interaction: discord.Interaction, error: app_commands.AppCommandError
     ) -> None:
+        # todo: @es3n1n: permissionerror check
         _log.exception(
             "Exception occurred due to `/%s %s`",
             interaction.command.parent.name,
@@ -286,20 +287,22 @@ class CTF(app_commands.Group):
             if role in member.roles
         ]
 
-        # Make threads invitable and lock them if needed.
-        locked = permissions in [Permissions.RDONLY, Permissions.RDONLY_EVERYONE]
+        # Detect the options from the enum
+        read_only = permissions in [
+            Permissions.RDONLY,
+            Permissions.RDONLY_EVERYONE,
+        ]
         unlock_to_everyone = permissions in [
             Permissions.RDONLY_EVERYONE,
             Permissions.RDWR_EVERYONE,
         ]
+
+        # Make threads invitable and lock them if needed.
         for thread in interaction.guild.threads:
             if thread.parent is None or thread.category_id != ctf["guild_category"]:
                 continue
-            await thread.edit(locked=locked, invitable=True)
 
-            # Invite everyone if needed
-            if unlock_to_everyone:
-                [await thread.add_user(member) for member in members]
+            await thread.edit(locked=read_only, invitable=True)
 
         # Change channels permissions according to the `permissions` parameter.
         perm_rdwr = discord.PermissionOverwrite(read_messages=True, send_messages=True)
@@ -312,19 +315,32 @@ class CTF(app_commands.Group):
             category_id=ctf["guild_category"],
             name="general",
         )
+
+        # Push permissions. Readwrite by default because everyone should
+        # be able to write to general
         overwrites = {member: perm_rdwr for member in members}
+
+        # Push the permissions for '@everyone'
         overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(
-            read_messages=False
+            read_messages=unlock_to_everyone,
+            send_messages=unlock_to_everyone and not read_only,
         )
+
+        # Edit the general channel permissions
         await ctf_general_channel.edit(overwrites=overwrites)
 
+        # Overwrite member perms
         for member in members:
-            overwrites[member] = perm_rdonly if locked else perm_rdwr
+            overwrites[member] = perm_rdonly if read_only else perm_rdwr
 
+        # Edit the category permissions
         await category_channel.edit(name=f"🔒 {ctf['name']}", overwrites=overwrites)
+
+        # Sync the channel permissions
         for ctf_channel in category_channel.channels:
             if ctf_channel.name == "general":
                 continue
+
             await ctf_channel.edit(sync_permissions=True)
 
         # Delete the CTF role.
