@@ -33,7 +33,7 @@ from lib.validators.ctfd import (
     UserResponse,
 )
 
-_log = logging.getLogger('discord.eruditus.ctfd')
+_log = logging.getLogger("discord.eruditus.ctfd")
 
 
 class CTFd(PlatformABC):

@@ -21,7 +21,7 @@ from config import CHALLENGE_COLLECTION, CTF_COLLECTION, DBNAME, MONGO
 from lib.platforms.abc import ChallengeFile, TeamScoreHistory
 
 T = TypeVar("T")
-_log = logging.getLogger('discord.eruditus.util')
+_log = logging.getLogger("discord.eruditus.util")
 
 # "The input looks more like a filename than a markup" warnings
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
