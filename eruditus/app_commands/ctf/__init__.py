@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Callable, Optional
+from typing import Any, Callable, Coroutine, Optional
 
 import aiohttp
 import discord
@@ -102,35 +102,62 @@ class CTF(app_commands.Group):
                 break
         return suggestions
 
-    async def _challenge_autocompletion_func(
-        self, interaction: discord.Interaction, current: str
-    ) -> list[Choice[str]]:
-        """Autocomplete challenge name.
-        This function is inefficient, might improve it later.
+    @staticmethod
+    def get_challenge_autocompletion_func(
+        ignore_solved: bool, *fields: str
+    ) -> Callable[[...], Coroutine[Any, Any, list[Choice[str]]]]:
+        """Generate autocomplete challenge stub based on the challenge fields.
 
         Args:
-            interaction: The interaction that triggered this command.
-            current: The challenge name typed so far.
+            ignore_solved: Ignore solved challenges
+            fields: Fields that should be used for formatting.
 
         Returns:
-            A list of suggestions.
+            An autocompletion stub.
         """
-        ctf = get_ctf_info(guild_category=interaction.channel.category_id)
-        if ctf is None:
-            return []
+        assert len(fields) > 0
 
-        suggestions = []
-        for challenge_id in ctf["challenges"]:
-            challenge = get_challenge_info(_id=challenge_id)
-            if challenge is None or challenge["solved"]:
-                continue
+        async def _challenge_autocompletion_func(
+            interaction: discord.Interaction, current: str
+        ) -> list[Choice[str]]:
+            """Autocomplete challenge.
+            This function is inefficient, might improve it later.
 
-            display_name = f"{challenge['name']} ({challenge['category']})"
-            if current.lower() in display_name.lower():
-                suggestions.append(Choice(name=display_name, value=challenge["name"]))
-            if len(suggestions) == 25:
-                break
-        return suggestions
+            Args:
+                interaction: The interaction that triggered this command.
+                current: The challenge name typed so far.
+
+            Returns:
+                A list of suggestions.
+            """
+            ctf = get_ctf_info(guild_category=interaction.channel.category_id)
+            if ctf is None:
+                return []
+
+            suggestions: dict[str, Choice] = {}
+            for challenge_id in ctf["challenges"]:
+                challenge = get_challenge_info(_id=challenge_id)
+                if challenge is None or challenge["solved"]:
+                    continue
+
+                key = ""
+                value = ""
+                for i, field in enumerate(fields):
+                    field = f" ({challenge[field]})" if i > 0 else challenge[field]
+                    key += field
+
+                    if i == 0:
+                        value = field
+
+                if current.strip() == "" or current.lower() in key.lower():
+                    suggestions[key] = Choice(name=key, value=value)
+
+                if len(suggestions) == 25:
+                    break
+
+            return list(suggestions.values())
+
+        return _challenge_autocompletion_func
 
     @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.checks.has_permissions(manage_channels=True, manage_roles=True)
@@ -701,7 +728,9 @@ class CTF(app_commands.Group):
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
-    @app_commands.autocomplete(name=_challenge_autocompletion_func)  # type: ignore
+    @app_commands.autocomplete(
+        name=get_challenge_autocompletion_func(False, "name", "category")
+    )  # type: ignore
     @_in_ctf_channel()
     async def deletechallenge(
         self, interaction: discord.Interaction, name: Optional[str] = None
@@ -933,7 +962,9 @@ class CTF(app_commands.Group):
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
-    @app_commands.autocomplete(name=_challenge_autocompletion_func)  # type: ignore
+    @app_commands.autocomplete(
+        name=get_challenge_autocompletion_func(True, "name", "category")
+    )  # type: ignore
     @_in_ctf_channel()
     async def workon(self, interaction: discord.Interaction, name: str) -> None:
         """Start working on a challenge and join its thread.
@@ -975,7 +1006,9 @@ class CTF(app_commands.Group):
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
-    @app_commands.autocomplete(name=_challenge_autocompletion_func)  # type: ignore
+    @app_commands.autocomplete(
+        name=get_challenge_autocompletion_func(True, "name", "category")
+    )  # type: ignore
     @_in_ctf_channel()
     async def unworkon(
         self, interaction: discord.Interaction, name: Optional[str] = None
@@ -1025,6 +1058,10 @@ class CTF(app_commands.Group):
         await interaction.response.send_message(
             f"✅ Removed from the `{challenge['name']}` challenge.", ephemeral=True
         )
+
+    # @app_commands.checks.bot_has_permissions(manage_channels=True)
+    # @app_commands.command()
+    # @app_commands.autocomplete(name=)
 
     @app_commands.checks.bot_has_permissions(manage_channels=True)
     @app_commands.command()
