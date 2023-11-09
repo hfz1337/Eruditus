@@ -203,7 +203,7 @@ class Eruditus(discord.Client):
 
         await self.change_presence(
             activity=discord.Game(
-                name=f"/help ~ {config.COMMIT_HASH:.8} ~ {len(Platform)} platforms "
+                name=f"/help ~ {config.COMMIT_HASH:.8} ~ {len(Platform) - 1} platforms "
                 "supported"
             )
         )
