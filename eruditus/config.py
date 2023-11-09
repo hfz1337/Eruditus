@@ -51,6 +51,7 @@ def load_nullable_env_var(
 
 CHALLENGE_COLLECTION = os.getenv("CHALLENGE_COLLECTION")
 CTF_COLLECTION = os.getenv("CTF_COLLECTION")
+WORKON_COLLECTION = os.getenv("WORKON_COLLECTION")
 CTFTIME_URL = os.getenv("CTFTIME_URL")
 DATE_FORMAT = os.getenv("DATE_FORMAT")
 DBNAME = os.getenv("DBNAME")

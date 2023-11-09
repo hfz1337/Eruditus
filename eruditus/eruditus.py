@@ -47,6 +47,7 @@ from lib.discord_util import get_challenge_category_channel, send_scoreboard
 from lib.platforms import PlatformCTX, match_platform
 from lib.util import (
     derive_colour,
+    get_all_workon_info,
     get_challenge_info,
     get_ctf_info,
     get_local_time,
@@ -717,6 +718,7 @@ class Eruditus(discord.Client):
                         "announcement": announcement.id,
                         "solve_time": None,
                         "solve_announcement": None,
+                        "ctf_id": ctf["_id"],
                     }
                 )
 
@@ -725,6 +727,14 @@ class Eruditus(discord.Client):
                 MONGO[DBNAME][CTF_COLLECTION].update_one(
                     {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
                 )
+
+                # Add all subscribed players to the channel
+                for workon_info in get_all_workon_info(ctf["_id"], challenge.category):
+                    user = guild.get_member(workon_info["user_id"])
+                    if not user:
+                        continue
+
+                    await challenge_thread.add_user(user)
 
                 await text_channel.edit(
                     name=text_channel.name.replace("💤", "🔄").replace("🎯", "🔄")
