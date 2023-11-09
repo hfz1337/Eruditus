@@ -44,7 +44,7 @@ from lib.ctftime.misc import ctftime_date_to_datetime
 from lib.ctftime.teams import get_ctftime_team_info
 from lib.ctftime.types import CTFTimeParticipatedEvent, CTFTimeTeam
 from lib.discord_util import get_challenge_category_channel, send_scoreboard
-from lib.platforms import PlatformCTX, match_platform
+from lib.platforms import Platform, PlatformCTX, match_platform
 from lib.util import (
     derive_colour,
     get_all_workon_info,
@@ -201,7 +201,12 @@ class Eruditus(discord.Client):
         await self.tree.sync()
         await self.tree.sync(guild=discord.Object(id=GUILD_ID))
 
-        await self.change_presence(activity=discord.Game(name="/help"))
+        await self.change_presence(
+            activity=discord.Game(
+                name=f"/help ~ {config.COMMIT_HASH:.8} ~ {len(Platform)} platforms "
+                "supported"
+            )
+        )
 
     async def on_guild_join(self, guild: discord.Guild) -> None:
         logger.info("%s joined %s!", self.user, guild)
