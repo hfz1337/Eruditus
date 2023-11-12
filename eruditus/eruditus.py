@@ -408,7 +408,7 @@ class Eruditus(discord.Client):
             # Ignore this event if not too many people are interested in it.
             users = [user async for user in scheduled_event.users()]
             if len(users) < MIN_PLAYERS:
-                if reminder_channel:
+                if reminder_channel and not config.NOTIFICATIONS_DISABLE_UNINTERESTED:
                     await reminder_channel.send(
                         f"🔔 CTF `{event_name}` starting "
                         f"<t:{scheduled_event.start_time.timestamp():.0f}:R>.\n"

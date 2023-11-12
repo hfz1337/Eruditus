@@ -35,7 +35,7 @@ def load_revision() -> str:
 
 
 def load_nullable_env_var(
-    name: str, factory: Callable[[str], T] = lambda x: x
+    name: str, factory: Callable[[str], T] = lambda x: x, default: Optional[T] = None
 ) -> Optional[T]:
     """Load the nullable config var.
 
@@ -43,8 +43,8 @@ def load_nullable_env_var(
         @es3n1n
     """
     var = os.getenv(name)
-    if not var:
-        return var
+    if var in [None, ""]:
+        return default
 
     return factory(var)
 
@@ -70,6 +70,9 @@ BOOKMARK_CHANNEL = int(os.getenv("BOOKMARK_CHANNEL"))
 CTFTIME_TEAM_ID = load_nullable_env_var("CTFTIME_TEAM_ID", factory=int)
 CTFTIME_TRACKING_CHANNEL = load_nullable_env_var(
     "CTFTIME_TRACKING_CHANNEL", factory=int
+)
+NOTIFICATIONS_DISABLE_UNINTERESTED = load_nullable_env_var(
+    "NOTIFICATIONS_DISABLE_UNINTERESTED", factory=bool, default=False
 )
 
 MONGO = MongoClient(MONGODB_URI)
