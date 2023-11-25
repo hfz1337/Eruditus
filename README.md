@@ -54,6 +54,7 @@ Here's a list of the currently supported commands:
 /search                                              (Search for a topic in the CTF write-ups index)
 /request                                             (Request a new feature from the developer)
 /report                                              (Send a bug report to the developer)
+/intro                                               (Show bot instructions for newcomers)
 
 /ctf createctf                                       (Create a new CTF)
 /ctf renamectf                                       (Rename a CTF)
