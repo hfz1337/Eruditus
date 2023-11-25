@@ -72,7 +72,7 @@ class _UnworkonButton(discord.ui.Button):
         )
         await remove_challenge_worker(challenge_thread, challenge, interaction.user)
         await challenge_thread.send(
-            f"{interaction.user.mention} left you alone, what a chicken! 🐥"
+            f"{interaction.user.name} left you alone, what a chicken! 🐥"
         )
 
         await interaction.response.edit_message(
