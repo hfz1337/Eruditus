@@ -14,5 +14,5 @@ repos:
     hooks:
       - id: flake8
         args:
-          - --ignore=W503
+          - --ignore=W503,E203,E221,E225,E231,E241
           - --max-line-length=88
