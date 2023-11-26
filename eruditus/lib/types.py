@@ -19,13 +19,8 @@ class CTFStatusMode(Enum):
 
 
 class Permissions(Enum):
-    # Only the ctf participants can access such channels
     RDONLY = 0
     RDWR = 2
-
-    # Everyone can access
-    RDONLY_EVERYONE = 5
-    RDWR_EVERYONE = 6
 
 
 class OSType(Enum):

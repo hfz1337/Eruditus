@@ -225,6 +225,7 @@ class CTF(app_commands.Group):
         self,
         interaction: discord.Interaction,
         permissions: Optional[Permissions] = Permissions.RDONLY,
+        members: Optional[str] = None,
         name: Optional[str] = None,
     ):
         """Archive a CTF by making its channels read-only by default.
@@ -233,6 +234,8 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             permissions: Whether channels should be read-only or writable
                as well (default: read only).
+            members: A list of member or role mentions to be granted access into the
+               private threads.
             name: CTF name (default: current channel's CTF).
         """
         await interaction.response.defer()
@@ -311,31 +314,30 @@ class CTF(app_commands.Group):
             for summary in summaries:
                 await scoreboard_channel.send(head.format(summary))
 
-        # Collect all the joined users
+        # Make threads invitable and lock them if needed.
+        locked = permissions == Permissions.RDONLY
+        for thread in interaction.guild.threads:
+            if thread.parent is None or thread.category_id != ctf["guild_category"]:
+                continue
+            await thread.edit(locked=locked, invitable=True)
+
+            if members is None:
+                continue
+
+            # XXX Until Discord supports changing threads privacy, this is the only
+            # workaround in order to add members to a thread without bombing them
+            # with notifications.
+            message = await thread.send(content="Adding members...", silent=True)
+            await message.edit(content=members)
+            await message.delete()
+
+        # Change channels permissions according to the `permissions` parameter.
         members = [
             member
             async for member in interaction.guild.fetch_members(limit=None)
             if role in member.roles
         ]
 
-        # Detect the options from the enum
-        read_only = permissions in [
-            Permissions.RDONLY,
-            Permissions.RDONLY_EVERYONE,
-        ]
-        unlock_to_everyone = permissions in [
-            Permissions.RDONLY_EVERYONE,
-            Permissions.RDWR_EVERYONE,
-        ]
-
-        # Make threads invitable and lock them if needed.
-        for thread in interaction.guild.threads:
-            if thread.parent is None or thread.category_id != ctf["guild_category"]:
-                continue
-
-            await thread.edit(locked=read_only, invitable=True)
-
-        # Change channels permissions according to the `permissions` parameter.
         perm_rdwr = discord.PermissionOverwrite(read_messages=True, send_messages=True)
         perm_rdonly = discord.PermissionOverwrite(
             read_messages=True, send_messages=False
@@ -346,32 +348,21 @@ class CTF(app_commands.Group):
             category_id=ctf["guild_category"],
             name="general",
         )
-
-        # Push permissions. Readwrite by default because everyone should
-        # be able to write to general
         overwrites = {member: perm_rdwr for member in members}
-
-        # Push the permissions for '@everyone'
         overwrites[interaction.guild.default_role] = discord.PermissionOverwrite(
-            read_messages=unlock_to_everyone,
-            send_messages=unlock_to_everyone and not read_only,
+            read_messages=False
         )
-
-        # Edit the general channel permissions
         await ctf_general_channel.edit(overwrites=overwrites)
 
-        # Overwrite member perms
         for member in members:
-            overwrites[member] = perm_rdonly if read_only else perm_rdwr
+            overwrites[member] = (
+                perm_rdonly if permissions == Permissions.RDONLY else perm_rdwr
+            )
 
-        # Edit the category permissions
         await category_channel.edit(name=f"🔒 {ctf['name']}", overwrites=overwrites)
-
-        # Sync the channel permissions
         for ctf_channel in category_channel.channels:
             if ctf_channel.name == "general":
                 continue
-
             await ctf_channel.edit(sync_permissions=True)
 
         # Delete the CTF role.
