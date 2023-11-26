@@ -1,75 +1,59 @@
 from typing import Optional
 
 import aiohttp
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
 
 from config import CTFTIME_URL, USER_AGENT
 from lib.ctftime.types import CTFTimeParticipatedEvent, CTFTimeTeam
 
 
 async def get_ctftime_team_info(team_id: int) -> Optional[CTFTimeTeam]:
-    # Request the team data from ctftime
+    # Request the team data from CTFtime
     async with aiohttp.request(
         method="get",
         url=f"{CTFTIME_URL}/team/{team_id}",
         headers={"User-Agent": USER_AGENT},
     ) as response:
-        # If CTFTime is doing CTFTime things
         if response.status != 200:
             return None
 
         parser = BeautifulSoup(await response.text(), "html.parser")
 
-    # Select the panes with content
-    panes = parser.select(".tab-pane")
-    if len(panes) == 0:
+    # Select the paragraphs containing overall rating place, points and eventually the
+    # country place.
+    if not (p := parser.select(".active p")):
         return None
 
-    # Find rating pane
-    rating_pane: Tag = panes[0]
-    if "rating" not in rating_pane.get("id", ""):
-        return None
+    rank, points = [b_tag.text for b_tag in p.pop(0).find_all("b")]
+    country_rank = int(p.pop().find("a").text) if p else None
 
-    # Look up for the ranking info
-    ranking_places: list[Tag] = rating_pane.select("p")
-    if len(ranking_places) == 0:
-        return None
+    # Get the results of the current year.
+    table_rows = parser.select(".table-striped").pop(0).select("tr:has(td)")
 
-    # At this time, we're 100% sure that we're at the right pane,
-    # so we can finally init the result struct
     result = CTFTimeTeam(
-        overall_points=0.0,
-        overall_rating_place=0,
-        country_place=None,
-        participated_in=list(),
+        overall_points=float(points),
+        overall_rating_place=int(rank),
+        country_place=country_rank,
+        participated_in=[],
     )
-
-    # Select the global ranking info
-    overall_values = ranking_places[0].select("b")
-    result.overall_rating_place = int(overall_values[0].text)
-    result.overall_points = float(overall_values[1].text)
-
-    # If there's a country place, we should store it
-    if len(ranking_places) >= 2:
-        result.country_place = int(ranking_places[1].find("b").text)
-
-    # Look for the table with events
-    events_table = rating_pane.find("table")
-    events_entries = events_table.select("tr")
-
-    # Start iteration at 1 because the first entry is always a table header
-    for i in range(1, len(events_entries)):
+    for row in table_rows:
         # Select the table cells
-        tds = [x for x in events_entries[i].select("td")]
+        event = row.select_one("td:not(.place_ico):has(a)").find("a")
+        event_id = event["href"].split("/").pop()
+        event_name = event.text
+
+        place, ctf_points, rating_points = (
+            td.text for td in row.select("td:not(.place_ico):not(:has(a))")
+        )
 
         # Assemble the scoreboard entry
         result.participated_in.append(
             CTFTimeParticipatedEvent(
-                place=int(tds[1].text),
-                event_name=tds[2].text,
-                event_id=int(tds[2].contents[0].attrs.get("href", "0").split("/")[-1]),
-                ctf_points=float(tds[3].text),
-                rating_points=float(tds[4].text) if "*" not in tds[4].text else None,
+                place=int(place),
+                event_name=event_name,
+                event_id=int(event_id),
+                ctf_points=float(ctf_points),
+                rating_points=float(rating_points),
             )
         )
 
