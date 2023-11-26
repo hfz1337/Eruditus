@@ -794,12 +794,12 @@ class Eruditus(discord.Client):
         for update_type in (diff := self.previous_team_info - team_info):
             match update_type:
                 case CTFTimeDiffType.OVERALL_POINTS_UPDATE:
-                    bad = (
+                    decreased = (
                         self.previous_team_info.overall_points
                         > team_info.overall_points
                     )
                     msg = msg_fmt.format(
-                        "📉" if bad else "📈",
+                        "📉" if decreased else "📈",
                         "Overall points",
                         self.previous_team_info.overall_points,
                         team_info.overall_points,
@@ -807,10 +807,6 @@ class Eruditus(discord.Client):
                     await channel.send(msg)
 
                 case CTFTimeDiffType.OVERALL_PLACE_UPDATE:
-                    bad = (
-                        self.previous_team_info.overall_rating_place
-                        > team_info.overall_rating_place
-                    )
                     msg = msg_fmt.format(
                         "🌎",
                         "Global position",
@@ -820,9 +816,6 @@ class Eruditus(discord.Client):
                     await channel.send(msg)
 
                 case CTFTimeDiffType.COUNTRY_PLACE_UPDATE:
-                    bad = (
-                        self.previous_team_info.country_place > team_info.country_place
-                    )
                     msg = msg_fmt.format(
                         f":flag_{team_info.country_code.lower()}",
                         "Country position",
