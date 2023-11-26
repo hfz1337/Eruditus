@@ -33,7 +33,7 @@ from lib.validators.ctfd import (
     UserResponse,
 )
 
-_log = logging.getLogger("discord.eruditus.ctfd")
+_log = logging.getLogger(__name__)
 
 
 class CTFd(PlatformABC):
@@ -353,9 +353,6 @@ class CTFd(PlatformABC):
 
                 graphs.append(item)
 
-            # Make sure that we return only the requested amount of graphs,
-            # because there are some weird ctfs with broken scoreboard
-            # endpoint (yes, i'm looking at you, fe-ctf23)
             return graphs[:count]
 
     @classmethod

@@ -43,7 +43,7 @@ from msg_components.buttons.workon import WorkonButton
 from msg_components.forms.credentials import create_credentials_modal_for_platform
 from msg_components.forms.flag import FlagSubmissionForm
 
-_log = logging.getLogger("discord.eruditus.cmds.ctf")
+_log = logging.getLogger(__name__)
 
 
 class CTF(app_commands.Group):
