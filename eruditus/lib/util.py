@@ -17,13 +17,7 @@ from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from markdownify import markdownify as html2md
 from pydantic import TypeAdapter, ValidationError
 
-from config import (
-    CHALLENGE_COLLECTION,
-    CTF_COLLECTION,
-    DBNAME,
-    MONGO,
-    WORKON_COLLECTION,
-)
+from config import CHALLENGE_COLLECTION, CTF_COLLECTION, DBNAME, MONGO
 from lib.platforms.abc import ChallengeFile, TeamScoreHistory
 
 T = TypeVar("T")
@@ -258,39 +252,7 @@ def extract_rctf_team_token(invite_url: str) -> Optional[str]:
     return team_token[0]
 
 
-def re_ignorecase(s: str) -> Any:
-    """Convert the immediate value to the regex ignore case expression.
-
-    Args:
-        The string to be converted.
-
-    Returns:
-        Converted expression.
-    """
-    return re.compile(f"^{re.escape(s.strip())}$", re.IGNORECASE)
-
-
-def _build_query(**search_fields: Any) -> dict:
-    """Build a search query for the ctf/challenge search.
-
-    Returns:
-        The built search query.
-
-    Notes:
-        The name and category are case-insensitive.
-    """
-    query = {}
-    for field, value in search_fields.items():
-        if field in {"name", "category"}:
-            query[field] = re_ignorecase(value)
-            continue
-
-        query[field] = value
-
-    return query
-
-
-def get_ctf_info(**search_fields: Any) -> Optional[dict]:
+def get_ctf_info(**search_fields: dict[str, Any]) -> Optional[dict]:
     """Retrieve information for a CTF.
 
     Returns:
@@ -299,61 +261,31 @@ def get_ctf_info(**search_fields: Any) -> Optional[dict]:
     Notes:
         The CTF name is case insensitive.
     """
-    return MONGO[DBNAME][CTF_COLLECTION].find_one(_build_query(**search_fields))
+    query = {}
+    for field, value in search_fields.items():
+        if field == "name":
+            query[field] = re.compile(f"^{re.escape(value.strip())}$", re.IGNORECASE)
+            continue
+        query[field] = value
+    return MONGO[DBNAME][CTF_COLLECTION].find_one(query)
 
 
-def get_challenge_info(**search_fields: Any) -> Optional[dict]:
+def get_challenge_info(**search_fields: dict[str, Any]) -> Optional[dict]:
     """Retrieve a challenge from the database.
 
     Returns:
         The challenge document.
 
     Notes:
-        The challenge name and category name are case-insensitive.
+        The challenge name and category name are case insensitive.
     """
-    return MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(_build_query(**search_fields))
-
-
-def get_all_challenges_info(**search_fields: Any) -> list[dict]:
-    """Retrieve multiple challenges from the database.
-
-    Returns:
-        The challenges documents.
-
-    Notes:
-        The challenge name and category name are case-insensitive.
-    """
-    return list(MONGO[DBNAME][CHALLENGE_COLLECTION].find(_build_query(**search_fields)))
-
-
-def get_workon_info(ctf_id: Any, user_id: int, category_name: str) -> Optional[dict]:
-    """Retrieve a workon info from the database.
-
-    Returns:
-        The optional document.
-
-    Notes:
-        The category name is case-insensitive.
-    """
-    return MONGO[DBNAME][WORKON_COLLECTION].find_one(
-        {"ctf_id": ctf_id, "category": re_ignorecase(category_name), "user_id": user_id}
-    )
-
-
-def get_all_workon_info(ctf_id: Any, category_name: str) -> list[dict]:
-    """Retrieve all workon info for a category
-
-    Returns:
-        List of documents.
-
-    Notes:
-        The category name is case-insensitive.
-    """
-    return list(
-        MONGO[DBNAME][WORKON_COLLECTION].find(
-            {"ctf_id": ctf_id, "category": re_ignorecase(category_name)}
-        )
-    )
+    query = {}
+    for field, value in search_fields.items():
+        if field in {"name", "category"}:
+            query[field] = re.compile(f"^{re.escape(value.strip())}$", re.IGNORECASE)
+            continue
+        query[field] = value
+    return MONGO[DBNAME][CHALLENGE_COLLECTION].find_one(query)
 
 
 def make_form_field_config(name: str, config: dict) -> dict:

@@ -37,21 +37,18 @@ def load_revision() -> str:
 def load_nullable_env_var(
     name: str, factory: Callable[[str], T] = lambda x: x, default: Optional[T] = None
 ) -> Optional[T]:
-    """Load the nullable config var.
-
+    """Load a nullable config var.
     Author:
         @es3n1n
     """
     var = os.getenv(name)
-    if var in [None, ""]:
-        return default
-
-    return factory(var)
+    return default if not var else factory(var)
 
 
+# fmt: off
+# flake8: noqa 
 CHALLENGE_COLLECTION = os.getenv("CHALLENGE_COLLECTION")
 CTF_COLLECTION = os.getenv("CTF_COLLECTION")
-WORKON_COLLECTION = os.getenv("WORKON_COLLECTION")
 CTFTIME_URL = os.getenv("CTFTIME_URL")
 DATE_FORMAT = os.getenv("DATE_FORMAT")
 DBNAME = os.getenv("DBNAME")
@@ -65,14 +62,9 @@ TEAM_NAME = os.getenv("TEAM_NAME")
 TEAM_EMAIL = os.getenv("TEAM_EMAIL")
 MIN_PLAYERS = int(os.getenv("MIN_PLAYERS"))
 COMMIT_HASH = load_revision()
-REMINDER_CHANNEL = load_nullable_env_var("REMINDER_CHANNEL", factory=int)
 BOOKMARK_CHANNEL = int(os.getenv("BOOKMARK_CHANNEL"))
+REMINDER_CHANNEL = load_nullable_env_var("REMINDER_CHANNEL", factory=int)
 CTFTIME_TEAM_ID = load_nullable_env_var("CTFTIME_TEAM_ID", factory=int)
-CTFTIME_TRACKING_CHANNEL = load_nullable_env_var(
-    "CTFTIME_TRACKING_CHANNEL", factory=int
-)
-NOTIFICATIONS_DISABLE_UNINTERESTED = load_nullable_env_var(
-    "NOTIFICATIONS_DISABLE_UNINTERESTED", factory=bool, default=False
-)
+CTFTIME_TRACKING_CHANNEL = load_nullable_env_var("CTFTIME_TRACKING_CHANNEL", factory=int)
 
 MONGO = MongoClient(MONGODB_URI)
