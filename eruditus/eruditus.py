@@ -38,11 +38,10 @@ from config import (
     TEAM_NAME,
     USER_AGENT,
 )
-from lib.ctftime.diff import CTFTimeTeamDiff, diff_ctftime_team
 from lib.ctftime.events import scrape_event_info
 from lib.ctftime.misc import ctftime_date_to_datetime
 from lib.ctftime.teams import get_ctftime_team_info
-from lib.ctftime.types import CTFTimeParticipatedEvent, CTFTimeTeam
+from lib.ctftime.types import CTFTimeDiffType, CTFTimeTeam
 from lib.discord_util import get_challenge_category_channel, send_scoreboard
 from lib.platforms import Platform, PlatformCTX, match_platform
 from lib.util import (
@@ -761,90 +760,98 @@ class Eruditus(discord.Client):
 
     @tasks.loop(minutes=15, reconnect=True)
     async def ctftime_tracking(self) -> None:
-        # Disable the feature if some of the related config vars are missing
+        # Wait until the bot internal cache is ready.
+        await self.wait_until_ready()
+
+        # Disable the feature if some of the related config vars are missing.
         if not CTFTIME_TRACKING_CHANNEL or not CTFTIME_TEAM_ID:
             self.ctftime_tracking.stop()
             return
-
-        # Wait until guild objects are obtained
-        await self.wait_until_ready()
 
         # Find the channel
         guild = self.get_guild(GUILD_ID)
         channel = guild.get_channel(CTFTIME_TRACKING_CHANNEL) if guild else None
         if not channel:
-            logger.error("Unable to find channel for the tracking notifications")
+            logger.error(
+                "Unable to find the CTFtime tracking channel, make sure the channel "
+                "ID is valid"
+            )
             return
 
-        # Request the ctftime team info
+        # Request the CTFtime team info
         team_info = await get_ctftime_team_info(CTFTIME_TEAM_ID)
         if not team_info:
             return
 
-        # If there's no team cache, we should store it
+        # If we didn't have a previous state to compare with, we save this one and bail
+        # out.
         if not self.previous_team_info:
             self.previous_team_info = team_info
             return
 
-        # Detect the team changes and iterate over them
-        for change in diff_ctftime_team(self.previous_team_info, team_info):
-            # Message header
-            text = "A new change detected!\n"
+        # Detect changes and post them into the relevant channel.
+        msg_fmt = "{} {} changed from {} to {}"
+        for update_type in (diff := self.previous_team_info - team_info):
+            match update_type:
+                case CTFTimeDiffType.OVERALL_POINTS_UPDATE:
+                    bad = (
+                        self.previous_team_info.overall_points
+                        > team_info.overall_points
+                    )
+                    msg = msg_fmt.format(
+                        "📉" if bad else "📈",
+                        "Overall points",
+                        self.previous_team_info.overall_points,
+                        team_info.overall_points,
+                    )
+                    await channel.send(msg)
 
-            # Add object url
-            if it := (change.previous or change.current):
-                text += "Object: "
+                case CTFTimeDiffType.OVERALL_PLACE_UPDATE:
+                    bad = (
+                        self.previous_team_info.overall_rating_place
+                        > team_info.overall_rating_place
+                    )
+                    msg = msg_fmt.format(
+                        "🌎",
+                        "Global position",
+                        self.previous_team_info.overall_rating_place,
+                        team_info.overall_rating_place,
+                    )
+                    await channel.send(msg)
 
-                if isinstance(it, CTFTimeTeam):
-                    text += f"[team]({CTFTIME_URL}/team/{CTFTIME_TEAM_ID})"
-                elif isinstance(it, CTFTimeParticipatedEvent):
-                    text += f"[{it.event_name}]({CTFTIME_URL}/event/{it.event_id})"
+                case CTFTimeDiffType.COUNTRY_PLACE_UPDATE:
+                    bad = (
+                        self.previous_team_info.country_place > team_info.country_place
+                    )
+                    msg = msg_fmt.format(
+                        f":flag_{team_info.country_code.lower()}",
+                        "Country position",
+                        self.previous_team_info.country_place,
+                        team_info.country_place,
+                    )
+                    await channel.send(msg)
 
-                text += "\n"
+                case CTFTimeDiffType.EVENT_UPDATE:
+                    msg = (
+                        "There was an update to the `{}` event:\n"
+                        "```diff"
+                        f"  {'Place'} {'Event':<30} {'CTF points':<15} "
+                        f"{'Rating points':<15}\n"
+                        "- {} {} {} {} {}\n"
+                        "+ {} {} {} {} {}\n"
+                        f"```"
+                    )
+                    for event_diff in diff[CTFTimeDiffType.EVENT_UPDATE]:
+                        await channel.send(
+                            msg.format(
+                                event_diff[0].event_name,
+                                f"{event_diff[0].place:<5}",
+                                f"{event_diff[0].event_name:<30}",
+                                f"{event_diff[0].ctf_points:<15.4f}",
+                                f"{event_diff[0].rating_points:<15.4f}",
+                            )
+                        )
 
-            # Add the change type
-            text += f'Change: `{change.type.name.replace("_", " ").capitalize()}`\n'
-
-            # Stringified changes info
-            previous: Optional[Any] = None
-            current: Optional[Any] = None
-
-            def load_attrs(attr_name: str) -> None:
-                nonlocal previous, current
-
-                previous = getattr(change.previous, attr_name)
-                current = getattr(change.current, attr_name)
-
-            # Match the change type and load attributes
-            match change.type:
-                case CTFTimeTeamDiff.Type.RANKING_OVERALL_POINTS_CHANGE:
-                    load_attrs("overall_points")
-                case CTFTimeTeamDiff.Type.RANKING_OVERALL_PLACE_CHANGE:
-                    load_attrs("overall_rating_place")
-                case CTFTimeTeamDiff.Type.RANKING_COUNTRY_PLACE_CHANGE:
-                    load_attrs("country_place")
-                case CTFTimeTeamDiff.Type.EVENT_ADDED:
-                    pass  # nothing should be added to this notification
-                case CTFTimeTeamDiff.Type.EVENT_REMOVED:
-                    pass  # nothing should be added to this notification
-                case CTFTimeTeamDiff.Type.EVENT_PLACE_CHANGE:
-                    load_attrs("place")
-                case CTFTimeTeamDiff.Type.EVENT_CTF_PTS_CHANGE:
-                    load_attrs("ctf_points")
-                case CTFTimeTeamDiff.Type.EVENT_RATING_PTS_CHANGE:
-                    load_attrs("rating_points")
-
-            # Add the diff object if needed
-            if previous or current:
-                text += "```diff\n"
-                text += f"- {previous}\n"
-                text += f"+ {current}\n"
-                text += "```\n"
-
-            # Send the notification
-            await channel.send(content=text, suppress_embeds=True)
-
-        # Backup the previous team info
         self.previous_team_info = team_info
 
     @create_upcoming_events.error

@@ -1,5 +1,14 @@
 from dataclasses import dataclass
-from typing import Optional
+from enum import IntEnum, auto, unique
+from typing import Any, Optional
+
+
+@unique
+class CTFTimeDiffType(IntEnum):
+    OVERALL_POINTS_UPDATE = auto()
+    OVERALL_PLACE_UPDATE = auto()
+    COUNTRY_PLACE_UPDATE = auto()
+    EVENT_UPDATE = auto()
 
 
 @dataclass
@@ -28,21 +37,43 @@ class CTFTimeTeam:
     overall_points: float
     overall_rating_place: int
     country_place: Optional[int]
-    participated_in: list[CTFTimeParticipatedEvent]
+    country_code: Optional[str]
+    participated_in: dict[int, CTFTimeParticipatedEvent]
 
-    def find_event_by_id(self, event_id: int) -> Optional[CTFTimeParticipatedEvent]:
-        """Attempt to locate the event in which participation occurred using its ID.
+    def __sub__(self, other) -> dict[CTFTimeDiffType, Any]:
+        diff = {CTFTimeDiffType.EVENT_UPDATE: []}
+        if not isinstance(other, CTFTimeTeam):
+            raise TypeError(
+                f"Cannot diff {self.__class__.__name__} and {other.__class__.__name__}"
+            )
 
-        Args:
-            event_id: The event ID.
+        if self.overall_points != other.overall_points:
+            diff[CTFTimeDiffType.OVERALL_POINTS_UPDATE] = (
+                self.overall_points,
+                other.overall_points,
+            )
 
-        Returns:
-             Nullable event info.
-        """
-        for event in self.participated_in:
-            if event.event_id != event_id:
+        if self.overall_rating_place != other.overall_rating_place:
+            diff[CTFTimeDiffType.OVERALL_PLACE_UPDATE] = (
+                self.overall_rating_place,
+                other.overall_rating_place,
+            )
+
+        if self.country_place != other.country_place:
+            diff[CTFTimeDiffType.COUNTRY_PLACE_UPDATE] = (
+                self.country_place,
+                other.country_place,
+            )
+
+        for prev_event in self.participated_in.values():
+            if not (curr_event := other.participated_in.get(prev_event.event_id)):
                 continue
 
-            return event
+            if (
+                prev_event.place != curr_event.place
+                or prev_event.ctf_points != curr_event.ctf_points
+                or prev_event.rating_points != curr_event.ctf_points
+            ):
+                diff[CTFTimeDiffType.EVENT_UPDATE].append((prev_event, curr_event))
 
-        return None
+        return diff
