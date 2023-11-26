@@ -115,7 +115,7 @@ class Challenge:
         if value is None:
             return value
 
-        # Sorting the solvers by their solve time
+        # Sort the solvers by their solve time
         value.sort(key=lambda x: x.solved_at)
         return value
 
@@ -204,7 +204,7 @@ class SubmittedFlag:
             self.is_first_blood = challenge is not None and challenge.solves <= 1
             return
 
-        # Querying solvers of this challenge.
+        # Query the solvers of this challenge.
         solvers_generator: Optional[AsyncIterator[ChallengeSolver]] = solvers_getter(
             ctx=ctx, challenge_id=challenge_id, limit=1
         )

@@ -237,7 +237,7 @@ class RCTF(PlatformABC):
             params={"limit": count, "offset": "0"},
             headers=generate_headers(ctx),
         ) as response:
-            # Validating and deserializing response
+            # Validate and deserialize response
             data = await deserialize_response(response, model=StandingsResponse)
             if not data or not data.data.graph:
                 return

@@ -180,7 +180,7 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             headers={"CSRF-Token": csrf_nonce},
         ) as response:
-            # Validating and deserializing response
+            # Validate and deserialize response
             data = await deserialize_response(response, model=SubmissionResponse)
             if not data:
                 return
@@ -248,7 +248,7 @@ class CTFd(PlatformABC):
                     msg_response.message,
                 )
 
-            # Validating and deserializing response
+            # Validate and deserialize response
             data = await deserialize_response(
                 response,
                 model=ChallengesResponse,
@@ -290,7 +290,7 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
-            # Validating and deserializing response
+            # Validate and deserialize response
             data = await deserialize_response(response, model=ScoreboardResponse)
             if not data:
                 return
@@ -327,7 +327,7 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
-            # Validating and deserializing response
+            # Validate and deserialize response
             data = await deserialize_response(response, model=StandingsResponse)
             if not data or not data.data:
                 return
@@ -477,7 +477,7 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
-            # Validating and deserializing response
+            # Validate and deserialize response
             data = await deserialize_response(response, model=SolvesResponse)
             if not data:
                 return
@@ -507,7 +507,7 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
-            # Validating and deserializing response
+            # Validate and deserialize response
             data = await deserialize_response(response, model=ChallengeResponse)
             if not data:
                 return
@@ -533,7 +533,7 @@ class CTFd(PlatformABC):
             cookies=ctx.session.cookies,
             allow_redirects=False,
         ) as response:
-            # Validating and deserializing response
+            # Validate and deserialize response
             data = await deserialize_response(response, model=UserResponse)
             if not data:
                 return
