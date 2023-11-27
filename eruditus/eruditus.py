@@ -802,7 +802,7 @@ class Eruditus(discord.Client):
 
                 case CTFTimeDiffType.COUNTRY_PLACE_UPDATE:
                     msg = msg_fmt.format(
-                        f":flag_{team_info.country_code.lower()}",
+                        f":flag_{team_info.country_code.lower()}:",
                         "Country position",
                         self.previous_team_info.country_place,
                         team_info.country_place,
