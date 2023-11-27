@@ -10,7 +10,7 @@ from lib.ctftime.types import LeaderboardEntry
 
 async def get_ctftime_leaderboard(
     year: Optional[int] = None, country_code: Optional[str] = None, n: int = 20
-) -> Optional[list[LeaderboardEntry]]:
+) -> Optional[dict[int, LeaderboardEntry]]:
     """Retrieve the CTFtime leaderboard.
 
     Args:
@@ -20,7 +20,8 @@ async def get_ctftime_leaderboard(
         n: Number of entries to retrieve (default: 20, max: 50).
 
     Returns:
-        A list of leaderboard entries, in descending order.
+        A dictionary of leaderboard entries (in descending order), mapping team IDs to
+        a LeaderboardEntry item.
     """
     # Request the leaderboard from CTFtime.
     path = os.path.join("stats", str(year or ""), country_code or "")
@@ -38,13 +39,21 @@ async def get_ctftime_leaderboard(
     if not (rows := parser.select(".table-striped").pop(0).select("tr:has(td)")):
         return None
 
-    return [
-        LeaderboardEntry(
+    return {
+        (
+            team_id := int(
+                row.select_one("td:not(.country):has(a)")
+                .find("a")["href"]
+                .split("/")
+                .pop()
+            )
+        ): LeaderboardEntry(
             position=int(row.select_one(".place").text.strip()),
             country_position=int(row.select(".place").pop().text.strip())
             if country_code
             else None,
-            team=row.select_one("td:not(.country):has(a)").text.strip(),
+            team_id=team_id,
+            team_name=row.select_one("td:not(.country):has(a)").text.strip(),
             country_code=country_code
             or (row.find("img")["alt"] if row.find("img") else None),
             points=float(
@@ -55,4 +64,4 @@ async def get_ctftime_leaderboard(
             ),
         )
         for row in rows[:n]
-    ]
+    }

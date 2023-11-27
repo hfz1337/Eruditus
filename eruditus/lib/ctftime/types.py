@@ -85,7 +85,8 @@ class LeaderboardEntry:
 
     position: int
     country_position: int
-    team: str
+    team_id: int
+    team_name: str
     country_code: Optional[str]
     points: float
     events: int
