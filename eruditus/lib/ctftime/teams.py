@@ -26,7 +26,7 @@ async def get_ctftime_team_info(team_id: int) -> Optional[CTFTimeTeam]:
 
     rank, points = [b_tag.text for b_tag in p.pop(0).find_all("b")]
     country_code, country_rank = None, None
-    if p is not None:
+    if p:
         a_tag = p.pop().find("a")
         country_code = a_tag["href"].split("/").pop()
         country_rank = int(a_tag.text)
