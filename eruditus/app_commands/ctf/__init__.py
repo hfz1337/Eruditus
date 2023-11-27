@@ -105,6 +105,7 @@ class CTF(app_commands.Group):
         self, interaction: discord.Interaction, current: str
     ) -> list[Choice[str]]:
         """Autocomplete challenge name.
+
         This function is inefficient, might improve it later.
 
         Args:
@@ -125,8 +126,9 @@ class CTF(app_commands.Group):
                 continue
 
             display_name = f"{challenge['name']} ({challenge['category']})"
-            if current.lower() in display_name.lower():
+            if not current.strip() or current.lower() in display_name.lower():
                 suggestions.append(Choice(name=display_name, value=challenge["name"]))
+
             if len(suggestions) == 25:
                 break
         return suggestions
@@ -193,6 +195,7 @@ class CTF(app_commands.Group):
         self,
         interaction: discord.Interaction,
         permissions: Optional[Permissions] = Permissions.RDONLY,
+        members: Optional[str] = None,
         name: Optional[str] = None,
     ):
         """Archive a CTF by making its channels read-only by default.
@@ -201,9 +204,52 @@ class CTF(app_commands.Group):
             interaction: The interaction that triggered this command.
             permissions: Whether channels should be read-only or writable
                as well (default: read only).
+            members: A list of member or role mentions to be granted access into the
+               private threads.
             name: CTF name (default: current channel's CTF).
         """
-        await interaction.response.defer()
+
+        async def get_confirmation() -> bool:
+            class Prompt(discord.ui.View):
+                def __init__(self) -> None:
+                    super().__init__(timeout=None)
+                    self.add_item(
+                        discord.ui.Button(style=discord.ButtonStyle.green, label="Yes")
+                    )
+                    self.add_item(
+                        discord.ui.Button(style=discord.ButtonStyle.red, label="No")
+                    )
+                    self.children[0].callback = self.yes_callback
+                    self.children[1].callback = self.no_callback
+
+                async def yes_callback(_, interaction: discord.Interaction) -> None:
+                    await interaction.response.edit_message(
+                        content="🔄 Starting CTF archival...",
+                        view=None,
+                    )
+                    await self.archivectf.callback(
+                        self,
+                        interaction=interaction,
+                        permissions=permissions,
+                        members=members or "",
+                        name=name,
+                    )
+
+                async def no_callback(_, interaction: discord.Interaction) -> None:
+                    await interaction.response.edit_message(
+                        content="Aborting CTF archival.", view=None
+                    )
+
+            await interaction.response.send_message(
+                content=(
+                    "It appears that you forgot to set the `members` parameter, this "
+                    "is important if you want to grant people access to private "
+                    "threads that they weren't part of.\n"
+                    "⚠️ This action cannot be undone, would you like to continue?"
+                ),
+                view=Prompt(),
+                ephemeral=True,
+            )
 
         if name is not None:
             ctf = get_ctf_info(name=name)
@@ -211,7 +257,7 @@ class CTF(app_commands.Group):
             ctf = get_ctf_info(guild_category=interaction.channel.category_id)
 
         if not ctf:
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 (
                     "Run this command from within a CTF channel, or provide the name "
                     "of the CTF you wish to archive."
@@ -224,10 +270,16 @@ class CTF(app_commands.Group):
 
         # In case CTF was already archived.
         if ctf["archived"]:
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 "This CTF was already archived.", ephemeral=True
             )
             return
+
+        if members is None:
+            return await get_confirmation()
+
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
         category_channel = discord.utils.get(
             interaction.guild.categories, id=ctf["guild_category"]
@@ -286,6 +338,16 @@ class CTF(app_commands.Group):
                 continue
             await thread.edit(locked=locked, invitable=True)
 
+            if members is None:
+                continue
+
+            # XXX Until Discord supports changing threads privacy, this is the only
+            # workaround in order to add members to a thread without bombing them
+            # with notifications.
+            message = await thread.send(content="Adding members...", silent=True)
+            await message.edit(content=members)
+            await message.delete()
+
         # Change channels permissions according to the `permissions` parameter.
         members = [
             member
@@ -333,7 +395,11 @@ class CTF(app_commands.Group):
             {"_id": ctf["_id"]}, {"$set": {"archived": True, "ended": True}}
         )
 
-        await interaction.followup.send(f"✅ CTF `{ctf['name']}` has been archived.")
+        msg = f"✅ CTF `{ctf['name']}` has been archived."
+        if interaction.response.is_done():
+            await interaction.edit_original_response(content=msg)
+            return
+        await interaction.followup.send(content=msg)
 
     @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.checks.has_permissions(manage_channels=True, manage_roles=True)
@@ -1100,7 +1166,7 @@ class CTF(app_commands.Group):
                         name=f"{icon} {challenge['name']} ({challenge['category']})",
                         value=(
                             "```diff\n"
-                            f"+ Solver{['', 's'][len(challenge['players'])>1]}:"
+                            f"+ Solver{['', 's'][len(challenge['players']) > 1]}:"
                             f" {', '.join(challenge['players']).strip()}\n"
                             f"+ Date: {solve_time}\n"
                             "```"
@@ -1114,7 +1180,7 @@ class CTF(app_commands.Group):
                         if len(challenge["players"]) == 0
                         else (
                             "```fix\n"
-                            f"! Worker{['', 's'][len(challenge['players'])>1]}:"
+                            f"! Worker{['', 's'][len(challenge['players']) > 1]}:"
                             f" {', '.join(challenge['players']).strip()}\n"
                             "```"
                         )

@@ -353,7 +353,7 @@ class CTFd(PlatformABC):
 
                 graphs.append(item)
 
-            return graphs
+            return graphs[:count]
 
     @classmethod
     async def register(cls, ctx: PlatformCTX) -> RegistrationStatus:
