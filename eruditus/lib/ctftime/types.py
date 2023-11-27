@@ -72,7 +72,7 @@ class CTFTimeTeam:
             if (
                 prev_event.place != curr_event.place
                 or prev_event.ctf_points != curr_event.ctf_points
-                or prev_event.rating_points != curr_event.ctf_points
+                or prev_event.rating_points != curr_event.rating_points
             ):
                 diff[CTFTimeDiffType.EVENT_UPDATE].append((prev_event, curr_event))
 

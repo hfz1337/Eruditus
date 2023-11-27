@@ -24,12 +24,12 @@ async def get_ctftime_team_info(team_id: int) -> Optional[CTFTimeTeam]:
     if not (p := parser.select(".active p")):
         return None
 
-    rank, points = [b_tag.text for b_tag in p.pop(0).find_all("b")]
+    rank, points = [b_tag.text.strip() for b_tag in p.pop(0).find_all("b")]
     country_code, country_rank = None, None
     if p:
         a_tag = p.pop().find("a")
         country_code = a_tag["href"].split("/").pop()
-        country_rank = int(a_tag.text)
+        country_rank = int(a_tag.text.strip())
 
     # Get the results of the current year.
     table_rows = parser.select(".table-striped").pop(0).select("tr:has(td)")
@@ -45,10 +45,10 @@ async def get_ctftime_team_info(team_id: int) -> Optional[CTFTimeTeam]:
         # Select the table cells.
         event = row.select_one("td:not(.place_ico):has(a)").find("a")
         event_id = int(event["href"].split("/").pop())
-        event_name = event.text
+        event_name = event.text.strip()
 
         place, ctf_points, rating_points = (
-            td.text for td in row.select("td:not(.place_ico):not(:has(a))")
+            td.text.strip() for td in row.select("td:not(.place_ico):not(:has(a))")
         )
 
         # Assemble the scoreboard entry.

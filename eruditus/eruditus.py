@@ -812,11 +812,11 @@ class Eruditus(discord.Client):
                 case CTFTimeDiffType.EVENT_UPDATE:
                     msg = (
                         "There was an update to the `{}` event:\n"
-                        "```diff"
+                        "```diff\n"
                         f"  {'Place'} {'Event':<30} {'CTF points':<15} "
                         f"{'Rating points':<15}\n"
-                        "- {} {} {} {} {}\n"
-                        "+ {} {} {} {} {}\n"
+                        "- {} {} {} {}\n"
+                        "+ {} {} {} {}\n"
                         f"```"
                     )
                     for event_diff in diff[CTFTimeDiffType.EVENT_UPDATE]:
@@ -827,6 +827,10 @@ class Eruditus(discord.Client):
                                 f"{event_diff[0].event_name:<30}",
                                 f"{event_diff[0].ctf_points:<15.4f}",
                                 f"{event_diff[0].rating_points:<15.4f}",
+                                f"{event_diff[1].place:<5}",
+                                f"{event_diff[1].event_name:<30}",
+                                f"{event_diff[1].ctf_points:<15.4f}",
+                                f"{event_diff[1].rating_points:<15.4f}",
                             )
                         )
 
