@@ -753,13 +753,13 @@ class Eruditus(discord.Client):
             self.ctftime_tracking.stop()
             return
 
-        # Find the channel
+        # Find the channel.
         guild = self.get_guild(GUILD_ID)
         channel = guild.get_channel(CTFTIME_TRACKING_CHANNEL) if guild else None
         if not channel:
             logger.error(
                 "Unable to find the CTFtime tracking channel, make sure the channel "
-                "ID is valid"
+                "ID is valid."
             )
             return
 

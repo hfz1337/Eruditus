@@ -8,7 +8,7 @@ from lib.ctftime.types import CTFTimeParticipatedEvent, CTFTimeTeam
 
 
 async def get_ctftime_team_info(team_id: int) -> Optional[CTFTimeTeam]:
-    # Request the team data from CTFtime
+    # Request the team data from CTFtime.
     async with aiohttp.request(
         method="get",
         url=f"{CTFTIME_URL}/team/{team_id}",
@@ -42,7 +42,7 @@ async def get_ctftime_team_info(team_id: int) -> Optional[CTFTimeTeam]:
         participated_in={},
     )
     for row in table_rows:
-        # Select the table cells
+        # Select the table cells.
         event = row.select_one("td:not(.place_ico):has(a)").find("a")
         event_id = int(event["href"].split("/").pop())
         event_name = event.text
@@ -51,7 +51,7 @@ async def get_ctftime_team_info(team_id: int) -> Optional[CTFTimeTeam]:
             td.text for td in row.select("td:not(.place_ico):not(:has(a))")
         )
 
-        # Assemble the scoreboard entry
+        # Assemble the scoreboard entry.
         result.participated_in[event_id] = CTFTimeParticipatedEvent(
             place=int(place),
             event_name=event_name,
