@@ -77,3 +77,15 @@ class CTFTimeTeam:
                 diff[CTFTimeDiffType.EVENT_UPDATE].append((prev_event, curr_event))
 
         return diff
+
+
+@dataclass
+class LeaderboardEntry:
+    """A class representing a row from the CTFtime leaderboard."""
+
+    position: int
+    country_position: int
+    team: str
+    country_code: Optional[str]
+    points: float
+    events: int
