@@ -10,9 +10,10 @@ repos:
       - id: isort
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
+    rev: 6.1.0
     hooks:
       - id: flake8
         args:
           - --ignore=W503,E203,E221,E225,E231,E241
           - --max-line-length=88
+          - --config=eruditus/.flake8
