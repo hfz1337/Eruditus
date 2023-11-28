@@ -60,6 +60,7 @@ Here's a list of the currently supported commands:
 /ctf renamectf                                       (Rename a CTF)
 /ctf archivectf                                      (Archive a CTF's channels)
 /ctf deletectf                                       (Delete a CTF as well as its channels)
+/ctf setprivacy                                      (Toggle CTF privacy between public and private)
 /ctf join                                            (Join a specific CTF channels)
 /ctf leave                                           (Leave a CTF)
 /ctf addcreds                                        (Add credentials for the current CTF)
