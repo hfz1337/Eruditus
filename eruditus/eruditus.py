@@ -28,6 +28,7 @@ from app_commands.takenote import TakeNote
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
+    CTFTIME_LEADERBOARD_CHANNEL,
     CTFTIME_TEAM_ID,
     CTFTIME_TRACKING_CHANNEL,
     CTFTIME_URL,
@@ -40,6 +41,7 @@ from config import (
     USER_AGENT,
 )
 from lib.ctftime.events import scrape_event_info
+from lib.ctftime.leaderboard import get_ctftime_leaderboard
 from lib.ctftime.misc import ctftime_date_to_datetime
 from lib.ctftime.teams import get_ctftime_team_info
 from lib.ctftime.types import CTFTimeDiffType
@@ -63,6 +65,7 @@ class Eruditus(discord.Client):
         self.tree = discord.app_commands.CommandTree(self)
         self.challenge_puller_is_running = False
         self.previous_team_info = None
+        self.previous_leaderboard = None
 
     async def create_ctf(
         self, name: str, live: bool = True, return_if_exists: bool = False
@@ -189,7 +192,8 @@ class Eruditus(discord.Client):
         self.ctf_reminder.start()
         self.scoreboard_updater.start()
         self.challenge_puller.start()
-        self.ctftime_tracking.start()
+        self.ctftime_team_tracking.start()
+        self.ctftime_leaderboard_tracking.start()
 
     async def on_ready(self) -> None:
         for guild in self.guilds:
@@ -744,13 +748,13 @@ class Eruditus(discord.Client):
             await send_scoreboard(ctf, guild=guild)
 
     @tasks.loop(minutes=15, reconnect=True)
-    async def ctftime_tracking(self) -> None:
+    async def ctftime_team_tracking(self) -> None:
         # Wait until the bot internal cache is ready.
         await self.wait_until_ready()
 
         # Disable the feature if some of the related config vars are missing.
         if not CTFTIME_TRACKING_CHANNEL or not CTFTIME_TEAM_ID:
-            self.ctftime_tracking.stop()
+            self.ctftime_team_tracking.stop()
             return
 
         # Find the channel.
@@ -836,6 +840,65 @@ class Eruditus(discord.Client):
 
         self.previous_team_info = team_info
 
+    @tasks.loop(minutes=15, reconnect=True)
+    async def ctftime_leaderboard_tracking(self) -> None:
+        # Wait until the bot internal cache is ready.
+        await self.wait_until_ready()
+
+        # Disable the feature if some of the related config vars are missing.
+        if not CTFTIME_LEADERBOARD_CHANNEL:
+            self.ctftime_leaderboard_tracking.stop()
+            return
+
+        # Find the channel.
+        guild = self.get_guild(GUILD_ID)
+        channel = guild.get_channel(CTFTIME_LEADERBOARD_CHANNEL) if guild else None
+        if not channel:
+            logger.error(
+                "Unable to find the CTFtime leaderboard channel, make sure the channel"
+                " ID is valid."
+            )
+            return
+
+        # Request the CTFtime leaderboard.
+        leaderboard = await get_ctftime_leaderboard()
+        if not leaderboard:
+            return
+
+        # If we didn't have a previous state to compare with, we save this one and bail
+        # out.
+        if not self.previous_leaderboard:
+            self.previous_leaderboard = leaderboard
+            return
+
+        # Detect changes and post them into the relevant channel.
+        msg = f"📊 {'Rank':<10} {'Country':<15} {'Points':<15} {'Events':<10} Name\n\n"
+        update = False
+        team_ids = list(self.previous_leaderboard.keys())
+        for index, (team_id, row) in leaderboard.items():
+            if team_id not in self.previous_leaderboard or index < team_ids.index(
+                team_id
+            ):
+                emoji = "🔼"
+                update = True
+            elif index == team_ids.index(team_id):
+                emoji = "➖"
+            else:
+                emoji = "🔻"
+                update = True
+
+            msg += (
+                f"{emoji} {row.position:>4} {row.country_code or '❔':>9} "
+                f"{row.points:>20.4f} {row.events:>12}     {row.team_name}\n"
+            )
+
+        self.previous_leaderboard = leaderboard
+        if not update:
+            return
+
+        await channel.purge()
+        await channel.send(f"```\n{msg}```")
+
     @create_upcoming_events.error
     async def create_upcoming_events_err_handler(self, _: Exception) -> None:
         traceback.print_exc()
@@ -856,10 +919,15 @@ class Eruditus(discord.Client):
         traceback.print_exc()
         self.challenge_puller.restart()
 
-    @ctftime_tracking.error
-    async def ctftime_tracking_err_handler(self, _: Exception) -> None:
+    @ctftime_team_tracking.error
+    async def ctftime_team_tracking_err_handler(self, _: Exception) -> None:
         traceback.print_exc()
-        self.ctftime_tracking.restart()
+        self.ctftime_team_tracking.restart()
+
+    @ctftime_leaderboard_tracking.error
+    async def ctftime_leaderboard_tracking_err_handler(self, _: Exception) -> None:
+        traceback.print_exc()
+        self.ctftime_leaderboard_tracking.restart()
 
 
 if __name__ == "__main__":

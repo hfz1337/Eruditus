@@ -84,7 +84,7 @@ class LeaderboardEntry:
     """A class representing a row from the CTFtime leaderboard."""
 
     position: int
-    country_position: int
+    country_position: Optional[int]
     team_id: int
     team_name: str
     country_code: Optional[str]
