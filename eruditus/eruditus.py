@@ -35,6 +35,7 @@ from config import (
     CTFTIME_URL,
     DBNAME,
     GUILD_ID,
+    MAX_CONTENT_SIZE,
     MIN_PLAYERS,
     MONGO,
     TEAM_EMAIL,
@@ -872,7 +873,7 @@ class Eruditus(discord.Client):
             return
 
         # Request the CTFtime leaderboard.
-        leaderboard = await get_ctftime_leaderboard()
+        leaderboard = await get_ctftime_leaderboard(n=50)
         if not leaderboard:
             return
 
@@ -883,9 +884,9 @@ class Eruditus(discord.Client):
             return
 
         # Detect changes and post them into the relevant channel.
-        msg = f"📊 {'Rank':<10} {'Country':<53} {'Points':<15} {'Events':<10} Name\n\n"
-        update = False
+        head = f"📊 {'Rank':<10} {'Country':<53} {'Points':<15} {'Events':<10} Name\n\n"
         team_ids = list(self.previous_leaderboard.keys())
+        chunks, chunk, update = [], head, False
         for index, (team_id, row) in enumerate(leaderboard.items()):
             if team_id not in self.previous_leaderboard or index < team_ids.index(
                 team_id
@@ -899,17 +900,25 @@ class Eruditus(discord.Client):
                 update = True
 
             country = country_name(row.country_code or "") or ""
-            msg += (
+            line = (
                 f"{emoji} {row.position:>4}       {country:<45} "
                 f"{row.points:>17.4f} {row.events:>12}     {row.team_name}\n"
             )
+            if len(chunk) + len(line) < MAX_CONTENT_SIZE - 7:  # -7 for the formatting
+                chunk += line
+            else:
+                chunks.append(chunk)
+                chunk = head + line
+
+        chunks.append(chunk)
 
         self.previous_leaderboard = leaderboard
         if not update:
             return
 
         await channel.purge()
-        await channel.send(f"```\n{msg}```")
+        for msg in chunks:
+            await channel.send(f"```\n{msg}```", silent=True)
 
     @create_upcoming_events.error
     async def create_upcoming_events_err_handler(self, _: Exception) -> None:
