@@ -46,7 +46,7 @@ def load_nullable_env_var(
 
 
 # fmt: off
-# flake8: noqa 
+# flake8: noqa
 CHALLENGE_COLLECTION = os.getenv("CHALLENGE_COLLECTION")
 CTF_COLLECTION = os.getenv("CTF_COLLECTION")
 CTFTIME_URL = os.getenv("CTFTIME_URL")
@@ -66,5 +66,6 @@ BOOKMARK_CHANNEL = int(os.getenv("BOOKMARK_CHANNEL"))
 REMINDER_CHANNEL = load_nullable_env_var("REMINDER_CHANNEL", factory=int)
 CTFTIME_TEAM_ID = load_nullable_env_var("CTFTIME_TEAM_ID", factory=int)
 CTFTIME_TRACKING_CHANNEL = load_nullable_env_var("CTFTIME_TRACKING_CHANNEL", factory=int)
+CTFTIME_LEADERBOARD_CHANNEL = load_nullable_env_var("CTFTIME_LEADERBOARD_CHANNEL", factory=int)
 
 MONGO = MongoClient(MONGODB_URI)
