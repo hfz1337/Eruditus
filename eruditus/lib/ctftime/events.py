@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from typing import Generator, Optional
 
 import aiohttp
@@ -6,21 +5,6 @@ from bs4 import BeautifulSoup
 
 from config import CTFTIME_URL, USER_AGENT
 from lib.util import truncate
-
-
-def ctftime_date_to_datetime(ctftime_date: str) -> datetime:
-    """Convert CTFtime date to an offset aware datetime object.
-
-    Args:
-        ctftime_date: Date retrieved from the CTFtime event.
-
-    Returns:
-        Offset aware datetime object.
-    """
-    return datetime.strptime(
-        ctftime_date.replace("Sept", "Sep"),
-        f"%a, %d {'%b.' if '.' in ctftime_date else '%B'} %Y, %H:%M UTC",
-    ).replace(tzinfo=timezone.utc)
 
 
 async def scrape_event_info(event_id: int) -> Optional[dict]:
@@ -32,7 +16,6 @@ async def scrape_event_info(event_id: int) -> Optional[dict]:
     Returns:
         A dictionary representing the event.
     """
-
     async with aiohttp.request(
         method="get",
         url=f"{CTFTIME_URL}/event/{event_id}",
@@ -78,7 +61,7 @@ async def scrape_event_info(event_id: int) -> Optional[dict]:
     event_prizes = "\n".join(p.getText() for p in parser.select("h3+ .well p"))
     event_prizes = event_prizes or "No prizes."
 
-    # Check if logo actually exists and doesn't 404s.
+    # Check if the logo actually exists and doesn't 404s.
     # In case it doesn't exist, we fall back to the event's logo.
     async with aiohttp.request(
         method="get",

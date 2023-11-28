@@ -9,11 +9,8 @@ from discord import app_commands
 
 import config
 from config import CTFTIME_URL, GUILD_ID, USER_AGENT
-from lib.ctftime import (
-    ctftime_date_to_datetime,
-    scrape_current_events,
-    scrape_event_info,
-)
+from lib.ctftime.events import scrape_current_events, scrape_event_info
+from lib.ctftime.misc import ctftime_date_to_datetime
 from lib.util import get_local_time, truncate
 
 
