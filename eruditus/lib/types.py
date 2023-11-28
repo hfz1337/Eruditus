@@ -27,3 +27,8 @@ class OSType(Enum):
     linux = 0
     windows = 1
     mac = 2
+
+
+class Privacy(Enum):
+    public = 0
+    private = 1

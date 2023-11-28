@@ -28,7 +28,7 @@ from lib.discord_util import (
     send_scoreboard,
 )
 from lib.platforms import PlatformCTX, match_platform
-from lib.types import CTFStatusMode, Permissions
+from lib.types import CTFStatusMode, Permissions, Privacy
 from lib.util import (
     get_challenge_info,
     get_ctf_info,
@@ -462,6 +462,48 @@ class CTF(app_commands.Group):
         if name and interaction.channel.category_id != category_channel.id:
             await interaction.followup.send(f"✅ CTF `{ctf['name']}` has been deleted.")
 
+    @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
+    @app_commands.checks.has_permissions(manage_channels=True, manage_roles=True)
+    @app_commands.command()
+    async def setprivacy(
+        self,
+        interaction: discord.Interaction,
+        privacy: Privacy,
+        name: Optional[str] = None,
+    ) -> None:
+        """Toggle a CTF privacy. Making the CTF private disallows others from joining
+        the CTF and would require an admin invitation.
+
+        Args:
+            interaction: The interaction that triggered this command.
+            name: Name of the CTF to delete (default: CTF associated with the
+                category channel from which the command was issued).
+            privacy: The CTF privacy.
+        """
+        if name is not None:
+            ctf = get_ctf_info(name=name)
+        else:
+            ctf = get_ctf_info(guild_category=interaction.channel.category_id)
+
+        if not ctf:
+            await interaction.followup.send(
+                (
+                    "Run this command from within a CTF channel, or provide the name "
+                    "of the CTF for which you wish to change the privacy."
+                )
+                if name is None
+                else "No such CTF.",
+                ephemeral=True,
+            )
+            return
+
+        MONGO[DBNAME][CTF_COLLECTION].update_one(
+            {"_id": ctf["_id"]}, {"$set": {"private": bool(privacy.value)}}
+        )
+        await interaction.response.send_message(
+            f"CTF privacy changed to `{privacy.name}`", ephemeral=True
+        )
+
     @app_commands.checks.bot_has_permissions(manage_roles=True)
     @app_commands.checks.has_permissions(manage_roles=True)
     @app_commands.command()
@@ -535,6 +577,13 @@ class CTF(app_commands.Group):
         ctf = get_ctf_info(name=name)
         if ctf is None:
             await interaction.response.send_message("No such CTF.", ephemeral=True)
+            return
+
+        if ctf.get("private"):
+            await interaction.response.send_message(
+                "This CTF is private and requires invitation by an admin.",
+                ephemeral=True,
+            )
             return
 
         role = discord.utils.get(interaction.guild.roles, id=ctf["guild_role"])

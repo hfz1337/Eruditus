@@ -153,6 +153,7 @@ class Eruditus(discord.Client):
             "name": name,
             "archived": False,
             "ended": False,
+            "private": False,
             "credentials": {
                 "url": None,
                 "username": None,
@@ -277,13 +278,17 @@ class Eruditus(discord.Client):
         users: list[discord.User],
         event: discord.ScheduledEvent,
     ) -> discord.Role:
+        # Register to the CTF.
+        await cls._do_ctf_registration(ctf=ctf, guild=guild, event=event)
+
         role = discord.utils.get(guild.roles, id=ctf["guild_role"])
+        if ctf.get("private"):
+            return role
+
         for user in users:
             member = await guild.fetch_member(user.id)
             await member.add_roles(role)
 
-        # Register to the CTF.
-        await cls._do_ctf_registration(ctf=ctf, guild=guild, event=event)
         return role
 
     async def on_scheduled_event_update(
