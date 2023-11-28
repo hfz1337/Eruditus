@@ -61,7 +61,10 @@ from msg_components.buttons.workon import WorkonButton
 
 class Eruditus(discord.Client):
     def __init__(self) -> None:
-        super().__init__(intents=discord.Intents.all())
+        intents = discord.Intents.default()
+        intents.members = True
+        intents.message_content = True
+        super().__init__(intents=intents)
 
         self.tree = discord.app_commands.CommandTree(self)
         self.challenge_puller_is_running = False
