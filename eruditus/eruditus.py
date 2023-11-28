@@ -49,6 +49,7 @@ from lib.ctftime.types import CTFTimeDiffType
 from lib.discord_util import get_challenge_category_channel, send_scoreboard
 from lib.platforms import PlatformCTX, match_platform
 from lib.util import (
+    country_name,
     derive_colour,
     get_challenge_info,
     get_ctf_info,
@@ -882,7 +883,7 @@ class Eruditus(discord.Client):
             return
 
         # Detect changes and post them into the relevant channel.
-        msg = f"📊 {'Rank':<10} {'Country':<15} {'Points':<15} {'Events':<10} Name\n\n"
+        msg = f"📊 {'Rank':<10} {'Country':<53} {'Points':<15} {'Events':<10} Name\n\n"
         update = False
         team_ids = list(self.previous_leaderboard.keys())
         for index, (team_id, row) in enumerate(leaderboard.items()):
@@ -897,8 +898,9 @@ class Eruditus(discord.Client):
                 emoji = "🔻"
                 update = True
 
+            country = country_name(row.country_code or "") or ""
             msg += (
-                f"{emoji} {row.position:>4} {row.country_code or '  ':>13} "
+                f"{emoji} {row.position:>4}       {country:<45} "
                 f"{row.points:>17.4f} {row.events:>12}     {row.team_name}\n"
             )
 
