@@ -16,4 +16,4 @@ repos:
         args:
           - --ignore=W503,E203,E221,E225,E231,E241
           - --max-line-length=88
-          - --config=.flake8
+          - --config=eruditus/.flake8
