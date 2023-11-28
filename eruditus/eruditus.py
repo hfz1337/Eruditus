@@ -875,7 +875,7 @@ class Eruditus(discord.Client):
         msg = f"📊 {'Rank':<10} {'Country':<15} {'Points':<15} {'Events':<10} Name\n\n"
         update = False
         team_ids = list(self.previous_leaderboard.keys())
-        for index, (team_id, row) in leaderboard.items():
+        for index, (team_id, row) in enumerate(leaderboard.items()):
             if team_id not in self.previous_leaderboard or index < team_ids.index(
                 team_id
             ):
@@ -888,8 +888,8 @@ class Eruditus(discord.Client):
                 update = True
 
             msg += (
-                f"{emoji} {row.position:>4} {row.country_code or '❔':>9} "
-                f"{row.points:>20.4f} {row.events:>12}     {row.team_name}\n"
+                f"{emoji} {row.position:>4} {row.country_code or '  ':>13} "
+                f"{row.points:>17.4f} {row.events:>12}     {row.team_name}\n"
             )
 
         self.previous_leaderboard = leaderboard
