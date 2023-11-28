@@ -891,6 +891,10 @@ class CTF(app_commands.Group):
         await announcement.edit(view=WorkonButton(oid=challenge["_id"], disabled=True))
 
         await interaction.followup.send("✅ Challenge solved.")
+        await interaction.followup.send(
+            "💡 Make sure to use `/ctf submit` instead in order to track first bloods.",
+            ephemeral=True,
+        )
 
         # We leave editing the channel name till the end since we might get rate
         # limited, causing a sleep that will block this function call.
