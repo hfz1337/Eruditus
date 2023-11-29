@@ -338,7 +338,7 @@ class CTF(app_commands.Group):
                 continue
             await thread.edit(locked=locked, invitable=True)
 
-            if members is None:
+            if not members:
                 continue
 
             # XXX Until Discord supports changing threads privacy, this is the only
