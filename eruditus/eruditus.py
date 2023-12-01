@@ -26,6 +26,7 @@ from app_commands.revshell import Revshell
 from app_commands.search import Search
 from app_commands.syscalls import Syscalls
 from app_commands.takenote import TakeNote
+from app_commands.openai import OpenAI
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
@@ -191,6 +192,7 @@ class Eruditus(discord.Client):
         self.tree.add_command(TakeNote(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(CTF(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(Intro(), guild=discord.Object(GUILD_ID))
+        self.tree.add_command(OpenAI())  # TODO: add guild later
 
         # Restore `workon` buttons.
         for challenge in MONGO[DBNAME][CHALLENGE_COLLECTION].find({"solved": False}):
@@ -232,7 +234,8 @@ class Eruditus(discord.Client):
         # Match the platform
         ctx = PlatformCTX(
             base_url=url,
-            args={"username": TEAM_NAME, "password": password, "email": TEAM_EMAIL},
+            args={"username": TEAM_NAME,
+                  "password": password, "email": TEAM_EMAIL},
         )
         platform = await match_platform(ctx)
         if platform is None:
@@ -511,7 +514,8 @@ class Eruditus(discord.Client):
                         raw_image = io.BytesIO(await image.read()).read()
 
                     # Check if the platform is supported.
-                    ctx = PlatformCTX.from_credentials({"url": event_info["website"]})
+                    ctx = PlatformCTX.from_credentials(
+                        {"url": event_info["website"]})
                     try:
                         platform = await match_platform(ctx)
                     except aiohttp.ClientError:
@@ -646,7 +650,8 @@ class Eruditus(discord.Client):
                         raw_image = await platform.fetch(ctx, image.url)
                         if raw_image is None:
                             continue
-                        attachment = discord.File(raw_image, filename=image.name)
+                        attachment = discord.File(
+                            raw_image, filename=image.name)
                         img_attachments.append(attachment)
                     # Otherwise, if it's external, we don't need to fetch it ourselves,
                     # we can just send the URL as is.
@@ -738,7 +743,8 @@ class Eruditus(discord.Client):
                 # Add reference to the newly created challenge.
                 ctf["challenges"].append(challenge_oid)
                 MONGO[DBNAME][CTF_COLLECTION].update_one(
-                    {"_id": ctf["_id"]}, {"$set": {"challenges": ctf["challenges"]}}
+                    {"_id": ctf["_id"]}, {
+                        "$set": {"challenges": ctf["challenges"]}}
                 )
 
                 await text_channel.edit(
@@ -771,7 +777,8 @@ class Eruditus(discord.Client):
 
         # Find the channel.
         guild = self.get_guild(GUILD_ID)
-        channel = guild.get_channel(CTFTIME_TRACKING_CHANNEL) if guild else None
+        channel = guild.get_channel(
+            CTFTIME_TRACKING_CHANNEL) if guild else None
         if not channel:
             logger.error(
                 "Unable to find the CTFtime tracking channel, make sure the channel "
@@ -864,7 +871,8 @@ class Eruditus(discord.Client):
 
         # Find the channel.
         guild = self.get_guild(GUILD_ID)
-        channel = guild.get_channel(CTFTIME_LEADERBOARD_CHANNEL) if guild else None
+        channel = guild.get_channel(
+            CTFTIME_LEADERBOARD_CHANNEL) if guild else None
         if not channel:
             logger.error(
                 "Unable to find the CTFtime leaderboard channel, make sure the channel"
