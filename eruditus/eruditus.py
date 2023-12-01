@@ -192,7 +192,7 @@ class Eruditus(discord.Client):
         self.tree.add_command(TakeNote(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(CTF(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(Intro(), guild=discord.Object(GUILD_ID))
-        self.tree.add_command(OpenAI())  # TODO: add guild later
+        self.tree.add_command(OpenAI(), guild=discord.Object(GUILD_ID))
 
         # Restore `workon` buttons.
         for challenge in MONGO[DBNAME][CHALLENGE_COLLECTION].find({"solved": False}):
