@@ -259,10 +259,8 @@ class CTFd(PlatformABC):
 
             # Loop through the challenges and get information about each challenge by
             # requesting the `/api/v1/challenges/{challenge_id}` endpoint.
-            for min_challenge in data.data:
-                min_challenge_id: str = str(min_challenge.id)
-
-                challenge = await cls.get_challenge(ctx, min_challenge_id)
+            for chal in data.data:
+                challenge = await cls.get_challenge(ctx, str(chal.id))
                 if challenge is None:
                     continue
 
