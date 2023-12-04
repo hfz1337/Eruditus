@@ -96,16 +96,17 @@ class Challenge:
     """
 
     id: str
+    name: str
+    category: str
+    description: str
     tags: Optional[list[str]] = None
-    category: Optional[str] = None
-    name: Optional[str] = None
-    description: Optional[str] = None
     value: Optional[int] = None
     files: Optional[list[ChallengeFile]] = None
     images: Optional[list[ChallengeFile]] = None
     connection_info: Optional[str] = None
     solves: Optional[int] = None
     solved_by: Optional[list[ChallengeSolver]] = None
+    solved_by_me: bool = False
 
     @classmethod
     @field_validator("solved_by", mode="before")

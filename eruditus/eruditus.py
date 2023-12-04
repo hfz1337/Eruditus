@@ -601,6 +601,10 @@ class Eruditus(discord.Client):
                 continue
 
             async for challenge in platform.pull_challenges(ctx):
+                # Skip solved challenges.
+                if challenge.solved_by_me:
+                    continue
+
                 # Avoid having duplicate categories when people mix up upper/lower case
                 # or add unnecessary spaces at the beginning or the end.
                 challenge.category = challenge.category.title().strip()

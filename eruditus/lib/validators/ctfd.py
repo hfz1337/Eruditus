@@ -91,6 +91,7 @@ class CTFDChallenge(BaseModel):
             images=extract_images_from_html(self.description, url_stripped),
             connection_info=self.connection_info,
             solves=self.solves,
+            solved_by_me=self.solved_by_me,
         )
 
 
