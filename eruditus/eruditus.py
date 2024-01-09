@@ -881,11 +881,10 @@ class Eruditus(discord.Client):
         if not leaderboard:
             return
 
-        # If we didn't have a previous state to compare with, we save this one and bail
-        # out.
+        first_run = False
         if not self.previous_leaderboard:
+            first_run = True
             self.previous_leaderboard = leaderboard
-            return
 
         # Detect changes and post them into the relevant channel.
         head = f"📊 {'Rank':<10} {'Country':<53} {'Points':<15} {'Events':<10} Name\n\n"
@@ -917,7 +916,7 @@ class Eruditus(discord.Client):
         chunks.append(chunk)
 
         self.previous_leaderboard = leaderboard
-        if not update:
+        if not update and not first_run:
             return
 
         await channel.purge()
