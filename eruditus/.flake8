@@ -4,11 +4,6 @@ max-line-length = 88
 
 ignore =
     W503
-    E203
-    E221
-    E225
-    E231
-    E241
 
 exclude =
     venv
