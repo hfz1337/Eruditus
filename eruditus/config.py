@@ -49,6 +49,7 @@ def load_nullable_env_var(
 # flake8: noqa
 CHALLENGE_COLLECTION = os.getenv("CHALLENGE_COLLECTION")
 CTF_COLLECTION = os.getenv("CTF_COLLECTION")
+OPENAI_COLLECTION = os.getenv("OPENAI_COLLECTION")
 CTFTIME_URL = os.getenv("CTFTIME_URL")
 DATE_FORMAT = os.getenv("DATE_FORMAT")
 DBNAME = os.getenv("DBNAME")
@@ -67,5 +68,7 @@ REMINDER_CHANNEL = load_nullable_env_var("REMINDER_CHANNEL", factory=int)
 CTFTIME_TEAM_ID = load_nullable_env_var("CTFTIME_TEAM_ID", factory=int)
 CTFTIME_TRACKING_CHANNEL = load_nullable_env_var("CTFTIME_TRACKING_CHANNEL", factory=int)
 CTFTIME_LEADERBOARD_CHANNEL = load_nullable_env_var("CTFTIME_LEADERBOARD_CHANNEL", factory=int)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_LANGUAGE_MODEL = os.getenv("OPENAI_LANGUAGE_MODEL")
 
 MONGO = MongoClient(MONGODB_URI)

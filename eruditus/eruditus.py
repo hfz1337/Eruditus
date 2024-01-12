@@ -26,6 +26,7 @@ from app_commands.revshell import Revshell
 from app_commands.search import Search
 from app_commands.syscalls import Syscalls
 from app_commands.takenote import TakeNote
+from app_commands.openai import OpenAI
 from config import (
     CHALLENGE_COLLECTION,
     CTF_COLLECTION,
@@ -191,6 +192,7 @@ class Eruditus(discord.Client):
         self.tree.add_command(TakeNote(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(CTF(), guild=discord.Object(GUILD_ID))
         self.tree.add_command(Intro(), guild=discord.Object(GUILD_ID))
+        self.tree.add_command(OpenAI(), guild=discord.Object(GUILD_ID))
 
         # Restore `workon` buttons.
         for challenge in MONGO[DBNAME][CHALLENGE_COLLECTION].find({"solved": False}):
