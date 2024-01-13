@@ -53,7 +53,7 @@ class CTFDChallenge(BaseModel):
     type: str
     name: str
     value: int
-    solves: int
+    solves: Optional[int] = None
     solved_by_me: bool
     category: str
     tags: list[dict[str, str] | str]

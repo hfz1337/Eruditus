@@ -2,6 +2,7 @@ import io
 import logging
 import re
 from datetime import datetime
+from enum import Enum
 from typing import AsyncIterator
 
 import aiohttp
@@ -34,6 +35,12 @@ from lib.validators.ctfd import (
 )
 
 _log = logging.getLogger(__name__)
+
+
+class ChallengeType(str, Enum):
+    dynamic = "dynamic"
+    hidden = "hidden"
+    standard = "standard"
 
 
 class CTFd(PlatformABC):
@@ -260,6 +267,9 @@ class CTFd(PlatformABC):
             # Loop through the challenges and get information about each challenge by
             # requesting the `/api/v1/challenges/{challenge_id}` endpoint.
             for chal in data.data:
+                if chal.type == ChallengeType.hidden:
+                    continue
+
                 challenge = await cls.get_challenge(ctx, str(chal.id))
                 if challenge is None:
                     continue
