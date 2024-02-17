@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, field_validator
 
@@ -166,7 +166,7 @@ class SubmissionResponse(BaseRCTFResponse):
     """Response schema returned by `/api/v1/challs/:id/submit`."""
 
     message: str
-    data: None
+    data: Optional[dict[str, Any]] = None
 
 
 class StandingsResponse(BaseRCTFResponse):
