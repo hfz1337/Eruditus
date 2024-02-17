@@ -4,6 +4,7 @@ from typing import AsyncIterator
 
 import aiohttp
 
+from config import USER_AGENT
 from lib.platforms.abc import (
     Challenge,
     ChallengeSolver,
@@ -33,7 +34,10 @@ def generate_headers(ctx: PlatformCTX) -> dict[str, str]:
     if not ctx.session or not ctx.session.validate():
         return {}
 
-    return {"Authorization": f'Bearer {ctx.args["authToken"]}'}
+    return {
+        "Authorization": f'Bearer {ctx.args["authToken"]}',
+        "User-Agent": USER_AGENT,
+    }
 
 
 class RCTF(PlatformABC):
@@ -56,6 +60,7 @@ class RCTF(PlatformABC):
         async with aiohttp.request(
             method="get",
             url=f"{ctx.url_stripped}/api/v1/leaderboard/now?limit=0&offset=0",
+            headers={"User-Agent": USER_AGENT},
         ) as response:
             _text: str = await response.text()
 
@@ -73,6 +78,7 @@ class RCTF(PlatformABC):
             json={
                 "teamToken": ctx.args.get("teamToken"),
             },
+            headers={"User-Agent": USER_AGENT},
             allow_redirects=False,
         ) as response:
             # Validate and deserialize response
@@ -298,6 +304,7 @@ class RCTF(PlatformABC):
                 "name": ctx.args.get("team"),
                 "email": ctx.args.get("email"),
             },
+            headers={"User-Agent": USER_AGENT},
             allow_redirects=False,
         ) as response:
             # Validate and deserialize response
