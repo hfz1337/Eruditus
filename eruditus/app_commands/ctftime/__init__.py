@@ -89,55 +89,54 @@ class CTFTime(app_commands.Group):
             params={"limit": str(min(limit, 10))},
             headers={"User-Agent": USER_AGENT},
         ) as response:
-            if response.status == 200:
-                for event in await response.json():
-                    event_info = await scrape_event_info(event["id"])
-                    if event_info is None:
-                        continue
+            if response.status != 200:
+                return
 
-                    embed = (
-                        discord.Embed(
-                            title=f"🆕 {event_info['name']}",
-                            description=(
-                                f"Event website: {event_info['website']}\n"
-                                f"CTFtime URL: {CTFTIME_URL}/event/{event_info['id']}"
-                            ),
-                            color=discord.Colour.red(),
-                        )
-                        .set_thumbnail(url=event_info["logo"])
-                        .add_field(
-                            name="Description",
-                            value=event_info["description"],
-                            inline=False,
-                        )
-                        .add_field(
-                            name="Prizes", value=event_info["prizes"], inline=False
-                        )
-                        .add_field(
-                            name="Format",
-                            value=f"{event_info['location']} {event_info['format']}",
-                            inline=True,
-                        )
-                        .add_field(
-                            name="Organizers",
-                            value=", ".join(event_info["organizers"]),
-                            inline=True,
-                        )
-                        .add_field(
-                            name="Weight", value=event_info["weight"], inline=True
-                        )
-                        .add_field(
-                            name="Timeframe",
-                            value=f"{event_info['start']}\n{event_info['end']}",
-                            inline=False,
-                        )
+            no_upcoming_events = True
+            for event in await response.json():
+                event_info = await scrape_event_info(event["id"])
+                if event_info is None:
+                    continue
+
+                embed = (
+                    discord.Embed(
+                        title=f"🆕 {event_info['name']}",
+                        description=(
+                            f"Event website: {event_info['website']}\n"
+                            f"CTFtime URL: {CTFTIME_URL}/event/{event_info['id']}"
+                        ),
+                        color=discord.Colour.red(),
                     )
+                    .set_thumbnail(url=event_info["logo"])
+                    .add_field(
+                        name="Description",
+                        value=event_info["description"],
+                        inline=False,
+                    )
+                    .add_field(name="Prizes", value=event_info["prizes"], inline=False)
+                    .add_field(
+                        name="Format",
+                        value=f"{event_info['location']} {event_info['format']}",
+                        inline=True,
+                    )
+                    .add_field(
+                        name="Organizers",
+                        value=", ".join(event_info["organizers"]),
+                        inline=True,
+                    )
+                    .add_field(name="Weight", value=event_info["weight"], inline=True)
+                    .add_field(
+                        name="Timeframe",
+                        value=f"{event_info['start']}\n{event_info['end']}",
+                        inline=False,
+                    )
+                )
 
-                    no_upcoming_events = False
-                    await interaction.followup.send(embed=embed)
+                no_upcoming_events = False
+                await interaction.followup.send(embed=embed)
 
-                if no_upcoming_events:
-                    await interaction.followup.send("No upcoming CTFs.")
+            if no_upcoming_events:
+                await interaction.followup.send("No upcoming CTFs.")
 
     @app_commands.command()
     async def top(self, interaction: discord.Interaction, year: Optional[int]) -> None:
