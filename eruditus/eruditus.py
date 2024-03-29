@@ -487,7 +487,7 @@ class Eruditus(discord.Client):
 
                     if event_start is None or event_end is None:
                         event_start = ctftime_date_to_datetime(event_info["start"])
-                        event_end = ctftime_date_to_datetime(event_info["finish"])
+                        event_end = ctftime_date_to_datetime(event_info["end"])
 
                     # Ignore event if start/end times are incorrect.
                     if event_end <= event_start:
