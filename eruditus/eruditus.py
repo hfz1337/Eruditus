@@ -822,6 +822,14 @@ class Eruditus(discord.Client):
         for update_type in (diff := self.previous_team_info - team_info):
             match update_type:
                 case CTFTimeDiffType.OVERALL_POINTS_UPDATE:
+                    if (
+                        abs(
+                            self.previous_team_info.overall_points
+                            - team_info.overall_points
+                        )
+                        < 1
+                    ):
+                        continue
                     decreased = (
                         self.previous_team_info.overall_points
                         > team_info.overall_points
@@ -863,6 +871,14 @@ class Eruditus(discord.Client):
                         f"```"
                     )
                     for event_diff in diff[CTFTimeDiffType.EVENT_UPDATE]:
+                        if (
+                            abs(
+                                event_diff[0].rating_points
+                                - event_diff[1].rating_points
+                            )
+                            < 1
+                        ):
+                            continue
                         await channel.send(
                             msg.format(
                                 event_diff[0].event_name,
