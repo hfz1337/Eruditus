@@ -12,7 +12,7 @@ async def get_ctftime_team_info(team_id: int) -> Optional[CTFTimeTeam]:
     async with aiohttp.request(
         method="get",
         url=f"{CTFTIME_URL}/team/{team_id}",
-        headers={"User-Agent": USER_AGENT},
+        headers={"User-Agent": USER_AGENT()},
     ) as response:
         if response.status != 200:
             return None

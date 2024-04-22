@@ -463,7 +463,7 @@ class Eruditus(discord.Client):
             method="get",
             url=f"{CTFTIME_URL}/api/v1/events/",
             params={"limit": "20"},
-            headers={"User-Agent": USER_AGENT},
+            headers={"User-Agent": USER_AGENT()},
         ) as response:
             if response.status == 200:
                 for event in await response.json():
@@ -522,7 +522,7 @@ class Eruditus(discord.Client):
                         async with aiohttp.request(
                             method="get",
                             url=event_info["logo"],
-                            headers={"User-Agent": USER_AGENT},
+                            headers={"User-Agent": USER_AGENT()},
                         ) as image:
                             if image.status == 200:
                                 raw_image = io.BytesIO(await image.read()).read()

@@ -91,7 +91,7 @@ class CTFTime(app_commands.Group):
             method="get",
             url=f"{CTFTIME_URL}/api/v1/events/",
             params={"limit": str(min(limit, 10))},
-            headers={"User-Agent": USER_AGENT},
+            headers={"User-Agent": USER_AGENT()},
         ) as response:
             if response.status != 200:
                 return
@@ -167,7 +167,7 @@ class CTFTime(app_commands.Group):
         async with aiohttp.request(
             method="get",
             url=f"{CTFTIME_URL}/api/v1/top/{year}/",
-            headers={"User-Agent": USER_AGENT},
+            headers={"User-Agent": USER_AGENT()},
         ) as response:
             if response.status == 200 and year in (json := await response.json()):
                 teams = json[year]
@@ -204,7 +204,7 @@ class CTFTime(app_commands.Group):
             method="get",
             url=f"{CTFTIME_URL}/api/v1/events/",
             params={"limit": "20"},
-            headers={"User-Agent": USER_AGENT},
+            headers={"User-Agent": USER_AGENT()},
         ) as response:
             if response.status == 200:
                 for event in await response.json():
@@ -237,7 +237,7 @@ class CTFTime(app_commands.Group):
                         async with aiohttp.request(
                             method="get",
                             url=event_info["logo"],
-                            headers={"User-Agent": USER_AGENT},
+                            headers={"User-Agent": USER_AGENT()},
                         ) as image:
                             if image.status == 200:
                                 raw_image = io.BytesIO(await image.read()).read()

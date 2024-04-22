@@ -19,7 +19,7 @@ async def scrape_event_info(event_id: int) -> Optional[dict]:
     async with aiohttp.request(
         method="get",
         url=f"{CTFTIME_URL}/event/{event_id}",
-        headers={"User-Agent": USER_AGENT},
+        headers={"User-Agent": USER_AGENT()},
     ) as response:
         if response.status != 200:
             return None
@@ -66,13 +66,13 @@ async def scrape_event_info(event_id: int) -> Optional[dict]:
     async with aiohttp.request(
         method="get",
         url=f"{CTFTIME_URL}/{event_logo}",
-        headers={"User-Agent": USER_AGENT},
+        headers={"User-Agent": USER_AGENT()},
     ) as response:
         if response.status == 404:
             async with aiohttp.request(
                 method="get",
                 url=f"{CTFTIME_URL}/api/v1/events/{event_id}/",
-                headers={"User-Agent": USER_AGENT},
+                headers={"User-Agent": USER_AGENT()},
             ) as event_resp:
                 event_logo = (await event_resp.json())["logo"]
         else:
@@ -101,7 +101,7 @@ async def scrape_current_events() -> Generator[dict, None, None]:
         An integer representing the unique ID of the event.
     """
     async with aiohttp.request(
-        method="get", url=CTFTIME_URL, headers={"User-Agent": USER_AGENT}
+        method="get", url=CTFTIME_URL, headers={"User-Agent": USER_AGENT()}
     ) as response:
         if response.status != 200:
             return

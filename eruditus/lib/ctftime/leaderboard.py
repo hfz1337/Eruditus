@@ -28,7 +28,7 @@ async def get_ctftime_leaderboard(
     async with aiohttp.request(
         method="get",
         url=f"{CTFTIME_URL}/{path}",
-        headers={"User-Agent": USER_AGENT},
+        headers={"User-Agent": USER_AGENT()},
     ) as response:
         if response.status != 200:
             return None

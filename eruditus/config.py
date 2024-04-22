@@ -1,4 +1,5 @@
 import os
+import random
 from pathlib import Path
 from typing import Callable, Optional, TypeVar
 
@@ -7,6 +8,21 @@ from pymongo import MongoClient
 
 T = TypeVar("T")
 dotenv.load_dotenv()
+
+
+class RandomUserAgent:
+    """A class that represents a random User-Agent."""
+
+    def __init__(self):
+        self.user_agents = [
+            line.strip()
+            for line in open(
+                f"{Path(__file__).parent}/user-agents.txt", encoding="utf-8"
+            ).readlines()
+        ]
+
+    def __call__(self):
+        return random.choice(self.user_agents)
 
 
 def load_revision() -> str:
@@ -56,7 +72,7 @@ DEVELOPER_USER_ID = os.getenv("DEVELOPER_USER_ID")
 GUILD_ID = int(os.getenv("GUILD_ID"))
 MAX_CONTENT_SIZE = int(os.getenv("MAX_CONTENT_SIZE"))
 MONGODB_URI = os.getenv("MONGODB_URI")
-USER_AGENT = os.getenv("USER_AGENT")
+USER_AGENT = RandomUserAgent()
 WRITEUP_INDEX_API = os.getenv("WRITEUP_INDEX_API")
 TEAM_NAME = os.getenv("TEAM_NAME")
 TEAM_EMAIL = os.getenv("TEAM_EMAIL")
