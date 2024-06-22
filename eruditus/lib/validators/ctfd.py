@@ -161,18 +161,18 @@ class UserResponse(BaseValidResponse):
     """Response schema returned by `/api/v1/teams/me`."""
 
     class Data(BaseModel):
-        website: Optional[str]
+        website: Optional[str] = None
         id: int
         members: list[int]
-        oauth_id: Optional[Union[str, int]]
-        email: Optional[str]
-        country: Optional[str]
+        oauth_id: Optional[Union[str, int]] = None
+        email: Optional[str] = None
+        country: Optional[str] = None
         captain_id: int
         fields: list[dict]
-        affiliation: Optional[str]
-        bracket: Optional[Any]
+        affiliation: Optional[str] = None
+        bracket: Optional[Any] = None
         name: str
-        place: Optional[str]
+        place: Optional[str] = None
         score: int
 
         def convert(self) -> Team:

@@ -6,6 +6,9 @@ services:
     image: eruditus:latest
     container_name: eruditus
     restart: unless-stopped
+    environment:
+      - DOTNET_CLI_TELEMETRY_OPTOUT=1
+      - DOTNET_NOLOGO=true
     depends_on:
       - mongodb
   mongodb:

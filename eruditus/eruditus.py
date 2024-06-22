@@ -777,7 +777,7 @@ class Eruditus(discord.Client):
     @tasks.loop(minutes=1, reconnect=True)
     async def scoreboard_updater(self) -> None:
         """Periodically update the scoreboard for all running CTFs."""
-        # Wait until the bot internal cache is ready.
+        # Wait until the bot's internal cache is ready.
         await self.wait_until_ready()
 
         # The bot is supposed to be part of a single guild.
@@ -788,7 +788,7 @@ class Eruditus(discord.Client):
 
     @tasks.loop(minutes=15, reconnect=True)
     async def ctftime_team_tracking(self) -> None:
-        # Wait until the bot internal cache is ready.
+        # Wait until the bot's internal cache is ready.
         await self.wait_until_ready()
 
         # Disable the feature if some of the related config vars are missing.
@@ -897,7 +897,7 @@ class Eruditus(discord.Client):
 
     @tasks.loop(minutes=15, reconnect=True)
     async def ctftime_leaderboard_tracking(self) -> None:
-        # Wait until the bot internal cache is ready.
+        # Wait until the bot's internal cache is ready.
         await self.wait_until_ready()
 
         # Disable the feature if some of the related config vars are missing.

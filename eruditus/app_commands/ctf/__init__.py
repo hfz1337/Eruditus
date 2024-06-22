@@ -1,4 +1,7 @@
+import asyncio
 import logging
+import subprocess
+import tempfile
 from datetime import datetime
 from typing import Callable, Optional
 
@@ -1416,3 +1419,53 @@ class CTF(app_commands.Group):
             return
 
         await interaction.response.send_modal(form)
+
+    @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
+    @app_commands.checks.has_permissions(manage_channels=True, manage_roles=True)
+    @app_commands.command()
+    @_in_ctf_channel()
+    async def exportchat(self, interaction: discord.Interaction) -> None:
+        """Export CTF chat logs to a static site.
+
+        Args:
+            interaction: The interaction that triggered this command.
+        """
+
+        async def _handle_process(process: asyncio.subprocess.Process):
+            _, _ = await process.communicate()
+            _log.info("Chat export task finished successfully.")
+
+        await interaction.response.defer()
+
+        guild_category = interaction.channel.category
+        exportable = set()
+        for channel in guild_category.text_channels:
+            exportable.add(channel.id)
+
+            for thread in channel.threads:
+                exportable.add(thread.id)
+
+            async for thread in channel.archived_threads(private=True, limit=None):
+                exportable.add(thread.id)
+
+        tmp = tempfile.mktemp()
+        output_dirname = (
+            f"[{guild_category.id}] {guild_category.name.replace('/', '_')}"
+        )
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write("\n".join(map(str, exportable)))
+
+        asyncio.create_task(
+            _handle_process(
+                await asyncio.create_subprocess_exec(
+                    "chat_exporter",
+                    tmp,
+                    output_dirname,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+            )
+        )
+        await interaction.followup.send(
+            "Export task started, chat logs will be available shortly.", ephemeral=True
+        )

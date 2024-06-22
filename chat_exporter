@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+if [[ $# -lt 2 ]]; then
+    echo "Usage: $0 <channel_file> <output_dirname>"
+    exit 1
+fi
+
+CHANNELS_FILE="$1"
+OUTPUT_DIR="/home/user/chatlogs/static/$2"
+
+# Ensure output directory exists
+mkdir -p "$OUTPUT_DIR"
+
+# Load the bot token
+export $(cat /eruditus/.env | grep 'DISCORD_TOKEN' | xargs)
+
+# Export the chat logs
+cd ~/DiscordChatExporter
+dotnet run --project DiscordChatExporter.Cli export \
+  --token "$DISCORD_TOKEN" \
+  --file "$CHANNELS_FILE" \
+  --output "$OUTPUT_DIR"
+
+# Commit & push
+cd ~/chatlogs
+git add . && git commit -m "Export operation ($(date))"
+git push origin main

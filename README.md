@@ -59,6 +59,7 @@ Here's a list of the currently supported commands:
 /ctf createctf                                       (Create a new CTF)
 /ctf renamectf                                       (Rename a CTF)
 /ctf archivectf                                      (Archive a CTF's channels)
+/ctf exportchat                                      (Export CTF chat logs to a static site)
 /ctf deletectf                                       (Delete a CTF as well as its channels)
 /ctf setprivacy                                      (Toggle CTF privacy between public and private)
 /ctf join                                            (Join a specific CTF channels)
@@ -98,6 +99,18 @@ Here's a list of the currently supported commands:
 ```
 
 ## Installation
+
+Before proceeding with the installation, you may want to setup a repository to host Discord chat logs for archived CTFs that you no longer want to have on your Discord guild. Follow these instructions if you wish to do so:
+1. Create a private GitHub repository to host your chat logs.
+2. Clone [this project](https://github.com/hfz1337/discord-oauth2-webapp) into your previously create GitHub repository.
+3. Modify line 37 of the [Dockerfile](./Dockerfile) to point to your private GitHub repository that will host the chat logs.
+4. Prepare an SSH key pair to access your private GitHub repository, and put the private key under [.ssh/privkey.pem](./.ssh). As for the public key, under your repository settings in the `Deploy keys` section, click on `Add deploy key` and paste your SSH public key (make sure to tick the `Allow write access` box).
+
+The [sample GitHub repository](https://github.com/hfz1337/discord-oauth2-webapp) already has a workflow for publishing the website to Azure App Service, but you're free to host it somewhere else, or simply keep it in the GitHub repository. If you're willing to use Azure, make sure to add the necessary secrets and variables referenced inside the [workflow](https://github.com/hfz1337/discord-oauth2-webapp/blob/main/.github/workflows/publish.yml).
+
+---
+
+Follow the instructions below to deploy the bot:
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
 2. Create a new application.
