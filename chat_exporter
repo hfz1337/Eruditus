@@ -26,3 +26,6 @@ dotnet run --project DiscordChatExporter.Cli export \
 cd ~/chatlogs
 git add . && git commit -m "Export operation ($(date))"
 git push origin main
+
+# Cleanup
+rm -f "$CHANNELS_FILE"
