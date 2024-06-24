@@ -49,6 +49,7 @@ class CTF(app_commands.Group):
     """Manage a CTF competition."""
 
     def __init__(self) -> None:
+        self._chat_export_tasks = []
         super().__init__(name="ctf")
 
     async def on_error(
@@ -1433,7 +1434,26 @@ class CTF(app_commands.Group):
 
         async def _handle_process(process: asyncio.subprocess.Process):
             _, _ = await process.communicate()
-            _log.info("Chat export task finished successfully.")
+            self._chat_export_tasks.pop(0)
+            _log.info(
+                "Chat export task finished successfully, %s items remaining in the "
+                "queue."
+            )
+            if len(self._chat_export_tasks) == 0:
+                return
+
+            tmp, output_dirname = self._chat_export_tasks[0]
+            asyncio.create_task(
+                _handle_process(
+                    await asyncio.create_subprocess_exec(
+                        "chat_exporter",
+                        tmp,
+                        output_dirname,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                    )
+                )
+            )
 
         await interaction.response.defer()
 
@@ -1455,17 +1475,20 @@ class CTF(app_commands.Group):
         with open(tmp, "w", encoding="utf-8") as f:
             f.write("\n".join(map(str, exportable)))
 
-        asyncio.create_task(
-            _handle_process(
-                await asyncio.create_subprocess_exec(
-                    "chat_exporter",
-                    tmp,
-                    output_dirname,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+        self._chat_export_tasks.append((tmp, output_dirname))
+        if len(self._chat_export_tasks) == 1:
+            asyncio.create_task(
+                _handle_process(
+                    await asyncio.create_subprocess_exec(
+                        "chat_exporter",
+                        tmp,
+                        output_dirname,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                    )
                 )
             )
-        )
+
         await interaction.followup.send(
             "Export task started, chat logs will be available shortly.", ephemeral=True
         )
