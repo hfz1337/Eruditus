@@ -1435,10 +1435,12 @@ class CTF(app_commands.Group):
         async def _handle_process(process: asyncio.subprocess.Process):
             _, _ = await process.communicate()
             self._chat_export_tasks.pop(0)
-            _log.info(
-                "Chat export task finished successfully, %s items remaining in the "
-                "queue."
+            message = (
+                "Chat export task finished successfully, "
+                f"{len(self._chat_export_tasks)} items remaining in the queue."
             )
+            _log.info(message)
+            await interaction.channel.send(content=message)
             if len(self._chat_export_tasks) == 0:
                 return
 
