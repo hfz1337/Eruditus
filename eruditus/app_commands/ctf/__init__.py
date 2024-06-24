@@ -1424,7 +1424,6 @@ class CTF(app_commands.Group):
     @app_commands.checks.bot_has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.checks.has_permissions(manage_channels=True, manage_roles=True)
     @app_commands.command()
-    @_in_ctf_channel()
     async def exportchat(self, interaction: discord.Interaction) -> None:
         """Export CTF chat logs to a static site.
 
