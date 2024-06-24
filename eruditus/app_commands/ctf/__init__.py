@@ -1455,8 +1455,6 @@ class CTF(app_commands.Group):
                 )
             )
 
-        await interaction.response.defer()
-
         guild_category = interaction.channel.category
         exportable = set()
         for channel in guild_category.text_channels:
@@ -1489,6 +1487,6 @@ class CTF(app_commands.Group):
                 )
             )
 
-        await interaction.followup.send(
+        await interaction.response.send_message(
             "Export task started, chat logs will be available shortly.", ephemeral=True
         )
