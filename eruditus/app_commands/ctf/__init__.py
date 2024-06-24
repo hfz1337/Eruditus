@@ -1439,8 +1439,12 @@ class CTF(app_commands.Group):
                 "Chat export task finished successfully, "
                 f"{len(self._chat_export_tasks)} items remaining in the queue."
             )
+            try:
+                await interaction.channel.send(content=message)
+            except discord.errors.HTTPException as e:
+                _log.error(f"Failed to send message: {e}")
+
             _log.info(message)
-            await interaction.channel.send(content=message)
             if len(self._chat_export_tasks) == 0:
                 return
 
