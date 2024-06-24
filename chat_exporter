@@ -24,6 +24,7 @@ dotnet run --project DiscordChatExporter.Cli export \
 
 # Commit & push
 cd ~/chatlogs
+git pull origin main
 git add . && git commit -m "Export operation ($(date))"
 git push origin main
 
