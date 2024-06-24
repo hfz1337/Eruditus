@@ -1434,21 +1434,21 @@ class CTF(app_commands.Group):
 
         async def _handle_process(process: asyncio.subprocess.Process):
             _, _ = await process.communicate()
-            self._chat_export_tasks.pop(0)
+            channel, _, _ = self._chat_export_tasks.pop(0)
             message = (
                 "Chat export task finished successfully, "
                 f"{len(self._chat_export_tasks)} items remaining in the queue."
             )
             try:
-                await interaction.channel.send(content=message)
-            except discord.errors.HTTPException as e:
-                _log.error(f"Failed to send message: {e}")
+                await channel.send(content=message)
+            except discord.errors.HTTPException as err:
+                _log.error("Failed to send message: %s", err)
 
             _log.info(message)
             if len(self._chat_export_tasks) == 0:
                 return
 
-            tmp, output_dirname = self._chat_export_tasks[0]
+            _, tmp, output_dirname = self._chat_export_tasks[0]
             asyncio.create_task(
                 _handle_process(
                     await asyncio.create_subprocess_exec(
@@ -1484,7 +1484,7 @@ class CTF(app_commands.Group):
         with open(tmp, "w", encoding="utf-8") as f:
             f.write("\n".join(map(str, exportable)))
 
-        self._chat_export_tasks.append((tmp, output_dirname))
+        self._chat_export_tasks.append((interaction.channel, tmp, output_dirname))
         if len(self._chat_export_tasks) == 1:
             asyncio.create_task(
                 _handle_process(
