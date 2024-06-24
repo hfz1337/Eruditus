@@ -1469,8 +1469,11 @@ class CTF(app_commands.Group):
             for thread in channel.threads:
                 exportable.add(thread.id)
 
-            async for thread in channel.archived_threads(private=True, limit=None):
-                exportable.add(thread.id)
+            for private in (True, False):
+                async for thread in channel.archived_threads(
+                    private=private, limit=None
+                ):
+                    exportable.add(thread.id)
 
         tmp = tempfile.mktemp()
         output_dirname = (
