@@ -102,7 +102,7 @@ Here's a list of the currently supported commands:
 
 Before proceeding with the installation, you may want to setup a repository to host Discord chat logs for archived CTFs that you no longer want to have on your Discord guild. Follow these instructions if you wish to do so:
 1. Create a private GitHub repository to host your chat logs.
-2. Clone [this project](https://github.com/hfz1337/discord-oauth2-webapp) into your previously create GitHub repository.
+2. Clone [this project](https://github.com/hfz1337/discord-oauth2-webapp) into your previously created GitHub repository.
 3. Modify line 37 of the [Dockerfile](./Dockerfile) to point to your private GitHub repository that will host the chat logs.
 4. Prepare an SSH key pair to access your private GitHub repository, and put the private key under [.ssh/privkey.pem](./.ssh). As for the public key, under your repository settings in the `Deploy keys` section, click on `Add deploy key` and paste your SSH public key (make sure to tick the `Allow write access` box).
 
