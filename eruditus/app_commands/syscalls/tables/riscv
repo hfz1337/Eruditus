@@ -1,0 +1,313 @@
+id	Name	a7	a0	a1	a2	a3	a4	a5	Definition
+0	io_setup	0x00	unsigned nr_reqs	aio_context_t __user *ctx	-	-	-	-	fs/aio.c:1298
+1	io_destroy	0x01	aio_context_t ctx	-	-	-	-	-	fs/aio.c:1334
+2	io_submit	0x02	aio_context_t	long	struct iocb __user * __user *	-	-	-	fs/aio.c:1746
+3	io_cancel	0x03	aio_context_t ctx_id	struct iocb __user *iocb	struct io_event __user *result	-	-	-	fs/aio.c:1781
+4	io_getevents	0x04	aio_context_t ctx_id	long min_nr	long nr	struct io_event __user *events	struct __kernel_timespec __user *timeout	-	fs/aio.c:1844
+5	setxattr	0x05	const char __user *path	const char __user *name	const void __user *value	size_t size	int flags	-	fs/xattr.c:361
+6	lsetxattr	0x06	const char __user *path	const char __user *name	const void __user *value	size_t size	int flags	-	fs/xattr.c:380
+7	fsetxattr	0x07	int fd	const char __user *name	const void __user *value	size_t size	int flags	-	fs/xattr.c:399
+8	getxattr	0x08	const char __user *path	const char __user *name	void __user *value	size_t size	-	-	fs/xattr.c:459
+9	lgetxattr	0x09	const char __user *path	const char __user *name	void __user *value	size_t size	-	-	fs/xattr.c:473
+10	fgetxattr	0x0a	int fd	const char __user *name	void __user *value	size_t size	-	-	fs/xattr.c:487
+11	listxattr	0x0b	const char __user *path	char __user *list	size_t size	-	-	-	fs/xattr.c:541
+12	llistxattr	0x0c	const char __user *path	char __user *list	size_t size	-	-	-	fs/xattr.c:555
+13	flistxattr	0x0d	int fd	char __user *list	size_t size	-	-	-	fs/xattr.c:569
+14	removexattr	0x0e	const char __user *path	const char __user *name	-	-	-	-	fs/xattr.c:602
+15	lremovexattr	0x0f	const char __user *path	const char __user *name	-	-	-	-	fs/xattr.c:620
+16	fremovexattr	0x10	int fd	const char __user *name	-	-	-	-	fs/xattr.c:638
+17	getcwd	0x11	char __user *buf	unsigned long size	-	-	-	-	fs/dcache.c:2885
+18	lookup_dcookie	0x12	u64 cookie64	char __user *buf	size_t len	-	-	-	fs/dcookies.c:148
+19	eventfd2	0x13	unsigned int count	int flags	-	-	-	-	fs/eventfd.c:406
+20	epoll_create1	0x14	int flags	-	-	-	-	-	fs/eventpoll.c:1625
+21	epoll_ctl	0x15	int epfd	int op	int fd	struct epoll_event __user *event	-	-	fs/eventpoll.c:1681
+22	epoll_pwait	0x16	int epfd	struct epoll_event __user *events	int maxevents	int timeout	const sigset_t __user *sigmask	size_t sigsetsize	fs/eventpoll.c:1860
+23	dup	0x17	unsigned int fildes	-	-	-	-	-	fs/fcntl.c:131
+24	dup3	0x18	unsigned int oldfd	unsigned int newfd	int flags	-	-	-	fs/fcntl.c:53
+25	fcntl64	0x19	unsigned int fd	unsigned int cmd	unsigned long arg	-	-	-	-
+26	inotify_init1	0x1a	int flags	-	-	-	-	-	fs/notify/inotify/inotify_user.c:724
+27	inotify_add_watch	0x1b	int fd	const char __user *path	u32 mask	-	-	-	fs/notify/inotify/inotify_user.c:754
+28	inotify_rm_watch	0x1c	int fd	__s32 wd	-	-	-	-	fs/notify/inotify/inotify_user.c:795
+29	ioctl	0x1d	unsigned int fd	unsigned int cmd	unsigned long arg	-	-	-	fs/ioctl.c:604
+30	ioprio_set	0x1e	int which	int who	int ioprio	-	-	-	fs/ioprio.c:61
+31	ioprio_get	0x1f	int which	int who	-	-	-	-	fs/ioprio.c:176
+32	flock	0x20	unsigned int fd	unsigned int cmd	-	-	-	-	fs/locks.c:1636
+33	mknodat	0x21	int dfd	const char __user * filename	umode_t mode	unsigned dev	-	-	fs/namei.c:2646
+34	mkdirat	0x22	int dfd	const char __user * pathname	umode_t mode	-	-	-	fs/namei.c:2723
+35	unlinkat	0x23	int dfd	const char __user * pathname	int flag	-	-	-	fs/namei.c:2968
+36	symlinkat	0x24	const char __user * oldname	int newdfd	const char __user * newname	-	-	-	fs/namei.c:3004
+37	linkat	0x25	int dfd	const char __user * pathname	int flag	-	-	-	fs/namei.c:3097
+38	renameat	0x26	int olddfd	const char __user * oldname	int newdfd	const char __user * newname	-	-	fs/namei.c:3309
+39	umount	0x27	char __user *name	int flags	-	-	-	-	-
+40	mount	0x28	char __user *name	int flags	-	-	-	-	fs/namespace.c:2362
+41	pivot_root	0x29	const char __user *new_root	const char __user *put_old	-	-	-	-	fs/namespace.c:2453
+42	ni_syscall	0x2a	-	-	-	-	-	-	-
+43	statfs64	0x2b	const char __user *path	size_t sz	struct statfs64 __user *buf	-	-	-	-
+44	fstatfs64	0x2c	unsigned int fd	size_t sz	struct statfs64 __user *buf	-	-	-	-
+45	truncate64	0x2d	const char __user *path	loff_t length	-	-	-	-	-
+46	ftruncate64	0x2e	unsigned int fd	loff_t length	-	-	-	-	-
+47	fallocate	0x2f	int fd	int mode	loff_t offset	loff_t len	-	-	fs/open.c:272
+48	faccessat	0x30	int dfd	const char __user *filename	int mode	-	-	-	fs/open.c:299
+49	chdir	0x31	const char __user *filename	-	-	-	-	-	fs/open.c:375
+50	fchdir	0x32	unsigned int fd	-	-	-	-	-	fs/open.c:396
+51	chroot	0x33	const char __user *filename	-	-	-	-	-	fs/open.c:422
+52	fchmod	0x34	unsigned int fd	umode_t mode	-	-	-	-	fs/open.c:472
+53	fchmodat	0x35	int dfd	const char __user * filename	umode_t mode	-	-	-	fs/open.c:486
+54	fchownat	0x36	int dfd	const char __user *filename	uid_t user	gid_t group	int flag	-	fs/open.c:559
+55	fchown	0x37	unsigned int fd	uid_t user	gid_t group	-	-	-	fs/open.c:605
+56	openat	0x38	int dfd	const char __user *filename	int flags	umode_t mode	-	-	fs/open.c:1059
+57	close	0x39	unsigned int fd	-	-	-	-	-	fs/open.c:1117
+58	vhangup	0x3a	-	-	-	-	-	-	fs/open.c:1156
+59	pipe2	0x3b	int __user *fildes	int flags	-	-	-	-	fs/pipe.c:1133
+60	quotactl	0x3c	unsigned int cmd	const char __user *special	qid_t id	void __user *addr	-	-	fs/quota/quota.c:346
+61	getdents64	0x3d	unsigned int fd	struct linux_dirent64 __user *dirent	unsigned int count	-	-	-	fs/readdir.c:272
+62	lseek	0x3e	unsigned int fd	unsigned long offset_high	unsigned long offset_low	loff_t __user *result	unsigned int whence	-	fs/read_write.c:230
+63	read	0x3f	unsigned int fd	char __user *buf	size_t count	-	-	-	fs/read_write.c:460
+64	write	0x40	unsigned int fd	const char __user *buf	size_t count	-	-	-	fs/read_write.c:477
+65	readv	0x41	unsigned long fd	const struct iovec __user *vec	unsigned long vlen	-	-	-	fs/read_write.c:787
+66	writev	0x42	unsigned long fd	const struct iovec __user *vec	unsigned long vlen	-	-	-	fs/read_write.c:808
+67	pread64	0x43	unsigned int fd	char __user *buf	size_t count	loff_t pos	-	-	fs/read_write.c:495
+68	pwrite64	0x44	unsigned int fd	const char __user *buf	size_t count	loff_t pos	-	-	fs/read_write.c:524
+69	preadv	0x45	unsigned long fd	const struct iovec __user *vec	unsigned long vlen	unsigned long pos_l	unsigned long pos_h	-	fs/read_write.c:835
+70	pwritev	0x46	unsigned long fd	const struct iovec __user *vec	unsigned long vlen	unsigned long pos_l	unsigned long pos_h	-	fs/read_write.c:860
+71	sendfile64	0x47	int out_fd	int in_fd	loff_t __user *offset	size_t count	-	-	-
+72	pselect6_time32	0x48	int	fd_set __user *	fd_set __user *	fd_set __user *	struct old_timespec32 __user *	void __user *	-
+73	ppoll_time32	0x49	struct pollfd __user *	unsigned int	struct old_timespec32 __user *	const sigset_t __user *	size_t	-	-
+74	signalfd4	0x4a	int ufd	sigset_t __user *user_mask	size_t sizemask	int flags	-	-	fs/signalfd.c:237
+75	vmsplice	0x4b	int fd	const struct iovec __user *iov	unsigned long nr_segs	unsigned int flags	-	-	fs/splice.c:1663
+76	splice	0x4c	int fd	const struct iovec __user *iov	unsigned long nr_segs	unsigned int flags	-	-	fs/splice.c:1689
+77	tee	0x4d	int fdin	int fdout	size_t len	unsigned int flags	-	-	fs/splice.c:2025
+78	readlinkat	0x4e	int dfd	const char __user *path	char __user *buf	int bufsiz	-	-	fs/stat.c:293
+79	newfstatat	0x4f	int dfd	const char __user *filename	struct stat __user *statbuf	int flag	-	-	fs/stat.c:269
+80	newfstat	0x50	unsigned int fd	struct stat __user *statbuf	-	-	-	-	-
+81	sync	0x51	-	-	-	-	-	-	fs/sync.c:98
+82	fsync	0x52	unsigned int fd	-	-	-	-	-	fs/sync.c:201
+83	fdatasync	0x53	unsigned int fd	-	-	-	-	-	fs/sync.c:206
+84	sync_file_range	0x54	int fd	loff_t offset	loff_t nbytes	unsigned int flags	-	-	fs/sync.c:275
+85	timerfd_create	0x55	int clockid	int flags	-	-	-	-	fs/timerfd.c:252
+86	timerfd_settime	0x56	int ufd	int flags	const struct __kernel_itimerspec __user *utmr	struct __kernel_itimerspec __user *otmr	-	-	fs/timerfd.c:283
+87	timerfd_gettime	0x57	int ufd	struct __kernel_itimerspec __user *otmr	-	-	-	-	fs/timerfd.c:344
+88	utimensat	0x58	int dfd	const char __user *filename	struct __kernel_timespec __user *utimes	int flags	-	-	fs/utimes.c:175
+89	acct	0x59	const char __user *name	-	-	-	-	-	kernel/acct.c:255
+90	capget	0x5a	cap_user_header_t header	cap_user_data_t dataptr	-	-	-	-	kernel/capability.c:158
+91	capset	0x5b	cap_user_header_t header	const cap_user_data_t data	-	-	-	-	kernel/capability.c:232
+92	personality	0x5c	unsigned int personality	-	-	-	-	-	kernel/exec_domain.c:182
+93	exit	0x5d	int error_code	-	-	-	-	-	kernel/exit.c:1095
+94	exit_group	0x5e	int error_code	-	-	-	-	-	kernel/exit.c:1136
+95	waitid	0x5f	int which	pid_t pid	struct siginfo __user *infop	int options	struct rusage __user *ru	-	kernel/exit.c:1763
+96	set_tid_address	0x60	int __user *tidptr	-	-	-	-	-	kernel/fork.c:1109
+97	unshare	0x61	unsigned long unshare_flags	-	-	-	-	-	kernel/fork.c:1778
+98	futex	0x62	u32 __user *uaddr	int op	u32 val	struct __kernel_timespec __user *utime	u32 __user *uaddr2	u32 val3	kernel/futex.c:2680
+99	set_robust_list	0x63	struct robust_list_head __user *head	size_t len	-	-	-	-	kernel/futex.c:2422
+100	get_robust_list	0x64	int pid	struct robust_list_head __user * __user *head_ptr	size_t __user *len_ptr	-	-	-	kernel/futex.c:2444
+101	nanosleep	0x65	struct __kernel_timespec __user *rqtp	struct __kernel_timespec __user *rmtp	-	-	-	-	kernel/hrtimer.c:1621
+102	getitimer	0x66	int which	struct __kernel_old_itimerval __user *value	-	-	-	-	kernel/itimer.c:103
+103	setitimer	0x67	int which	struct __kernel_old_itimerval __user *value	struct __kernel_old_itimerval __user *ovalue	-	-	-	kernel/itimer.c:278
+104	kexec_load	0x68	unsigned long entry	unsigned long nr_segments	struct kexec_segment __user *segments	unsigned long flags	-	-	kernel/kexec.c:940
+105	init_module	0x69	void __user *umod	unsigned long len	const char __user *uargs	-	-	-	kernel/module.c:3010
+106	delete_module	0x6a	const char __user *name_user	unsigned int flags	-	-	-	-	kernel/module.c:768
+107	timer_create	0x6b	clockid_t which_clock	struct sigevent __user *timer_event_spec	timer_t __user * created_timer_id	-	-	-	kernel/posix-timers.c:535
+108	timer_gettime	0x6c	timer_t timer_id	struct __kernel_itimerspec __user *setting	-	-	-	-	kernel/posix-timers.c:715
+109	timer_getoverrun	0x6d	timer_t timer_id	-	-	-	-	-	kernel/posix-timers.c:751
+110	timer_settime	0x6e	timer_t timer_id	int flags	const struct __kernel_itimerspec __user *new_setting	struct __kernel_itimerspec __user *old_setting	-	-	kernel/posix-timers.c:819
+111	timer_delete	0x6f	timer_t timer_id	-	-	-	-	-	kernel/posix-timers.c:882
+112	clock_settime	0x70	clockid_t which_clock	const struct __kernel_timespec __user *tp	-	-	-	-	kernel/posix-timers.c:950
+113	clock_gettime	0x71	clockid_t which_clock	struct __kernel_timespec __user *tp	-	-	-	-	kernel/posix-timers.c:965
+114	clock_getres	0x72	clockid_t which_clock	struct __kernel_timespec __user *tp	-	-	-	-	kernel/posix-timers.c:1006
+115	clock_nanosleep	0x73	clockid_t which_clock	int flags	const struct __kernel_timespec __user *rqtp	struct __kernel_timespec __user *rmtp	-	-	kernel/posix-timers.c:1035
+116	syslog	0x74	int type	char __user *buf	int len	-	-	-	kernel/printk.c:1195
+117	ptrace	0x75	long request	long pid	unsigned long addr	unsigned long data	-	-	kernel/ptrace.c:857
+118	sched_setparam	0x76	pid_t pid	struct sched_param __user *param	-	-	-	-	kernel/sched/core.c:4477
+119	sched_setscheduler	0x77	pid_t pid	int policy	struct sched_param __user *param	-	-	-	kernel/sched/core.c:4462
+120	sched_getscheduler	0x78	pid_t pid	-	-	-	-	-	kernel/sched/core.c:4486
+121	sched_getparam	0x79	pid_t pid	struct sched_param __user *param	-	-	-	-	kernel/sched/core.c:4512
+122	sched_setaffinity	0x7a	pid_t pid	unsigned int len	unsigned long __user *user_mask_ptr	-	-	-	kernel/sched/core.c:4626
+123	sched_getaffinity	0x7b	pid_t pid	unsigned int len	unsigned long __user *user_mask_ptr	-	-	-	kernel/sched/core.c:4677
+124	sched_yield	0x7c	-	-	-	-	-	-	kernel/sched/core.c:4711
+125	sched_get_priority_max	0x7d	int policy	-	-	-	-	-	kernel/sched/core.c:4935
+126	sched_get_priority_min	0x7e	int policy	-	-	-	-	-	kernel/sched/core.c:4960
+127	sched_rr_get_interval	0x7f	pid_t pid	struct __kernel_timespec __user *interval	-	-	-	-	kernel/sched/core.c:4985
+128	restart_syscall	0x80	-	-	-	-	-	-	kernel/signal.c:2501
+129	kill	0x81	pid_t pid	int sig	-	-	-	-	kernel/signal.c:2841
+130	tkill	0x82	pid_t pid	int sig	-	-	-	-	kernel/signal.c:2923
+131	tgkill	0x83	pid_t tgid	pid_t pid	int sig	-	-	-	kernel/signal.c:2907
+132	sigaltstack	0x84	const struct sigaltstack __user *uss	struct sigaltstack __user *uoss	-	-	-	-	-	
+133	rt_sigsuspend	0x85	sigset_t __user *unewset	size_t sigsetsize	-	-	-	-	kernel/signal.c:3274
+134	rt_sigaction	0x86	int	const struct sigaction __user *	struct sigaction __user *	size_t	-	-	kernel/signal.c:3174
+135	rt_sigprocmask	0x87	int how	sigset_t __user *set	sigset_t __user *oset	size_t sigsetsize	-	-	kernel/signal.c:2591
+136	rt_sigpending	0x88	sigset_t __user *set	size_t sigsetsize	-	-	-	-	kernel/signal.c:2651
+137	rt_sigtimedwait_time32	0x89	const sigset_t __user *uthese	siginfo_t __user *uinfo	const struct old_timespec32 __user *uts	size_t sigsetsize	-	-	-
+138	rt_sigqueueinfo	0x8a	pid_t pid	int sig	siginfo_t __user *uinfo	-	-	-	kernel/signal.c:2938
+139	rt_sigreturn	0x8b	-	-	-	-	-	-	arch/riscv/kernel/signal.c:231
+140	setpriority	0x8c	int which	int who	int niceval	-	-	-	kernel/sys.c:172
+141	getpriority	0x8d	int which	int who	-	-	-	-	kernel/sys.c:241
+142	reboot	0x8e	int magic1	int magic2	unsigned int cmd	void __user *arg	-	-	kernel/sys.c:432
+143	setregid	0x8f	gid_t rgid	gid_t egid	-	-	-	-	kernel/sys.c:557
+144	setgid	0x90	gid_t gid	-	-	-	-	-	kernel/sys.c:614
+145	setreuid	0x91	uid_t ruid	uid_t euid	-	-	-	-	kernel/sys.c:690
+146	setuid	0x92	uid_t uid	-	-	-	-	-	kernel/sys.c:761
+147	setresuid	0x93	uid_t ruid	uid_t euid	uid_t suid	-	-	-	kernel/sys.c:808
+148	getresuid	0x94	uid_t __user *ruid	uid_t __user *euid	uid_t __user *suid	-	-	-	kernel/sys.c:873
+149	setresgid	0x95	gid_t rgid	gid_t egid	gid_t sgid	-	-	-	kernel/sys.c:893
+150	getresgid	0x96	gid_t __user *rgid	gid_t __user *egid	gid_t __user *sgid	-	-	-	kernel/sys.c:945
+151	setfsuid	0x97	uid_t uid	-	-	-	-	-	kernel/sys.c:969
+152	setfsgid	0x98	gid_t gid	-	-	-	-	-	kernel/sys.c:1008
+153	times	0x99	struct tms __user *tbuf	-	-	-	-	-	kernel/sys.c:1058
+154	setpgid	0x9a	pid_t pid	pid_t pgid	-	-	-	-	kernel/sys.c:1083
+155	getpgid	0x9b	pid_t pid	-	-	-	-	-	kernel/sys.c:1154
+156	getsid	0x9c	pid_t pid	-	-	-	-	-	kernel/sys.c:1191
+157	setsid	0x9d	-	-	-	-	-	-	kernel/sys.c:1219
+158	getgroups	0x9e	int gidsetsize	gid_t __user *grouplist	-	-	-	-	kernel/groups.c:202
+159	setgroups	0x9f	int gidsetsize	gid_t __user *grouplist	-	-	-	-	kernel/groups.c:231
+160	newuname	0xa0	struct new_utsname __user *name	-	-	-	-	-	-
+161	sethostname	0xa1	char __user *name	int len	-	-	-	-	kernel/sys.c:1365
+162	setdomainname	0xa2	char __user *name	int len	-	-	-	-	kernel/sys.c:1416
+163	getrlimit	0xa3	unsigned int resource	struct rlimit __user *rlim	-	-	-	-	kernel/sys.c:1440
+164	setrlimit	0xa4	unsigned int resource	struct rlimit __user *rlim	-	-	-	-	kernel/sys.c:1641
+165	getrusage	0xa5	int who	struct rusage __user *ru	-	-	-	-	kernel/sys.c:1774
+166	umask	0xa6	int mask	-	-	-	-	-	kernel/sys.c:1782
+167	prctl	0xa7	int option	unsigned long arg2	unsigned long arg3	unsigned long arg4	unsigned long arg5	-	kernel/sys.c:1999
+168	getcpu	0xa8	unsigned __user *cpu	unsigned __user *node	struct getcpu_cache __user *cache	-	-	-	kernel/sys.c:2179
+169	gettimeofday	0xa9	struct __kernel_old_timeval __user *tv	struct timezone __user *tz	-	-	-	-	kernel/time.c:101
+170	settimeofday	0xaa	struct __kernel_old_timeval __user *tv	struct timezone __user *tz	-	-	-	-	kernel/time.c:179
+171	adjtimex	0xab	struct __kernel_timex __user *txc_p	-	-	-	-	-	kernel/time.c:200
+172	getpid	0xac	-	-	-	-	-	-	kernel/timer.c:1413
+173	getppid	0xad	-	-	-	-	-	-	kernel/timer.c:1424
+174	getuid	0xae	-	-	-	-	-	-	kernel/timer.c:1435
+175	geteuid	0xaf	-	-	-	-	-	-	kernel/timer.c:1441
+176	getgid	0xb0	-	-	-	-	-	-	kernel/timer.c:1447
+177	getegid	0xb1	-	-	-	-	-	-	kernel/timer.c:1453
+178	gettid	0xb2	-	-	-	-	-	-	kernel/timer.c:1569
+179	sysinfo	0xb3	struct sysinfo __user *info	-	-	-	-	-	kernel/timer.c:1641
+180	mq_open	0xb4	const char __user *name	int oflag	umode_t mode	struct mq_attr __user *attr	-	-	ipc/mqueue.c:803
+181	mq_unlink	0xb5	const char __user *name	-	-	-	-	-	ipc/mqueue.c:876
+182	mq_timedsend	0xb6	mqd_t mqdes	const char __user *msg_ptr	size_t msg_len	unsigned int msg_prio	const struct __kernel_timespec __user *abs_timeout	-	ipc/mqueue.c:971
+183	mq_timedreceive	0xb7	mqd_t mqdes	char __user *msg_ptr	size_t msg_len	unsigned int __user *msg_prio	const struct __kernel_timespec __user *abs_timeout	-	ipc/mqueue.c:1092
+184	mq_notify	0xb8	mqd_t mqdes	const struct sigevent __user *notification	-	-	-	-	ipc/mqueue.c:1201
+185	mq_getsetattr	0xb9	mqd_t mqdes	const struct mq_attr __user *mqstat	struct mq_attr __user *omqstat	-	-	-	ipc/mqueue.c:1333
+186	msgget	0xba	key_t key	int msgflg	-	-	-	-	ipc/msg.c:312
+187	msgctl	0xbb	int msqid	int cmd	struct msqid_ds __user *buf	-	-	-	ipc/msg.c:469
+188	msgrcv	0xbc	int msqid	struct msgbuf __user *msgp	size_t msgsz	long msgtyp	int msgflg	-	ipc/msg.c:907
+189	msgsnd	0xbd	int msqid	struct msgbuf __user *msgp	size_t msgsz	int msgflg	-	-	ipc/msg.c:726
+190	semget	0xbe	key_t key	int nsems	int semflg	-	-	-	ipc/sem.c:367
+191	semctl	0xbf	int semid	int semnum	int cmd	unsigned long arg	-	-	ipc/sem.c:1121
+192	semtimedop	0xc0	int semid	struct sembuf __user *sops	unsigned nsops	const struct __kernel_timespec __user *timeout	-	-	ipc/sem.c:1330
+193	semop	0xc1	int semid	struct sembuf __user *sops	unsigned nsops	-	-	-	ipc/sem.c:1548
+194	shmget	0xc2	key_t key	size_t size	int flag	-	-	-	ipc/shm.c:574
+195	shmctl	0xc3	int shmid	int cmd	struct shmid_ds __user *buf	-	-	-	ipc/shm.c:774
+196	shmat	0xc4	int shmid	char __user *shmaddr	int shmflg	-	-	-	ipc/shm.c:1105
+197	shmdt	0xc5	char __user *shmaddr	-	-	-	-	-	ipc/shm.c:1121
+198	socket	0xc6	int	int	int	-	-	-	net/socket.c:1324
+199	socketpair	0xc7	int	int	int	int __user *	-	-	net/socket.c:1365
+200	bind	0xc8	int	struct sockaddr __user *	int	-	-	-	net/socket.c:1446
+201	listen	0xc9	int	int	-	-	-	-	net/socket.c:1475
+202	accept	0xca	int	struct sockaddr __user *	int __user *	-	-	-	net/socket.c:1582
+203	connect	0xcb	int	struct sockaddr __user *	int	-	-	-	net/socket.c:1600
+204	getsockname	0xcc	int	struct sockaddr __user *	int __user *	-	-	-	net/socket.c:1632
+205	getpeername	0xcd	int	struct sockaddr __user *	int __user *	-	-	-	net/socket.c:1663
+206	sendto	0xce	int	void __user *	size_t	unsigned	struct sockaddr __user *	int	net/socket.c:1695
+207	recvfrom	0xcf	int	void __user *	size_t	unsigned	struct sockaddr __user *	int __user *	net/socket.c:1754
+208	setsockopt	0xd0	int fd	int level	int optname	char __user *optval	int optlen	-	net/socket.c:1810
+209	getsockopt	0xd1	int fd	int level	int optname	char __user *optval	int __user *optlen	-	net/socket.c:1844
+210	shutdown	0xd2	int	int	-	-	-	-	net/socket.c:1874
+211	sendmsg	0xd3	int fd	struct user_msghdr __user *msg	unsigned flags	-	-	-	net/socket.c:2016
+212	recvmsg	0xd4	int fd	struct user_msghdr __user *msg	unsigned flags	-	-	-	net/socket.c:2189
+213	readahead	0xd5	int fd	loff_t offset	size_t count	-	-	-	mm/readahead.c:579
+214	brk	0xd6	unsigned long brk	-	-	-	-	-	mm/mmap.c:246
+215	munmap	0xd7	unsigned long addr	size_t len	-	-	-	-	mm/mmap.c:2141
+216	mremap	0xd8	unsigned long addr	unsigned long old_len	unsigned long new_len	unsigned long flags	unsigned long new_addr	-	mm/mremap.c:431
+217	add_key	0xd9	const char __user *_type	const char __user *_description	const void __user *_payload	size_t plen	key_serial_t destringid	-	security/keys/keyctl.c:54
+218	request_key	0xda	const char __user *_type	const char __user *_description	const char __user *_callout_info	key_serial_t destringid	-	-	security/keys/keyctl.c:147
+219	keyctl	0xdb	int cmd	unsigned long arg2	unsigned long arg3	unsigned long arg4	unsigned long arg5	-	security/keys/keyctl.c:1556
+220	clone	0xdc	unsigned long	unsigned long	int __user *	unsigned long	int __user *	-	kernel/fork.c:2897
+221	execve	0xdd	const char __user *filename	const char __user *const __user *argv	const char __user *const __user *envp	-	-	-	fs/exec.c:2097
+222	mmap	0xde	struct mmap_arg_struct __user *arg	-	-	-	-	-	arch/riscv/kernel/sys_riscv.c:24
+223	fadvise64_64	0xdf	int fd	loff_t offset	loff_t len	int advice	-	-	-
+224	swapon	0xe0	const char __user *specialfile	int swap_flags	-	-	-	-	mm/swapfile.c:1996
+225	swapoff	0xe1	const char __user *specialfile	-	-	-	-	-	mm/swapfile.c:1539
+226	mprotect	0xe2	unsigned long start	size_t len	unsigned long prot	-	-	-	mm/mprotect.c:232
+227	msync	0xe3	unsigned long start	size_t len	int flags	-	-	-	mm/msync.c:31
+228	mlock	0xe4	unsigned long start	size_t len	-	-	-	-	mm/mlock.c:482
+229	munlock	0xe5	unsigned long start	size_t len	-	-	-	-	mm/mlock.c:512
+230	mlockall	0xe6	int flags	-	-	-	-	-	mm/mlock.c:549
+231	munlockall	0xe7	-	-	-	-	-	-	mm/mlock.c:582
+232	mincore	0xe8	unsigned long start	size_t len	unsigned char __user * vec	-	-	-	mm/mincore.c:266
+233	madvise	0xe9	unsigned long start	size_t len	int behavior	-	-	-	mm/madvise.c:362
+234	remap_file_pages	0xea	unsigned long start	unsigned long size	unsigned long prot	unsigned long pgoff	unsigned long flags	-	mm/fremap.c:122
+235	mbind	0xeb	unsigned long start	unsigned long len	unsigned long mode	const unsigned long __user *nmask	unsigned long maxnode	unsigned flags	mm/mempolicy.c:1263
+236	get_mempolicy	0xec	int __user *policy	unsigned long __user *nmask	unsigned long maxnode	unsigned long addr	unsigned long flags	-	mm/mempolicy.c:1400
+237	set_mempolicy	0xed	int mode	const unsigned long __user *nmask	unsigned long maxnode	-	-	-	mm/mempolicy.c:1285
+238	migrate_pages	0xee	pid_t pid	unsigned long maxnode	const unsigned long __user *from	const unsigned long __user *to	-	-	mm/mempolicy.c:1304
+239	move_pages	0xef	pid_t pid	unsigned long nr_pages	const void __user * __user *pages	const int __user *nodes	int __user *status	int flags	mm/migrate.c:1343
+240	rt_tgsigqueueinfo	0xf0	pid_t tgid	pid_t pid	int sig	siginfo_t __user *uinfo	-	-	kernel/signal.c:2979
+241	perf_event_open	0xf1	"	-	-	-	-	-	kernel/events/core.c:6186
+242	accept4	0xf2	int	struct sockaddr __user *	int __user *	int	-	-	net/socket.c:1508
+243	recvmmsg_time32	0xf3	int fd	struct mmsghdr __user *msg	unsigned int vlen	unsigned flags	struct old_timespec32 __user *timeout	-	-
+260	wait4	0x104	pid_t pid	int __user *stat_addr	int options	struct rusage __user *ru	-	-	kernel/exit.c:1834
+261	prlimit64	0x105	pid_t pid	unsigned int resource	const struct rlimit64 __user *new_rlim	struct rlimit64 __user *old_rlim	-	-	kernel/sys.c:1599
+262	fanotify_init	0x106	unsigned int flags	unsigned int event_f_flags	-	-	-	-	fs/notify/fanotify/fanotify_user.c:679
+263	fanotify_mark	0x107	int fanotify_fd	unsigned int flags	u64 mask	int fd	const char __user *pathname	-	fs/notify/fanotify/fanotify_user.c:767
+264	name_to_handle_at	0x108	int dfd	const char __user *name	struct file_handle __user *handle	int __user *mnt_id	int flag	-	fs/fhandle.c:92
+265	open_by_handle_at	0x109	int mountdirfd	struct file_handle __user *handle	int flags	-	-	-	fs/fhandle.c:257
+266	clock_adjtime	0x10a	clockid_t which_clock	struct __kernel_timex __user *tx	-	-	-	-	kernel/posix-timers.c:983
+267	syncfs	0x10b	int fd	-	-	-	-	-	fs/sync.c:134
+268	setns	0x10c	int fd	int nstype	-	-	-	-	kernel/nsproxy.c:235
+269	sendmmsg	0x10d	int fd	struct mmsghdr __user *msg	unsigned int vlen	unsigned flags	-	-	net/socket.c:2091
+270	process_vm_readv	0x10e	pid_t pid	const struct iovec __user *lvec	unsigned long liovcnt	const struct iovec __user *rvec	unsigned long riovcnt	unsigned long flags	mm/process_vm_access.c:398
+271	process_vm_writev	0x10f	pid_t pid	const struct iovec __user *lvec	unsigned long liovcnt	const struct iovec __user *rvec	unsigned long riovcnt	unsigned long flags	mm/process_vm_access.c:405
+272	kcmp	0x110	pid_t pid1	pid_t pid2	int type	unsigned long idx1	unsigned long idx2	-	kernel/kcmp.c:95
+273	finit_module	0x111	int fd	const char __user *uargs	int flags	-	-	-	-
+274	sched_setattr	0x112	pid_t pid	struct sched_attr __user *attr	unsigned int flags	-	-	-	-
+275	sched_getattr	0x113	pid_t pid	struct sched_attr __user *attr	unsigned int size	unsigned int flags	-	-	-
+276	renameat2	0x114	int olddfd	const char __user *oldname	int newdfd	const char __user *newname	unsigned int flags	-	-
+277	seccomp	0x115	unsigned int op	unsigned int flags	void __user *uargs	-	-	-	-
+278	getrandom	0x116	char __user *buf	size_t count	unsigned int flags	-	-	-	-
+279	memfd_create	0x117	const char __user *uname_ptr	unsigned int flags	-	-	-	-	-
+280	bpf	0x118	int cmd	union bpf_attr *attr	unsigned int size	-	-	-	-
+281	execveat	0x119	int dfd	const char __user *filename	const char __user *const __user *argv	const char __user *const __user *envp	int flags	-	-
+282	userfaultfd	0x11a	int flags	-	-	-	-	-	-
+283	membarrier	0x11b	int cmd	unsigned int flags	int cpu_id	-	-	-	-
+284	mlock2	0x11c	unsigned long start	size_t len	int flags	-	-	-	-
+285	copy_file_range	0x11d	int fd_in	loff_t __user *off_in	int fd_out	loff_t __user *off_out	size_t len	unsigned int flags	-
+286	preadv2	0x11e	unsigned long fd	const struct iovec __user *vec	unsigned long vlen	unsigned long pos_l	unsigned long pos_h	rwf_t flags	-
+287	pwritev2	0x11f	unsigned long fd	const struct iovec __user *vec	unsigned long vlen	unsigned long pos_l	unsigned long pos_h	rwf_t flags	-
+288	pkey_mprotect	0x120	unsigned long start	size_t len	unsigned long prot	int pkey	-	-	-
+289	pkey_alloc	0x121	unsigned long flags	unsigned long init_val	-	-	-	-	-
+290	pkey_free	0x122	int pkey	-	-	-	-	-	-
+291	statx	0x123	int dfd	const char __user *path	unsigned flags	unsigned mask	struct statx __user *buffer	-	-
+292	io_pgetevents	0x124	aio_context_t ctx_id	long min_nr	long nr	struct io_event __user *events	struct __kernel_timespec __user *timeout	const struct __aio_sigset *sig	-
+293	rseq	0x125	struct rseq __user *rseq	uint32_t rseq_len	int flags	uint32_t sig	-	-	-
+294	kexec_file_load	0x126	int kernel_fd	int initrd_fd	unsigned long cmdline_len	const char __user *cmdline_ptr	unsigned long flags	-	-
+403	clock_gettime	0x193	clockid_t which_clock	struct __kernel_timespec __user *tp	-	-	-	-	kernel/posix-timers.c:965
+404	clock_settime	0x194	clockid_t which_clock	const struct __kernel_timespec __user *tp	-	-	-	-	kernel/posix-timers.c:950
+405	clock_adjtime	0x195	clockid_t which_clock	struct __kernel_timex __user *tx	-	-	-	-	kernel/posix-timers.c:983
+406	clock_getres	0x196	clockid_t which_clock	struct __kernel_timespec __user *tp	-	-	-	-	kernel/posix-timers.c:1006
+407	clock_nanosleep	0x197	clockid_t which_clock	int flags	const struct __kernel_timespec __user *rqtp	struct __kernel_timespec __user *rmtp	-	-	kernel/posix-timers.c:1035
+408	timer_gettime	0x198	timer_t timer_id	struct __kernel_itimerspec __user *setting	-	-	-	-	kernel/posix-timers.c:715
+409	timer_settime	0x199	timer_t timer_id	int flags	const struct __kernel_itimerspec __user *new_setting	struct __kernel_itimerspec __user *old_setting	-	-	kernel/posix-timers.c:819
+410	timerfd_gettime	0x19a	int ufd	struct __kernel_itimerspec __user *otmr	-	-	-	-	fs/timerfd.c:344
+411	timerfd_settime	0x19b	int ufd	int flags	const struct __kernel_itimerspec __user *utmr	struct __kernel_itimerspec __user *otmr	-	-	fs/timerfd.c:283
+412	utimensat	0x19c	int dfd	const char __user *filename	struct __kernel_timespec __user *utimes	int flags	-	-	fs/utimes.c:175
+416	io_pgetevents	0x1a0	aio_context_t ctx_id	long min_nr	long nr	struct io_event __user *events	struct __kernel_timespec __user *timeout	const struct __aio_sigset *sig	-
+418	mq_timedsend	0x1a2	mqd_t mqdes	const char __user *msg_ptr	size_t msg_len	unsigned int msg_prio	const struct __kernel_timespec __user *abs_timeout	-	ipc/mqueue.c:971
+419	mq_timedreceive	0x1a3	mqd_t mqdes	char __user *msg_ptr	size_t msg_len	unsigned int __user *msg_prio	const struct __kernel_timespec __user *abs_timeout	-	ipc/mqueue.c:1092
+420	semtimedop	0x1a4	int semid	struct sembuf __user *sops	unsigned nsops	const struct __kernel_timespec __user *timeout	-	-	ipc/sem.c:1330
+422	futex	0x1a6	u32 __user *uaddr	int op	u32 val	struct __kernel_timespec __user *utime	u32 __user *uaddr2	u32 val3	kernel/futex.c:2680
+423	sched_rr_get_interval	0x1a7	pid_t pid	struct __kernel_timespec __user *interval	-	-	-	-	kernel/sched/core.c:4985
+424	pidfd_send_signal	0x1a8	int pidfd	int sig	siginfo_t __user *info	unsigned int flags	-	-	-
+425	io_uring_setup	0x1a9	u32 entries	struct io_uring_params __user *p	-	-	-	-	-
+426	io_uring_enter	0x1aa	unsigned int fd	u32 to_submit	u32 min_complete	u32 flags	const sigset_t __user *sig	size_t sigsz	-
+427	io_uring_register	0x1ab	unsigned int fd	unsigned int op	void __user *arg	unsigned int nr_args	-	-	-
+428	open_tree	0x1ac	int dfd	const char __user *path	unsigned flags	-	-	-	-
+429	move_mount	0x1ad	int from_dfd	const char __user *from_path	int to_dfd	const char __user *to_path	unsigned int ms_flags	-	-
+430	fsopen	0x1ae	const char __user *fs_name	unsigned int flags	-	-	-	-	-
+431	fsconfig	0x1af	int fs_fd	unsigned int cmd	const char __user *key	const void __user *value	int aux	-	-
+432	fsmount	0x1b0	int fs_fd	unsigned int flags	unsigned int ms_flags	-	-	-	-
+433	fspick	0x1b1	int dfd	const char __user *path	unsigned int flags	-	-	-	-
+434	pidfd_open	0x1b2	pid_t pid	unsigned int flags	-	-	-	-	-
+435	clone3	0x1b3	struct clone_args __user *uargs	size_t size	-	-	-	-	-
+436	close_range	0x1b4	unsigned int fd	unsigned int max_fd	unsigned int flags	-	-	-	-
+437	openat2	0x1b5	int dfd	const char __user *filename	struct open_how *how	size_t size	-	-	-
+438	pidfd_getfd	0x1b6	int pidfd	int fd	unsigned int flags	-	-	-	-
+439	faccessat2	0x1b7	int dfd	const char __user *filename	int mode	int flags	-	-	-
+440	process_madvise	0x1b8	int pidfd	const struct iovec __user *vec	size_t vlen	int behavior	unsigned int flags	-	-
