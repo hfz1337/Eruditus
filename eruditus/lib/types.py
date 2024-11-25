@@ -6,6 +6,7 @@ class CPUArchitecture(Enum):
     x64 = 2
     arm = 3
     armthumb = 4
+    riscv = 5
 
 
 class EncodingOperationMode(Enum):
