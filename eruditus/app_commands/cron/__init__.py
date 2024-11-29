@@ -43,7 +43,7 @@ class Cron(app_commands.Group):
                 if not task.is_running():
                     task.start()
             return await interaction.response.send_message(
-                "✅ All jobs has been started."
+                "✅ All jobs have been started."
             )
 
         task = self.jobs.get(job)
@@ -70,7 +70,7 @@ class Cron(app_commands.Group):
                 if task.is_running():
                     task.cancel()
             return await interaction.response.send_message(
-                "✅ All jobs has been stopped."
+                "✅ All jobs have been stopped."
             )
 
         task = self.jobs.get(job)
