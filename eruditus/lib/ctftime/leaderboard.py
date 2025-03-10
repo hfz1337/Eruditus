@@ -49,9 +49,9 @@ async def get_ctftime_leaderboard(
             )
         ): LeaderboardEntry(
             position=int(row.select_one(".place").text.strip()),
-            country_position=int(row.select(".place").pop().text.strip())
-            if country_code
-            else None,
+            country_position=(
+                int(row.select(".place").pop().text.strip()) if country_code else None
+            ),
             team_id=team_id,
             team_name=row.select_one("td:not(.country):has(a)").text.strip(),
             country_code=country_code

@@ -263,11 +263,13 @@ class CTF(app_commands.Group):
         if not ctf:
             await interaction.response.send_message(
                 (
-                    "Run this command from within a CTF channel, or provide the name "
-                    "of the CTF you wish to archive."
-                )
-                if name is None
-                else "No such CTF.",
+                    (
+                        "Run this command from within a CTF channel, or provide the "
+                        "name of the CTF you wish to archive."
+                    )
+                    if name is None
+                    else "No such CTF."
+                ),
                 ephemeral=True,
             )
             return
@@ -429,11 +431,13 @@ class CTF(app_commands.Group):
         if not ctf:
             await interaction.followup.send(
                 (
-                    "Run this command from within a CTF channel, or provide the name "
-                    "of the CTF you wish to delete."
-                )
-                if name is None
-                else "No such CTF.",
+                    (
+                        "Run this command from within a CTF channel, or provide the "
+                        "name of the CTF you wish to delete."
+                    )
+                    if name is None
+                    else "No such CTF."
+                ),
                 ephemeral=True,
             )
             return
@@ -492,11 +496,13 @@ class CTF(app_commands.Group):
         if not ctf:
             await interaction.followup.send(
                 (
-                    "Run this command from within a CTF channel, or provide the name "
-                    "of the CTF for which you wish to change the privacy."
-                )
-                if name is None
-                else "No such CTF.",
+                    (
+                        "Run this command from within a CTF channel, or provide the "
+                        "name of the CTF for which you wish to change the privacy."
+                    )
+                    if name is None
+                    else "No such CTF."
+                ),
                 ephemeral=True,
             )
             return
@@ -951,7 +957,9 @@ class CTF(app_commands.Group):
 
         # We leave editing the channel name till the end since we might get rate
         # limited, causing a sleep that will block this function call.
-        await interaction.channel.edit(name=interaction.channel.name.replace("❌", "✅"))
+        await interaction.channel.edit(
+            name=interaction.channel.name.replace("❌", "✅")
+        )
 
         # Mark the CTF category maxed if all its challenges were solved.
         await mark_if_maxed(interaction.channel.parent, challenge["category"])

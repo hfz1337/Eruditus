@@ -10,9 +10,11 @@ class ClassicCiphers:
     @staticmethod
     def caesar(message: str, key: int) -> str:
         return "".join(
-            chr((ord(i) - (97, 65)[i.isupper()] + key) % 26 + (97, 65)[i.isupper()])
-            if i.isalpha()
-            else i
+            (
+                chr((ord(i) - (97, 65)[i.isupper()] + key) % 26 + (97, 65)[i.isupper()])
+                if i.isalpha()
+                else i
+            )
             for i in message
         )
 

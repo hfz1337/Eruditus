@@ -78,16 +78,20 @@ class CTFDChallenge(BaseModel):
     def convert(self, url_stripped: str) -> Challenge:
         return Challenge(
             id=str(self.id),
-            tags=[x["value"] if isinstance(x, dict) else str(x) for x in self.tags]
-            if self.tags is not None
-            else None,
+            tags=(
+                [x["value"] if isinstance(x, dict) else str(x) for x in self.tags]
+                if self.tags is not None
+                else None
+            ),
             category=self.category,
             name=self.name,
             description=html_to_markdown(self.description),
             value=self.value,
-            files=[parse_attachment(x, url_stripped) for x in self.files]
-            if self.files is not None
-            else None,
+            files=(
+                [parse_attachment(x, url_stripped) for x in self.files]
+                if self.files is not None
+                else None
+            ),
             images=extract_images_from_html(self.description, url_stripped),
             connection_info=self.connection_info,
             solves=self.solves,

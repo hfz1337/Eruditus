@@ -60,9 +60,11 @@ class Search(app_commands.Command):
                                 f"Search score: {writeup['score']:.2f}",
                                 f"Challenge: {writeup['name']}",
                                 f"Tags: {writeup['tags']}" if writeup["tags"] else "",
-                                f"Author: {writeup['author']}"
-                                if writeup["author"]
-                                else "",
+                                (
+                                    f"Author: {writeup['author']}"
+                                    if writeup["author"]
+                                    else ""
+                                ),
                                 f"Team: {writeup['team']}",
                                 "```",
                                 f"{writeup['ctftime']}",

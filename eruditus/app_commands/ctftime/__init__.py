@@ -217,9 +217,9 @@ class CTFTime(app_commands.Group):
                         event_info = event
                         event_info["name"] = event_info["title"]
                         event_info["website"] = event_info["url"]
-                        event_info[
-                            "prizes"
-                        ] = "Visit the event page for more information."
+                        event_info["prizes"] = (
+                            "Visit the event page for more information."
+                        )
                         event_info["organizers"] = [
                             organizer["name"] for organizer in event_info["organizers"]
                         ]

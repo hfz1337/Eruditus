@@ -57,9 +57,11 @@ class RCTFChallenge(BaseModel):
             name=self.name,
             description=html_to_markdown(self.description),
             value=self.points if self.points is not None else 0,
-            files=[x.convert(url_stripped) for x in self.files]
-            if self.files is not None
-            else None,
+            files=(
+                [x.convert(url_stripped) for x in self.files]
+                if self.files is not None
+                else None
+            ),
             images=extract_images_from_html(self.description, url_stripped),
             solves=self.solves if self.solves is not None else 0,
         )
@@ -89,9 +91,11 @@ class RCTFTeam(BaseModel):
             name=self.name,
             score=self.score,
             invite_token=self.teamToken,
-            solves=[x.convert(url_stripped) for x in self.solves]
-            if self.solves is not None
-            else None,
+            solves=(
+                [x.convert(url_stripped) for x in self.solves]
+                if self.solves is not None
+                else None
+            ),
         )
 
 
