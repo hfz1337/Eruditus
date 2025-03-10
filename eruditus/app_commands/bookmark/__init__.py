@@ -1,5 +1,5 @@
 import discord
-from discord import app_commands
+from discord import HTTPException, app_commands
 
 from config import BOOKMARK_CHANNEL
 
@@ -21,12 +21,10 @@ class Bookmark(app_commands.ContextMenu):
             message: The message to bookmark.
         """
         bookmark_channel = interaction.guild.get_channel(BOOKMARK_CHANNEL)
-        await bookmark_channel.send(
-            f"> _Author: {message.author.display_name}_\n"
-            f"> _Added by: {interaction.user.display_name}_\n\n"
-            f"{message.content}",
-            files=[await attachment.to_file() for attachment in message.attachments],
-        )
-        await interaction.response.send_message(
-            f"⭐ Added to {bookmark_channel.mention}", ephemeral=True
-        )
+        try:
+            await message.forward(destination=bookmark_channel)
+            status = f"⭐ Added to {bookmark_channel.mention}"
+        except HTTPException:
+            status = "❌ Failed to bookmark the message, was it deleted?"
+        finally:
+            await interaction.response.send_message(status, ephemeral=True)
