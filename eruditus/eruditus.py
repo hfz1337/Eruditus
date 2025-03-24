@@ -955,7 +955,7 @@ class Eruditus(discord.Client):
                 f"{diff} {emoji} {row.position:>4}       {country:<45} "
                 f"{row.points:>17.4f} {row.events:>12}     {row.team_name}\n"
             )
-            if len(chunk) + len(line) < MAX_CONTENT_SIZE - 11:  # -7 for the formatting
+            if len(chunk) + len(line) < MAX_CONTENT_SIZE - 11:  # -11 for the formatting
                 chunk += line
             else:
                 chunks.append(chunk)
