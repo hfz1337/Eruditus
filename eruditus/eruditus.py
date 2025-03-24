@@ -928,7 +928,9 @@ class Eruditus(discord.Client):
             self.previous_leaderboard = leaderboard
 
         # Detect changes and post them into the relevant channel.
-        head = f"📊 {'Rank':<10} {'Country':<53} {'Points':<15} {'Events':<10} Name\n\n"
+        head = (
+            f"  📊 {'Rank':<10} {'Country':<53} {'Points':<15} {'Events':<10} Name\n\n"
+        )
         team_ids = list(self.previous_leaderboard.keys())
         chunks, chunk, update = [], head, False
         for index, (team_id, row) in enumerate(leaderboard.items()):
@@ -943,12 +945,17 @@ class Eruditus(discord.Client):
                 emoji = "🔻"
                 update = True
 
+            diff = (
+                {"🔼": "+", "🔻": "-", "➖": "+"}[emoji]
+                if team_id == CTFTIME_TEAM_ID
+                else " "
+            )
             country = country_name(row.country_code or "") or ""
             line = (
-                f"{emoji} {row.position:>4}       {country:<45} "
+                f"{diff} {emoji} {row.position:>4}       {country:<45} "
                 f"{row.points:>17.4f} {row.events:>12}     {row.team_name}\n"
             )
-            if len(chunk) + len(line) < MAX_CONTENT_SIZE - 7:  # -7 for the formatting
+            if len(chunk) + len(line) < MAX_CONTENT_SIZE - 11:  # -7 for the formatting
                 chunk += line
             else:
                 chunks.append(chunk)
@@ -962,7 +969,7 @@ class Eruditus(discord.Client):
 
         await channel.purge()
         for msg in chunks:
-            await channel.send(f"```\n{msg}```", silent=True)
+            await channel.send(f"```diff\n{msg}```", silent=True)
 
     @create_upcoming_events.error
     async def create_upcoming_events_err_handler(self, _: Exception) -> None:
