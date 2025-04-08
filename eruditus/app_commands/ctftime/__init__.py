@@ -190,7 +190,7 @@ class CTFTime(app_commands.Group):
     async def pull(self, interaction: discord.Interaction) -> None:
         """Pull events starting in less than a week."""
         await interaction.response.defer()
-        await create_discord_events(guild=self.get_guild(GUILD_ID))
+        await create_discord_events(guild=interaction.client.get_guild(GUILD_ID))
         await interaction.followup.send("✅ Done pulling events", ephemeral=True)
 
     @app_commands.checks.has_permissions(manage_channels=True)

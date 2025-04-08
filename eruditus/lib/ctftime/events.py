@@ -99,7 +99,7 @@ async def scrape_event_info(event_id: int) -> Optional[dict]:
     }
 
 
-async def scrape_current_events() -> AsyncGenerator[dict, None, None]:
+async def scrape_current_events() -> AsyncGenerator[dict, None]:
     """Scrape current events off the CTFtime home page.
 
     Yields:
