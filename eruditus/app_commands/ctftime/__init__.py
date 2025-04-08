@@ -1,5 +1,4 @@
-import io
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 
 import aiohttp
@@ -9,9 +8,11 @@ from discord import app_commands
 
 import config
 from config import CTFTIME_URL, GUILD_ID, USER_AGENT
-from lib.ctftime.events import scrape_current_events, scrape_event_info
-from lib.ctftime.misc import ctftime_date_to_datetime
-from lib.util import get_local_time, truncate
+from lib.ctftime.events import (
+    create_discord_events,
+    scrape_current_events,
+    scrape_event_info,
+)
 
 
 class CTFTime(app_commands.Group):
@@ -189,100 +190,7 @@ class CTFTime(app_commands.Group):
     async def pull(self, interaction: discord.Interaction) -> None:
         """Pull events starting in less than a week."""
         await interaction.response.defer()
-
-        # Timezone aware local time.
-        local_time = get_local_time()
-
-        # The bot is supposed to be part of a single guild.
-        guild = interaction.client.get_guild(GUILD_ID)
-
-        scheduled_events = {
-            scheduled_event.name: scheduled_event.id
-            for scheduled_event in guild.scheduled_events
-        }
-        async with aiohttp.request(
-            method="get",
-            url=f"{CTFTIME_URL}/api/v1/events/",
-            params={"limit": "20"},
-            headers={"User-Agent": USER_AGENT()},
-        ) as response:
-            if response.status == 200:
-                for event in await response.json():
-                    event_start = None
-                    event_end = None
-
-                    event_info = await scrape_event_info(event["id"])
-                    if event_info is None:
-                        # Cloudflare protection, unable to scrape the event page.
-                        event_info = event
-                        event_info["name"] = event_info["title"]
-                        event_info["website"] = event_info["url"]
-                        event_info["prizes"] = (
-                            "Visit the event page for more information."
-                        )
-                        event_info["organizers"] = [
-                            organizer["name"] for organizer in event_info["organizers"]
-                        ]
-                        event_start = datetime.fromisoformat(event_info["start"])
-                        event_end = datetime.fromisoformat(event_info["finish"])
-
-                    if event_start is None or event_end is None:
-                        event_start = ctftime_date_to_datetime(event_info["start"])
-                        event_end = ctftime_date_to_datetime(event_info["end"])
-
-                    if event_start > local_time + timedelta(weeks=1):
-                        continue
-
-                    if event_info["logo"]:
-                        async with aiohttp.request(
-                            method="get",
-                            url=event_info["logo"],
-                            headers={"User-Agent": USER_AGENT()},
-                        ) as image:
-                            if image.status == 200:
-                                raw_image = io.BytesIO(await image.read()).read()
-                            else:
-                                raw_image = None
-
-                    event_description = (
-                        f"{event_info['description']}\n\n"
-                        f"👥 **Organizers**\n{', '.join(event_info['organizers'])}\n\n"
-                        f"💰 **Prizes**\n{event_info['prizes']}\n\n"
-                        f"⚙️ **Format**\n {event_info['location']} "
-                        f"{event_info['format']}\n\n"
-                        f"🎯 **Weight**\n{event_info['weight']}"
-                    )
-                    parameters = {
-                        "name": event_info["name"],
-                        "description": truncate(text=event_description, max_len=1000),
-                        "start_time": event_start,
-                        "end_time": event_end,
-                        "entity_type": discord.EntityType.external,
-                        "image": raw_image,
-                        "location": truncate(
-                            f"{CTFTIME_URL}/event/{event_info['id']}"
-                            " — "
-                            f"{event_info['website']}",
-                            max_len=100,
-                        ),
-                        "privacy_level": discord.PrivacyLevel.guild_only,
-                    }
-
-                    # Remove image parameter if we couldn't fetch the logo.
-                    if raw_image is None:
-                        parameters.pop("image")
-
-                    # In case the event was already scheduled, we update it, otherwise
-                    # we create a new event.
-                    if event_info["name"] in scheduled_events:
-                        scheduled_event = guild.get_scheduled_event(
-                            scheduled_events[event_info["name"]]
-                        )
-                        await scheduled_event.edit(**parameters)
-
-                    else:
-                        await guild.create_scheduled_event(**parameters)
-
+        await create_discord_events(guild=self.get_guild(GUILD_ID))
         await interaction.followup.send("✅ Done pulling events", ephemeral=True)
 
     @app_commands.checks.has_permissions(manage_channels=True)
