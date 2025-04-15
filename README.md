@@ -32,6 +32,7 @@ and more.
 - Provides a utility to lookup system calls from a specific architecture
 - Provides a utility for basic encoding schemes
 - Provides a utility for classic ciphers
+- Provides a utility to get payloads from PayloadAllTheThings
 
 ### Supported platforms
 As you already read this bot can interact with the CTF platforms, meaning that you can:
@@ -96,6 +97,8 @@ Here's a list of the currently supported commands:
 /encoding binary                                     (Binary encoding/decoding)
 /encoding hex                                        (Hex encoding/decoding)
 /encoding url                                        (URL encoding/decoding)
+                                                     
+/payload                                             (Get payload from PayoadAllTheThings)
 ```
 
 ## Installation
@@ -107,6 +110,11 @@ Before proceeding with the installation, you may want to setup a repository to h
 4. Prepare an SSH key pair to access your private GitHub repository, and put the private key under [.ssh/privkey.pem](./.ssh). As for the public key, under your repository settings in the `Deploy keys` section, click on `Add deploy key` and paste your SSH public key (make sure to tick the `Allow write access` box).
 
 The [sample GitHub repository](https://github.com/hfz1337/discord-oauth2-webapp) already has a workflow for publishing the website to Azure App Service, but you're free to host it somewhere else, or simply keep it in the GitHub repository. If you're willing to use Azure, make sure to add the necessary secrets and variables referenced inside the [workflow](https://github.com/hfz1337/discord-oauth2-webapp/blob/main/.github/workflows/publish.yml).
+
+## /payload setup
+1. Go to bot directory and run `unzip PayloadsAllTheThings.zip`.
+2. In `config.py` go down to line 89 and set `PAYLOADS_DIR` to unzipped folder name.
+3. Set `PAYLOADS_VIEW` variable to txt, page or msg according to your wish. 
 
 ---
 

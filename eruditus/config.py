@@ -85,3 +85,6 @@ CTFTIME_TRACKING_CHANNEL = load_nullable_env_var("CTFTIME_TRACKING_CHANNEL", fac
 CTFTIME_LEADERBOARD_CHANNEL = load_nullable_env_var("CTFTIME_LEADERBOARD_CHANNEL", factory=int)
 
 MONGO = MongoClient(MONGODB_URI)
+
+PAYLOADS_DIR = "PayloadsAllTheThings-master"
+PAYLOADS_VIEW = "" # txt (preferred), msg, page
