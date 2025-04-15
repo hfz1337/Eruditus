@@ -129,8 +129,21 @@ class Payload(app_commands.Command):
                         return
                     
                     intruder_list = "\n".join(f"🎯 `{f}`" for f in matched_files)
-                    await interaction.followup.send(f"**Intruder Payloads in `{query1}` with `{query2}`**\n{intruder_list}")
-                    return
+                    await interaction.followup.send(f"**Intruder Payloads in `{query1}` with `{query2}` text in it:**\n{intruder_list}\n\n📩 Reply with the filename to get it.")
+                    def check(m):
+                        return m.author.id == interaction.user.id and m.channel.id == interaction.channel.id
+
+                    try:
+                        response = await interaction.client.wait_for("message", timeout=60, check=check)
+                        requested_file = response.content.strip()
+                        file_path = os.path.join(intruder_dir, requested_file)
+                        if os.path.isfile(file_path):
+                            await interaction.followup.send(f"Here’s your intruder file `{requested_file}`:", file=File(file_path))
+                        else:
+                            await interaction.followup.send("❌ File not found.")
+                    except asyncio.TimeoutError:
+                        await interaction.followup.send("⌛ Timeout. You didn’t reply in time.")
+                    return                    
 
                 intruder_files = os.listdir(intruder_dir)
                 if not intruder_files:
