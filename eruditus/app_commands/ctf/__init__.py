@@ -19,6 +19,7 @@ from config import (
     DBNAME,
     MAX_CONTENT_SIZE,
     MONGO,
+    TEAM_NAME
 )
 from lib.discord_util import (
     add_challenge_worker,
@@ -37,6 +38,7 @@ from lib.util import (
     get_ctf_info,
     sanitize_channel_name,
     strip_url_components,
+    time_since,
 )
 from msg_components.buttons.workon import WorkonButton
 from msg_components.forms.credentials import create_credentials_modal_for_platform
@@ -1346,6 +1348,84 @@ class CTF(app_commands.Group):
             members: List of member mentions who contributed in solving the challenge.
         """
         await interaction.response.send_modal(FlagSubmissionForm(members=members))
+
+    @app_commands.command()
+    @_in_ctf_channel()
+    async def showsolvers(
+        self, interaction: discord.Interaction
+    ) -> None:
+        """
+        Show the list of solvers for the current challenge.
+        """
+        async def followup(content: str, ephemeral=True, **kwargs) -> None:
+            if not interaction:
+                return
+            await interaction.followup.send(content, ephemeral=ephemeral, **kwargs)
+        
+        await interaction.response.defer()
+
+        challenge = get_challenge_info(thread=interaction.channel_id)
+    
+        if challenge is None:
+            await followup(
+                "Run this command from within a challenge thread, "
+                "or provide the name of the challenge you wish to stop "
+                "working on."
+            )
+            return
+        
+        ctf = get_ctf_info(guild_category=interaction.channel.category_id)
+        ctx: PlatformCTX = PlatformCTX.from_credentials(ctf["credentials"])
+        platform = await match_platform(ctx)
+        
+        if not platform:
+            await followup("Invalid URL set for this CTF, or platform isn't supported.")
+            return
+
+        solvers = []
+        
+        async for solver in platform.pull_challenge_solvers(
+            ctx=ctx,challenge_id=challenge["id"], limit=10
+        ):
+            solvers.append(solver)
+            
+        me = await platform.get_me(ctx)
+        our_team_name: str = me.name if me is not None else TEAM_NAME
+
+        embed = None
+        num_fields = 0
+        
+        for idx, solver in enumerate(solvers,start=1):
+            # If we reached Discord's maximum number of fields per
+            # embed, we send the previous one and create a new one.
+            if num_fields % 25 == 0:
+                if num_fields != 0:
+                    await interaction.followup.send(embed=embed)
+                    embed = None
+
+                if embed is None:
+                    embed = discord.Embed(
+                        title=f"{challenge['name']} - solvers",
+                        colour=discord.Colour.green(),
+                    )
+            
+            if (idx==1):
+                name = f"🩸 - {solver.team.name}"
+            elif(solver.team.name==our_team_name):
+                name = f"🔴 - {solver.team.name}"
+            else:
+                name = f"{idx} - {solver.team.name}"
+            
+            embed.add_field(
+                name=name,
+                value=f"{time_since(solver.solved_at)}",
+                inline=False,
+            )
+            num_fields += 1
+        
+        # Send the remaining embed.
+        if embed is not None:
+            await interaction.followup.send(embed=embed)
 
     @app_commands.command()
     @_in_ctf_channel()
