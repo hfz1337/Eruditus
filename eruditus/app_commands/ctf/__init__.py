@@ -1350,12 +1350,14 @@ class CTF(app_commands.Group):
         await interaction.response.send_modal(FlagSubmissionForm(members=members))
 
     @app_commands.command()
+    @app_commands.autocomplete(name=_challenge_autocompletion_func) 
     @_in_ctf_channel()
     async def showsolvers(
-        self, interaction: discord.Interaction
+        self, interaction: discord.Interaction,
+        name: Optional[str] = None
     ) -> None:
         """
-        Show the list of solvers for the current challenge.
+        Show the list of solvers for the provided/current challenge.
         """
         async def followup(content: str, ephemeral=True, **kwargs) -> None:
             if not interaction:
@@ -1364,15 +1366,24 @@ class CTF(app_commands.Group):
         
         await interaction.response.defer()
 
-        challenge = get_challenge_info(thread=interaction.channel_id)
-    
-        if challenge is None:
-            await followup(
-                "Run this command from within a challenge thread, "
-                "or provide the name of the challenge you wish to stop "
-                "working on."
-            )
-            return
+        if name is None:
+            challenge = get_challenge_info(thread=interaction.channel_id)
+            if challenge is None:
+                await followup(
+                    (
+                        "Run this command from within a challenge thread, "
+                        "or provide the name of the challenge you wish to stop "
+                        "working on."
+                    )
+                )
+                return
+        else:
+            challenge = get_challenge_info(name=name)
+            if challenge is None:
+                await followup(
+                    "No such challenge."
+                )
+                return
         
         ctf = get_ctf_info(guild_category=interaction.channel.category_id)
         ctx: PlatformCTX = PlatformCTX.from_credentials(ctf["credentials"])
