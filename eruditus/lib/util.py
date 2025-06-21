@@ -273,6 +273,7 @@ def get_local_time() -> datetime:
     local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
     return datetime.now(local_timezone)
 
+
 def time_since(past_time: datetime) -> str:
     """
     Calculate the time since a past time.
@@ -283,7 +284,7 @@ def time_since(past_time: datetime) -> str:
     """
     if past_time.tzinfo is None:
         past_time = past_time.replace(tzinfo=timezone.utc)
-    
+
     now = get_local_time()
     delta = now - past_time
 
@@ -300,6 +301,7 @@ def time_since(past_time: datetime) -> str:
         return f"{hours} hours ago"
     else:
         return f"{days} days ago"
+
 
 def truncate(text: str, max_len: int = 1024) -> str:
     """Truncate a paragraph to a specific length.
