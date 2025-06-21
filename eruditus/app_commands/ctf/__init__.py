@@ -1388,7 +1388,12 @@ class CTF(app_commands.Group):
             ctx=ctx,challenge_id=challenge["id"], limit=10
         ):
             solvers.append(solver)
-            
+
+        num_solvers = len(solvers)        
+        if(num_solvers==0):
+            await followup("This challenge has not been blooded yet.")
+            return
+        
         me = await platform.get_me(ctx)
         our_team_name: str = me.name if me is not None else TEAM_NAME
 
@@ -1405,7 +1410,7 @@ class CTF(app_commands.Group):
 
                 if embed is None:
                     embed = discord.Embed(
-                        title=f"{challenge['name']} - solvers",
+                        title=f"{challenge['name']} - {num_solvers} solvers",
                         colour=discord.Colour.green(),
                     )
             
