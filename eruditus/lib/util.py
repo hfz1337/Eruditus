@@ -274,35 +274,6 @@ def get_local_time() -> datetime:
     return datetime.now(local_timezone)
 
 
-def time_since(past_time: datetime) -> str:
-    """
-    Calculate the time since a past time.
-    Args:
-        past_time: The past time to calculate the difference from.
-    Returns:
-        A string representing the time difference in a human-readable format.
-    """
-    if past_time.tzinfo is None:
-        past_time = past_time.replace(tzinfo=timezone.utc)
-
-    now = get_local_time()
-    delta = now - past_time
-
-    seconds = int(delta.total_seconds())
-    minutes = seconds // 60
-    hours = minutes // 60
-    days = delta.days
-
-    if seconds < 60:
-        return f"{seconds} seconds ago"
-    elif minutes < 60:
-        return f"{minutes} minutes ago"
-    elif hours < 24:
-        return f"{hours} hours ago"
-    else:
-        return f"{days} days ago"
-
-
 def truncate(text: str, max_len: int = 1024) -> str:
     """Truncate a paragraph to a specific length.
 

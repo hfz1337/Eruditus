@@ -2,7 +2,7 @@ import asyncio
 import logging
 import subprocess
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Callable, Optional
 
 import aiohttp
@@ -1432,7 +1432,7 @@ class CTF(app_commands.Group):
 
             embed.add_field(
                 name=name,
-                value=f"{time_since(solver.solved_at)}",
+                value=f"<t:{int(solver.solved_at.replace(tzinfo=timezone.utc).timestamp())}:R>",
                 inline=False,
             )
             num_fields += 1
