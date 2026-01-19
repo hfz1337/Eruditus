@@ -1355,8 +1355,11 @@ class CTF(app_commands.Group):
     async def showsolvers(
         self, interaction: discord.Interaction, name: Optional[str] = None
     ) -> None:
-        """
-        Show the list of solvers for the provided/current challenge.
+        """Show the list of solvers for a given challenge.
+
+        Args:
+            interaction: The interaction that triggered this command.
+            name: The challenge name (default: current thread's challenge).
         """
 
         async def followup(content: str, ephemeral=True, **kwargs) -> None:
