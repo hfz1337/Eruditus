@@ -1395,7 +1395,6 @@ class CTF(app_commands.Group):
             return
 
         solvers = []
-
         async for solver in platform.pull_challenge_solvers(
             ctx=ctx, challenge_id=challenge["id"], limit=0
         ):
