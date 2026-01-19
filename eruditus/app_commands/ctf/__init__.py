@@ -38,7 +38,6 @@ from lib.util import (
     get_ctf_info,
     sanitize_channel_name,
     strip_url_components,
-    time_since,
 )
 from msg_components.buttons.workon import WorkonButton
 from msg_components.forms.credentials import create_credentials_modal_for_platform
