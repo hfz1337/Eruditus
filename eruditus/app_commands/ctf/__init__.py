@@ -1411,8 +1411,8 @@ class CTF(app_commands.Group):
         embed = None
         num_fields = 0
         for idx, solver in enumerate(solvers, start=1):
-            # If we reached Discord's maximum number of fields per
-            # embed, we send the previous one and create a new one.
+            # If we reached Discord's maximum number of fields per embed, we send the
+            # previous one and create a new one.
             if num_fields % 25 == 0:
                 if num_fields != 0:
                     await interaction.followup.send(embed=embed)
