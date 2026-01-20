@@ -31,7 +31,7 @@ from utils.responses import (
 )
 from utils.time import get_local_time
 from utils.validation import in_range, is_empty_string
-from utils.visualization import plot_scoreboard
+from utils.visualization import plot_category_radar, plot_scoreboard
 
 __all__ = [
     "truncate",
@@ -50,6 +50,7 @@ __all__ = [
     "extract_images_from_html",
     "make_form_field_config",
     "country_name",
+    "plot_category_radar",
     "plot_scoreboard",
     "send_response",
     "send_error",

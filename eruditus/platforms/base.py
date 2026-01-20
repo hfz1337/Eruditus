@@ -248,6 +248,36 @@ class TeamScoreHistory:
 
 
 @dataclass
+class CategoryStats:
+    """Statistics for a single challenge category.
+
+    Attributes:
+        category: The category name.
+        total: Total number of challenges in this category.
+        solved: Number of solved challenges in this category.
+    """
+
+    category: str
+    total: int
+    solved: int
+
+
+@dataclass
+class TeamCategoryStats:
+    """Category statistics for a team.
+
+    Attributes:
+        team_name: The team name.
+        is_me: Whether this is our team.
+        stats: List of category statistics for this team.
+    """
+
+    team_name: str
+    is_me: bool
+    stats: list[CategoryStats]
+
+
+@dataclass
 class RegistrationStatus:
     """A class representing a team registration status.
 
