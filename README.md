@@ -1,8 +1,11 @@
 # Eruditus - CTF helper bot
 <p align="center">
-        <a href="https://discord.com/developers/docs/interactions/slash-commands"><img src="https://img.shields.io/badge/%2F-Discord%20Slash-blue" alt="Discord Slash Commands"></a>
-        <a href="https://github.com/hfz1337/Eruditus/actions"><img src="https://img.shields.io/github/actions/workflow/status/hfz1337/Eruditus/pre-commit.yml?branch=master&logo=github" alt="GitHub Workflow Status"></a>
-        <a href="https://github.com/pre-commit/pre-commit"> <img alt="pre-commit" src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=flat-square"></a>
+        <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12+-blue.svg?logo=python&logoColor=white" alt="Python 3.12+"></a>
+        <a href="https://discord.com/developers/docs/interactions/slash-commands"><img src="https://img.shields.io/badge/%2F-Discord%20Slash-5865F2?logo=discord&logoColor=white" alt="Discord Slash Commands"></a>
+        <a href="https://github.com/hfz1337/Eruditus/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/hfz1337/Eruditus/ci.yml?branch=master&logo=github&label=CI" alt="CI Status"></a>
+        <a href="https://codecov.io/gh/hfz1337/Eruditus"><img src="https://codecov.io/gh/hfz1337/Eruditus/branch/master/graph/badge.svg" alt="codecov"></a>
+        <a href="https://github.com/pre-commit/pre-commit"><img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white" alt="pre-commit"></a>
+        <a href="https://github.com/hfz1337/Eruditus/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
 </p>
 <br/>
 <p align="center">
@@ -20,7 +23,7 @@ make its usage as intuitive as possible.
 ## Features
 ### Core functionalities
 - Manage channels and their permissions
-- Create Discord scheduled events for upocoming CTF competitions
+- Create Discord scheduled events for upcoming CTF competitions
 - Track CTFs progress
 - Track members' participation in challenges
 - Announcements upon solving a challenge
@@ -32,6 +35,7 @@ and more.
 - Provides a utility to lookup system calls from a specific architecture
 - Provides a utility for basic encoding schemes
 - Provides a utility for classic ciphers
+- Provides a reverse shell payload generator
 
 ### Supported platforms
 As you already read this bot can interact with the CTF platforms, meaning that you can:
@@ -45,7 +49,7 @@ Currently, Eruditus supports these platforms:
 - CTFd
 - rCTF
 
-_You can check out our [abstract interfaces](eruditus/lib/platforms/abc.py) if you wish to add support for a new platform_
+_You can check out our [abstract interfaces](eruditus/platforms/base.py) if you wish to add support for a new platform_
 
 ## Usage
 Here's a list of the currently supported commands:
@@ -55,6 +59,7 @@ Here's a list of the currently supported commands:
 /request                                             (Request a new feature from the developer)
 /report                                              (Send a bug report to the developer)
 /intro                                               (Show bot instructions for newcomers)
+/revshell                                            (Generate reverse shell payloads)
 
 /ctf createctf                                       (Create a new CTF)
 /ctf renamectf                                       (Rename a CTF)
@@ -62,13 +67,16 @@ Here's a list of the currently supported commands:
 /ctf exportchat                                      (Export CTF chat logs to a static site)
 /ctf deletectf                                       (Delete a CTF as well as its channels)
 /ctf setprivacy                                      (Toggle CTF privacy between public and private)
+/ctf addplayers                                      (Add players to a CTF)
 /ctf join                                            (Join a specific CTF channels)
 /ctf leave                                           (Leave a CTF)
 /ctf addcreds                                        (Add credentials for the current CTF)
 /ctf showcreds                                       (Show credentials of the current CTF)
 /ctf status                                          (Show CTF(s) status)
+/ctf scoreboard                                      (Show the CTF scoreboard)
 /ctf workon                                          (Access the private channel associated to the challenge)
 /ctf unworkon                                        (Leave the challenge channel)
+/ctf showsolvers                                     (Show solvers for a challenge)
 /ctf solve                                           (Mark a challenge as solved)
 /ctf unsolve                                         (Mark a challenge as not solved)
 /ctf createchallenge                                 (Create a new challenge)
@@ -96,6 +104,10 @@ Here's a list of the currently supported commands:
 /encoding binary                                     (Binary encoding/decoding)
 /encoding hex                                        (Hex encoding/decoding)
 /encoding url                                        (URL encoding/decoding)
+
+Context menus (right-click on a message):
+⭐ Bookmark                                          (Bookmark a message)
+📝 Take Note                                         (Save a message as a note)
 ```
 
 ## Installation
@@ -128,16 +140,6 @@ section and copy the generated link.
 ## Contribution Guidelines
 Please consider reading our [Contribution Guidelines](.github/CONTRIBUTING.md) before
 making a contribution.
-
-## Contributors
-- [@es3n1n](https://github.com/es3n1n)
-- [@ouxs-19](https://github.com/ouxs-19)
-- [@abdelmaoo](https://github.com/abdelmaoo)
-
-## Credits
-This work was inspired from these amazing projects:
-- [OTA's Bishop Slack bot](https://github.com/OpenToAllCTF/OTA-Challenge-Bot)
-- [NullCTF](https://github.com/NullPxl/NullCTF)
 
 ## License
 Distributed under the MIT License. See [`LICENSE`](./LICENSE) for more information.

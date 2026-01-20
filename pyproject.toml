@@ -1,0 +1,93 @@
+[project]
+name = "eruditus"
+version = "2.0.0"
+description = "Discord CTF helper bot"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+dependencies = [
+    "discord.py>=2.6.4",
+    "numpy>=1.26.4",
+    "pydantic>=2.8",
+    "markdownify>=0.11.6",
+    "matplotlib>=3.6.3",
+    "beautifulsoup4",
+    "python-dotenv",
+    "pymongo",
+    "urllib3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "isort",
+    "flake8",
+    "pre-commit",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=4.0",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py312", "py313"]
+exclude = '''
+/(
+    \.git
+    | \.venv
+    | \.data
+    | venv
+    | __pycache__
+    | build
+    | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+combine_as_imports = true
+skip = [".git", ".venv", "venv", "__pycache__", "build", "dist"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = false
+warn_unused_ignores = false
+disallow_untyped_defs = false
+ignore_missing_imports = true
+check_untyped_defs = false
+strict_optional = false
+exclude = [".venv", "venv", "build", "dist", "tests"]
+
+# Ignore modules with incomplete third-party type stubs (discord.py, matplotlib, beautifulsoup4)
+[[tool.mypy.overrides]]
+module = [
+    "commands.*",
+    "components.*",
+    "events.*",
+    "tasks.*",
+    "services.*",
+    "integrations.*",
+    "platforms.*",
+    "utils.discord",
+    "utils.visualization",
+    "utils.responses",
+    "utils.html",
+    "eruditus",
+    "config",
+]
+ignore_errors = true
+
+# Stricter checking on pure utility modules
+[[tool.mypy.overrides]]
+module = ["utils.validation", "utils.formatting", "utils.http", "constants.*"]
+strict_optional = true
+warn_return_any = true

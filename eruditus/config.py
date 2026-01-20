@@ -13,23 +13,17 @@ dotenv.load_dotenv()
 class RandomUserAgent:
     """A class that represents a random User-Agent."""
 
-    def __init__(self):
-        self.user_agents = [
-            line.strip()
-            for line in open(
-                f"{Path(__file__).parent}/user-agents.txt", encoding="utf-8"
-            ).readlines()
-        ]
+    def __init__(self) -> None:
+        user_agents_path = Path(__file__).parent / "assets" / "user-agents.txt"
+        with open(user_agents_path, encoding="utf-8") as f:
+            self.user_agents = [line.strip() for line in f.readlines()]
 
-    def __call__(self):
+    def __call__(self) -> str:
         return random.choice(self.user_agents)
 
 
 def load_revision() -> str:
     """Get the current revision.
-
-    Author:
-        @es3n1n (refactoring and handling of multiple cases)
 
     Notes:
         We start by looking up the `.revision` file, if it's present, we use it.
@@ -39,13 +33,15 @@ def load_revision() -> str:
     dot_revision: Path = root_dir / ".revision"
 
     if dot_revision.exists():
-        return open(dot_revision, encoding="utf-8").read()
+        with open(dot_revision, encoding="utf-8") as f:
+            return f.read().strip()
 
     git_dir: Path = root_dir.parent / ".git"
 
     head_ref: Path = git_dir / "refs" / "heads" / "master"
     if head_ref.exists():
-        return open(head_ref, encoding="utf-8").read()
+        with open(head_ref, encoding="utf-8") as f:
+            return f.read().strip()
 
     return "unknown"
 
@@ -53,10 +49,7 @@ def load_revision() -> str:
 def load_nullable_env_var(
     name: str, factory: Callable[[str], T] = lambda x: x, default: Optional[T] = None
 ) -> Optional[T]:
-    """Load a nullable config var.
-    Author:
-        @es3n1n
-    """
+    """Load a nullable config var."""
     var = os.getenv(name)
     return default if not var else factory(var)
 
