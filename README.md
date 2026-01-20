@@ -3,7 +3,6 @@
         <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12+-blue.svg?logo=python&logoColor=white" alt="Python 3.12+"></a>
         <a href="https://discord.com/developers/docs/interactions/slash-commands"><img src="https://img.shields.io/badge/%2F-Discord%20Slash-5865F2?logo=discord&logoColor=white" alt="Discord Slash Commands"></a>
         <a href="https://github.com/hfz1337/Eruditus/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/hfz1337/Eruditus/ci.yml?branch=master&logo=github&label=CI" alt="CI Status"></a>
-        <a href="https://codecov.io/gh/hfz1337/Eruditus"><img src="https://codecov.io/gh/hfz1337/Eruditus/branch/master/graph/badge.svg" alt="codecov"></a>
         <a href="https://github.com/pre-commit/pre-commit"><img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white" alt="pre-commit"></a>
         <a href="https://github.com/hfz1337/Eruditus/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
 </p>
