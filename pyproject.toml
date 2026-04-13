@@ -9,7 +9,7 @@ dependencies = [
     "discord.py>=2.6.4",
     "numpy>=1.26.4",
     "pydantic>=2.8",
-    "markdownify>=0.11.6",
+    "markdownify>=1.2.2",
     "matplotlib>=3.6.3",
     "beautifulsoup4",
     "python-dotenv",
