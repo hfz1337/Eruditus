@@ -7,7 +7,7 @@ license = { text = "MIT" }
 requires-python = ">=3.12"
 dependencies = [
     "discord.py>=2.6.4",
-    "numpy>=1.26.4",
+    "numpy>=2.4.4",
     "pydantic>=2.8",
     "markdownify>=0.11.6",
     "matplotlib>=3.6.3",
