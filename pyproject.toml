@@ -10,7 +10,7 @@ dependencies = [
     "numpy>=1.26.4",
     "pydantic>=2.8",
     "markdownify>=0.11.6",
-    "matplotlib>=3.6.3",
+    "matplotlib>=3.10.8",
     "beautifulsoup4",
     "python-dotenv",
     "pymongo",
